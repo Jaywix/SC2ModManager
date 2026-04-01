@@ -4,6 +4,9 @@
         xmlns:local="clr-namespace:SC2ModManager"
         Title="SC2 Mod Manager" Height="500" Width="900">
 
+    <Window.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -42,6 +45,12 @@
                 <Button Content="Launch Game"
                         Height="40"
                         Click="LaunchGame_Click"/>
+
+                <Button Content="Update Available"
+                    Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Height="40"
+                    Margin="0,10,0,0"
+                    Click="Update_Click"/>
             </StackPanel>
 
             <!-- MODS VIEW -->

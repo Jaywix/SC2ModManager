@@ -5,6 +5,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace SC2ModManager.ViewModels
 {
@@ -19,6 +21,7 @@ namespace SC2ModManager.ViewModels
 
     public class MainViewModel : INotifyPropertyChanged
     {
+        // Data properties
         private ModService modService;
         private GameService gameService;
 
@@ -33,6 +36,7 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // View management
         private MainView currentView;
         public MainView CurrentView
         {
@@ -43,6 +47,22 @@ namespace SC2ModManager.ViewModels
                 OnPropertyChanged("CurrentView");
             }
         }
+
+        // Update checking properties
+        private UpdateService updateService;
+
+        private bool updateAvailable;
+        public bool UpdateAvailable
+        {
+            get => updateAvailable;
+            set
+            {
+                updateAvailable = value;
+                OnPropertyChanged(nameof(UpdateAvailable));
+            }
+        }
+
+        private string updateDownloadUrl;
 
 
 
@@ -63,6 +83,9 @@ namespace SC2ModManager.ViewModels
             }
 
             this.CurrentView = MainView.Home;
+
+            this.updateService = new UpdateService();
+            _ = CheckForUpdates();
         }
 
         public void LoadMaps()
@@ -165,6 +188,26 @@ namespace SC2ModManager.ViewModels
             }
 
             Directory.Delete(temp, true);
+        }
+
+        public async Task CheckForUpdates()
+        {
+            try
+            {
+                var (latestVersion, downloadUrl) = await updateService.GetLatestRelease();
+
+                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+                if (latestVersion > currentVersion)
+                {
+                    UpdateAvailable = true;
+                    updateDownloadUrl = downloadUrl;
+                }
+            }
+            catch
+            {
+                // possibly failed, but that's ok - just don't show update notification
+            }
         }
 
 

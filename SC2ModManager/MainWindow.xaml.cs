@@ -104,6 +104,11 @@ namespace SC2ModManager
             vm.ImportMaps();
         }
 
+        private async void Update_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Update system coming next step 👀");
+        }
+
 
 
 
