@@ -66,6 +66,18 @@ namespace SC2ModManager.ViewModels
 
         private string updateDownloadUrl;
 
+        // Download progress properties
+        private double downloadProgress;
+        public double DownloadProgress
+        {
+            get => downloadProgress;
+            set
+            {
+                downloadProgress = value;
+                OnPropertyChanged(nameof(DownloadProgress));
+            }
+        }
+
 
 
         public MainViewModel()
@@ -200,7 +212,7 @@ namespace SC2ModManager.ViewModels
 
                 var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
-                if (latestVersion > currentVersion)
+                if (latestVersion.CompareTo(currentVersion) > 0)
                 {
                     UpdateAvailable = true;
                     updateDownloadUrl = downloadUrl;
@@ -216,29 +228,107 @@ namespace SC2ModManager.ViewModels
         {
             try
             {
+                if (string.IsNullOrEmpty(updateDownloadUrl))
+                {
+                    MessageBox.Show("No update URL found.");
+                    return;
+                }
+
+                // Paths
                 string zipPath = Path.Combine(Path.GetTempPath(), "SC2_update.zip");
-
-                using HttpClient client = new HttpClient();
-                var data = await client.GetByteArrayAsync(updateDownloadUrl);
-                await File.WriteAllBytesAsync(zipPath, data);
-
-                string installPath = AppDomain.CurrentDomain.BaseDirectory;
+                string installPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
                 string updaterPath = Path.Combine(installPath, Globals.UpdaterExecutableName);
-
                 string exeName = Globals.ModManagerExecutableName;
 
+                // Ensure updater exists
+                if (!File.Exists(updaterPath))
+                {
+                    MessageBox.Show($"Updater not found:\n{updaterPath}");
+                    return;
+                }
+
+                // Optional: create backup BEFORE downloading/installing
+                CreateBackup(installPath);
+
+                // Download with progress
+                await DownloadFileWithProgress(updateDownloadUrl, zipPath);
+
+                MessageBox.Show("Download complete. Starting updater...");
+
+                // Start updater process
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = updaterPath,
                     Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
-                    UseShellExecute = true
+                    UseShellExecute = true,
+                    WorkingDirectory = installPath
                 });
 
+                // Small delay to ensure updater launches cleanly
+                MessageBox.Show("Updating... The app will restart automatically.");
+                await Task.Delay(500);
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Update failed: {ex.Message}");
+                MessageBox.Show($"Update failed:\n{ex.Message}");
+            }
+        }
+
+        public async Task DownloadFileWithProgress(string url, string outputPath)
+        {
+            using HttpClient client = new HttpClient();
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+            response.EnsureSuccessStatusCode();
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            var canReport = totalBytes != -1;
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var buffer = new byte[8192];
+            long totalRead = 0;
+            int read;
+
+            while ((read = await stream.ReadAsync(buffer)) > 0)
+            {
+                await fileStream.WriteAsync(buffer, 0, read);
+
+                totalRead += read;
+
+                if (canReport)
+                {
+                    DownloadProgress = (double)totalRead / totalBytes * 100;
+                }
+            }
+        }
+
+        public void CreateBackup(string installPath)
+        {
+            string backupDir = Path.Combine(installPath, "backup");
+
+            if (Directory.Exists(backupDir))
+                Directory.Delete(backupDir, true);
+
+            Directory.CreateDirectory(backupDir);
+
+            foreach (var file in Directory.GetFiles(installPath))
+            {
+                var dest = Path.Combine(backupDir, Path.GetFileName(file));
+                File.Copy(file, dest, true);
+            }
+        }
+
+        public void RestoreBackup(string installPath)
+        {
+            string backupDir = Path.Combine(installPath, "backup");
+
+            foreach (var file in Directory.GetFiles(backupDir))
+            {
+                var dest = Path.Combine(installPath, Path.GetFileName(file));
+                File.Copy(file, dest, true);
             }
         }
 
