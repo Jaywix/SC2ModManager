@@ -1,0 +1,97 @@
+﻿<Window x:Class="SC2ModManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SC2ModManager"
+        Title="SC2 Mod Manager" Height="500" Width="900">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.Background>
+            <ImageBrush ImageSource="/Assets/uef.png"
+                    Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <!-- SIDEBAR -->
+        <!--<StackPanel Background="#2D2D30">-->
+        <StackPanel>
+            <StackPanel.Background>
+                <ImageBrush ImageSource="/Assets/spoiler_profile.png"
+        Stretch="UniformToFill"/>
+            </StackPanel.Background>
+            <TextBlock Text="SC2 Manager"
+                       Foreground="White"
+                       FontSize="18"
+                       Margin="10"/>
+
+            <Button Content="Home" Click="GoHome" Margin="10"/>
+            <Button Content="Manage Mods" Click="GoToMods" Margin="10"/>
+        </StackPanel>
+
+        <!-- CONTENT -->
+        <Grid Grid.Column="1" Margin="10">
+
+            <!-- HOME VIEW -->
+            <StackPanel x:Name="HomeView">
+                <TextBlock Text="Home"
+                           FontSize="22"
+                           Margin="0,0,0,20"/>
+
+                <Button Content="Launch Game"
+                        Height="40"
+                        Click="LaunchGame_Click"/>
+            </StackPanel>
+
+            <!-- MODS VIEW -->
+            <StackPanel x:Name="ModsView" Visibility="Collapsed">
+                <TextBlock Text="Manage Mods"
+                           FontSize="22"
+                           Margin="0,0,0,20"/>
+
+                <Button Content="Custom Maps"
+                        Click="GoToMaps"
+                        Height="35"/>
+
+                <Button Content="Hotkeys"
+                        Click="GoToHotkeys"
+                        Height="35"/>
+
+                <Button Content="Back"
+                        Click="GoHome"
+                        Height="35"/>
+            </StackPanel>
+
+            <!-- MAPS VIEW -->
+            <StackPanel x:Name="MapsView" Visibility="Collapsed">
+                <TextBlock Text="Custom Maps"
+                           FontSize="22"
+                           Margin="0,0,0,20"/>
+
+                <ListBox ItemsSource="{Binding Maps}"
+                         AllowDrop="True"
+                         Drop="Maps_Drop"
+                         Height="250">
+
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}"
+                                      IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button Content="Select All" Click="SelectAll"/>
+                    <Button Content="Remove All" Click="RemoveAll"/>
+                    <Button Content="Save" Click="SaveMaps"/>
+                    <Button Content="Import Maps" Click="ImportMaps"/>
+                </StackPanel>
+
+                <Button Content="Back" Click="GoToMods" Margin="0,10,0,0"/>
+            </StackPanel>
+
+        </Grid>
+    </Grid>
+</Window>
