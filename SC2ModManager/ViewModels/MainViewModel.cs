@@ -3,10 +3,12 @@ using SC2ModManager.Models;
 using SC2ModManager.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
-using System.Windows;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace SC2ModManager.ViewModels
 {
@@ -207,6 +209,36 @@ namespace SC2ModManager.ViewModels
             catch
             {
                 // possibly failed, but that's ok - just don't show update notification
+            }
+        }
+
+        public async Task RunUpdater()
+        {
+            try
+            {
+                string zipPath = Path.Combine(Path.GetTempPath(), "SC2_update.zip");
+
+                using HttpClient client = new HttpClient();
+                var data = await client.GetByteArrayAsync(updateDownloadUrl);
+                await File.WriteAllBytesAsync(zipPath, data);
+
+                string installPath = AppDomain.CurrentDomain.BaseDirectory;
+                string updaterPath = Path.Combine(installPath, Globals.UpdaterExecutableName);
+
+                string exeName = Globals.ModManagerExecutableName;
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = updaterPath,
+                    Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
+                    UseShellExecute = true
+                });
+
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Update failed: {ex.Message}");
             }
         }
 

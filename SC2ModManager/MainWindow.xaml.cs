@@ -106,7 +106,7 @@ namespace SC2ModManager
 
         private async void Update_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Update system coming next step 👀");
+            await vm.RunUpdater();
         }
 
 

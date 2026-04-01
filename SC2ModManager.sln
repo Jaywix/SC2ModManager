@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36811.4 d17.14
+VisualStudioVersion = 17.14.36811.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SC2ModManager", "SC2ModManager\SC2ModManager.csproj", "{19016D9F-C74A-472E-BCC3-C937FAD6A40B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SC2MMUpdater", "SC2MMUpdater\SC2MMUpdater.csproj", "{B7B61A49-5AEE-4817-B888-0D367D076808}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{19016D9F-C74A-472E-BCC3-C937FAD6A40B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{19016D9F-C74A-472E-BCC3-C937FAD6A40B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{19016D9F-C74A-472E-BCC3-C937FAD6A40B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7B61A49-5AEE-4817-B888-0D367D076808}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7B61A49-5AEE-4817-B888-0D367D076808}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7B61A49-5AEE-4817-B888-0D367D076808}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7B61A49-5AEE-4817-B888-0D367D076808}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

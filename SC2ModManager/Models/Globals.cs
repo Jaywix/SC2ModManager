@@ -11,5 +11,9 @@ namespace SC2ModManager.Models
         public static string LauncherName = "SC2ModManager";
 
         public static string RepoUrl = "https://api.github.com/repos/Jaywix/SC2ModManager/releases/latest";
+
+        public static string ModManagerExecutableName = "SC2ModManager.exe";
+
+        public static string UpdaterExecutableName = "SC2MMUpdater.exe";
     }
 }
