@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using SC2ModManager.Models;
+using SC2ModManager.Services;
+using System;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
-using Microsoft.Win32;
-
-using SC2ModManager.Models;
 
 namespace SC2ModManager
 {
@@ -16,6 +16,8 @@ namespace SC2ModManager
         private readonly string AppDataPath;
         private readonly string ConfigPath;
 
+        private readonly ConfigService configService = new ConfigService();
+
         public SetupWindow()
         {
             InitializeComponent();
@@ -26,6 +28,8 @@ namespace SC2ModManager
             );
 
             ConfigPath = Path.Combine(AppDataPath, "config.json");
+
+            Loaded += SetupWindow_Loaded;
         }
 
         // Browse button
@@ -166,6 +170,32 @@ namespace SC2ModManager
                     SetupProgressBar.Value = progress;
                     StatusText.Text = $"Copying files... ({copied}/{totalFiles})";
                 });
+            }
+        }
+
+        private async void SetupWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            StatusText.Text = "Looking for Supreme Commander 2...";
+
+            await Task.Delay(300); // lets UI render first
+
+            string detected = configService.DetectGamePath();
+
+            if (!string.IsNullOrEmpty(detected))
+            {
+                selectedPath = detected;
+                GamePathTextBox.Text = detected;
+
+                StatusText.Text = "Game detected!";
+
+                MessageBox.Show($"Game auto-detected at:\n{detected}");
+
+                // OPTIONAL: auto-continue instead of requiring button click
+                // Finish_Click(this, new RoutedEventArgs());
+            }
+            else
+            {
+                StatusText.Text = "Game not found. Please select manually.";
             }
         }
 

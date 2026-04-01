@@ -13,6 +13,8 @@ namespace SC2ModManager.Services
     {
         private readonly string configPath;
 
+        public string GamePath { get; set; }
+
         public ConfigService()
         {
             string appDataPath = Path.Combine(
@@ -26,11 +28,13 @@ namespace SC2ModManager.Services
         public AppConfig Load()
         {
             if (!File.Exists(this.configPath))
-                throw new Exception("Config file not found.");
+            {
+                return new AppConfig();
+            }
 
-            return JsonSerializer.Deserialize<AppConfig>(
-                File.ReadAllText(this.configPath)
-            );
+            string json = File.ReadAllText(this.configPath);
+
+            return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
         }
 
         public void Save(AppConfig config)
@@ -47,6 +51,56 @@ namespace SC2ModManager.Services
         public bool ConfigExists()
         {
             return File.Exists(this.configPath);
+        }
+
+
+
+        public string DetectGamePath()
+        {
+            string path = TryGetFromSteam();
+
+            if (!string.IsNullOrEmpty(path))
+                return path;
+
+            return TryCommonPaths();
+        }
+
+        private string TryGetFromSteam()
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+
+            string steamPath = key?.GetValue("SteamPath")?.ToString();
+
+            if (string.IsNullOrEmpty(steamPath))
+                return null;
+
+            string gamePath = Path.Combine(
+                steamPath,
+                "steamapps",
+                "common",
+                "Supreme Commander 2"
+            );
+
+            return Directory.Exists(gamePath) ? gamePath : null;
+        }
+
+        private string TryCommonPaths()
+        {
+            string[] paths =
+            {
+                @"C:\Program Files (x86)\Steam\steamapps\common\Supreme Commander 2",
+                @"C:\Program Files\Steam\steamapps\common\Supreme Commander 2",
+                @"D:\Steam\steamapps\common\Supreme Commander 2",
+                @"D:\Program Files (x86)\Steam\steamapps\common\Supreme Commander 2"
+    };
+
+            foreach (var path in paths)
+            {
+                if (Directory.Exists(path))
+                    return path;
+            }
+
+            return null;
         }
     }
 }

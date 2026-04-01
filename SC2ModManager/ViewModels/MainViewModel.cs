@@ -26,6 +26,7 @@ namespace SC2ModManager.ViewModels
         // Data properties
         private ModService modService;
         private GameService gameService;
+        private ConfigService configService;
 
         private ObservableCollection<Map> maps;
         public ObservableCollection<Map> Maps
@@ -78,17 +79,31 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // Game path
+        private string gamePath;
+        public string GamePath
+        {
+            get => gamePath;
+            set
+            {
+                gamePath = value;
+                configService.GamePath = value;
+                OnPropertyChanged(nameof(GamePath));
+            }
+        }
+
 
 
         public MainViewModel()
         {
             try
             {
-                ConfigService configService = new ConfigService();
+                this.configService = new ConfigService();
 
-                this.modService = new ModService(configService);
-                this.gameService = new GameService(configService);
+                this.modService = new ModService(this.configService);
+                this.gameService = new GameService(this.configService);
 
+                InitializeGamePath();
                 LoadMaps();
             }
             catch (Exception ex)
@@ -314,8 +329,11 @@ namespace SC2ModManager.ViewModels
 
             Directory.CreateDirectory(backupDir);
 
-            foreach (var file in Directory.GetFiles(installPath))
+            foreach (var file in Directory.GetFiles(installPath, "*", SearchOption.AllDirectories))
             {
+                if (Path.GetFullPath(file).StartsWith(Path.Combine(installPath, "backup")))
+                    continue;
+
                 var dest = Path.Combine(backupDir, Path.GetFileName(file));
                 File.Copy(file, dest, true);
             }
@@ -325,11 +343,62 @@ namespace SC2ModManager.ViewModels
         {
             string backupDir = Path.Combine(installPath, "backup");
 
-            foreach (var file in Directory.GetFiles(backupDir))
+            foreach (var file in Directory.GetFiles(backupDir, "*", SearchOption.AllDirectories))
             {
                 var dest = Path.Combine(installPath, Path.GetFileName(file));
                 File.Copy(file, dest, true);
             }
+        }
+
+        public void InitializeGamePath()
+        {
+            var config = configService.Load();
+
+            if (!string.IsNullOrEmpty(config.GamePath))
+            {
+                GamePath = config.GamePath;
+            }
+            else
+            {
+                MessageBox.Show("Game path not configured. Please run setup.");
+            }
+        }
+
+        public void SelectGamePath()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Supreme Commander 2 Executable",
+                Filter = "Supreme Commander 2 (SupremeCommander2.exe)|SupremeCommander2.exe",
+                CheckFileExists = true
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            string selectedFile = dialog.FileName;
+            string selectedPath = Path.GetDirectoryName(selectedFile);
+
+            if (!IsValidGamePath(selectedPath))
+            {
+                MessageBox.Show("Invalid folder. Please select the correct game directory.");
+                return;
+            }
+
+            // Save once (clean + consistent with your AppConfig)
+            configService.Save(new AppConfig
+            {
+                GamePath = selectedPath
+            });
+
+            GamePath = selectedPath;
+
+            MessageBox.Show("Game path saved!");
+        }
+
+        private bool IsValidGamePath(string path)
+        {
+            return File.Exists(Path.Combine(path, "SupremeCommander2.exe"));
         }
 
 

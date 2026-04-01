@@ -14,17 +14,18 @@ namespace SC2ModManager
         {
             base.OnStartup(e);
 
-            ConfigService configService = new ConfigService();
+            var configService = new ConfigService();
+            var config = configService.Load();
 
-            if (!configService.ConfigExists())
+            if (config == null || string.IsNullOrEmpty(config.GamePath))
             {
-                SetupWindow setupWindow = new SetupWindow();
-                setupWindow.Show();
+                var setup = new SetupWindow();
+                setup.Show();
             }
             else
             {
-                MainWindow mainWindow = new MainWindow();
-                mainWindow.Show();
+                var main = new MainWindow();
+                main.Show();
             }
         }
     }
