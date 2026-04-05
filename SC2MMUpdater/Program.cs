@@ -17,13 +17,15 @@ namespace SC2MMUpdater
                     {
                         process.CloseMainWindow();
                         process.WaitForExit(3000);
-
                         if (!process.HasExited)
                         {
                             process.Kill();
+                            process.WaitForExit();
                         }
                     }
                 }
+
+                Thread.Sleep(2000); // let the OS release file locks
 
 
 
@@ -68,17 +70,27 @@ namespace SC2MMUpdater
                     sourcePath = publishPath;
                 }
 
-                // Copy files to install directory
+                var skipFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "SC2MMUpdater.exe",
+                    "SC2MMUpdater.dll",
+                    "SC2MMUpdater.pdb",
+                    "SC2MMUpdater.runtimeconfig.json",
+                    "SC2MMUpdater.deps.json"
+                };
+
                 foreach (string file in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
                 {
                     string relativePath = Path.GetRelativePath(sourcePath, file);
-                    string destinationPath = Path.Combine(installPath, relativePath);
 
+                    if (skipFiles.Contains(Path.GetFileName(relativePath)))
+                        continue;
+
+                    string destinationPath = Path.Combine(installPath, relativePath);
                     string destinationDir = Path.GetDirectoryName(destinationPath);
+
                     if (!Directory.Exists(destinationDir))
-                    {
                         Directory.CreateDirectory(destinationDir);
-                    }
 
                     File.Copy(file, destinationPath, true);
                 }
