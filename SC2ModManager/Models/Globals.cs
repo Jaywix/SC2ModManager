@@ -24,6 +24,10 @@ namespace SC2ModManager.Models
         public static string GameDataBackupPt2GithubReleaseUrl = "https://github.com/Jaywix/SC2Mods/releases/download/GamedataBackupFilesPt2/gamedataBackupPt2.zip";
 
 
+        public static string MapsListUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/maps.json";
+        public static string GenericModsListUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/genericMods.json";
+
+
 
     }
 }

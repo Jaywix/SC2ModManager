@@ -12,111 +12,316 @@
     </Window.Resources>
 
     <Grid>
-
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.Background>
-            <ImageBrush ImageSource="/Assets/uef.png"
-                        Stretch="UniformToFill"/>
+            <ImageBrush ImageSource="/Assets/uef.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <!-- SIDEBAR -->
         <StackPanel Grid.Column="0">
             <StackPanel.Background>
-                <ImageBrush ImageSource="/Assets/spoiler_profile.png"
-                            Stretch="UniformToFill"/>
+                <ImageBrush ImageSource="/Assets/spoiler_profile.png" Stretch="UniformToFill"/>
             </StackPanel.Background>
 
-            <TextBlock Text="SC2 Mod Manager"
-                       Foreground="White"
-                       FontSize="18"
-                       Margin="10"/>
-
-            <Button Content="Home" Click="GoHome" Margin="10"/>
-            <Button Content="Manage Mods" Click="GoToMods" Margin="10"/>
+            <TextBlock Text="SC2 Mod Manager" Foreground="White" FontSize="18" Margin="10"/>
+            <Button Content="Home"        Click="GoHome"    Margin="10"/>
+            <Button Content="Manage Mods" Click="GoToMods"  Margin="10"/>
         </StackPanel>
 
         <!-- MAIN CONTENT -->
         <Grid Grid.Column="1" Margin="10">
 
-            <!-- HOME -->
+            <!-- ===== HOME ===== -->
             <StackPanel x:Name="HomeView">
                 <TextBlock Text="Home" FontSize="22" Margin="0,0,0,20"/>
-
                 <Button Content="Launch Game" Height="40" Click="LaunchGame_Click"/>
-
                 <Button Content="Update Available"
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Height="40"
-                        Margin="0,10,0,0"
-                        Click="Update_Click"/>
-
+                        Height="40" Margin="0,10,0,0" Click="Update_Click"/>
                 <ProgressBar Minimum="0" Maximum="100" Height="20"
                              Value="{Binding DownloadProgress}"
                              Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}"/>
             </StackPanel>
 
-            <!-- MANAGE MODS MAIN -->
+            <!-- ===== MANAGE MODS ===== -->
             <StackPanel x:Name="ModsView" Visibility="Collapsed">
                 <TextBlock Text="Manage Mods" FontSize="22" Margin="0,0,0,20"/>
-
-                <Button Content="Compare Current Mod State to Backup" Height="35"/>
-                <Button Content="Current Mods Installed" Click="GoToInstalledMods" Height="35"/>
-                <Button Content="Download Mods" Click="GoToDownloadMods" Height="35"/>
-                <Button Content="Restore Original Game Files" Height="35" Click="RestoreOriginalGameData_Click"/>
-                <Button Content="Back" Click="GoHome" Height="35"/>
+                <Button Content="Backups"   Height="35" Margin="0,5" Click="GoToBackups"/>
+                <Button Content="Installed" Height="35" Margin="0,5" Click="GoToInstalledMods"/>
+                <Button Content="Download"  Height="35" Margin="0,5" Click="GoToDownloadMods"/>
+                <Button Content="Back"      Height="35" Margin="0,5" Click="GoHome"/>
             </StackPanel>
 
-            <!-- INSTALLED MODS CATEGORY -->
+            <!-- ===== BACKUPS ===== -->
+            <StackPanel x:Name="BackupsView" Visibility="Collapsed">
+                <TextBlock Text="Backups" FontSize="22" Margin="0,0,0,20"/>
+                <Button Content="Compare Current Mod State to Backup" Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Restore Original Game Files"         Height="35" Margin="0,5" Click="RestoreOriginalGameData_Click"/>
+                <Button Content="Back" Height="35" Margin="0,5"       Click="GoToMods"/>
+            </StackPanel>
+
+            <!-- ===== INSTALLED MODS CATEGORY ===== -->
             <StackPanel x:Name="InstalledModsView" Visibility="Collapsed">
                 <TextBlock Text="Installed Mods" FontSize="22" Margin="0,0,0,20"/>
-
-                <Button Content="Custom Maps" Click="GoToMaps" x:Name="InstalledCustomMaps"/>
-                <Button Content="Hotkeys" x:Name="InstalledHotkeys"/>
-                <Button Content="Balance Mods" x:Name="InstalledBalanceMods"/>
-                <Button Content="Visual Mods" x:Name="InstalledVisualMods"/>
-                <Button Content="Generic Gamedata Mods" x:Name="InstalledGamedataMods"/>
-
-                <Button Content="Back" Click="GoToMods"/>
+                <Button Content="Custom Maps"           Height="35" Margin="0,5" Click="GoToInstalledMaps"/>
+                <Button Content="Hotkeys"               Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Balance Mods"          Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Visual Mods"           Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Generic Gamedata Mods" Height="35" Margin="0,5" Click="GoToInstalledGenericMods"/>
+                <Button Content="Back"                  Height="35" Margin="0,5" Click="GoToMods"/>
             </StackPanel>
 
-            <!-- DOWNLOAD MODS CATEGORY -->
+            <!-- ===== INSTALLED: CUSTOM MAPS ===== -->
+            <Grid x:Name="InstalledMapsView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Installed Maps" FontSize="22" Margin="0,0,0,10"/>
+
+                <!-- Enabled / Disabled split -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Enabled -->
+                    <StackPanel Grid.Column="0" Margin="0,0,5,0">
+                        <TextBlock Text="Enabled" FontSize="16" Margin="0,0,0,5"/>
+                        <ListBox x:Name="EnabledMapsList"
+                                 ItemsSource="{Binding EnabledMaps}"
+                                 SelectionMode="Multiple"
+                                 Height="350">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding FileName}"
+                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- Disabled -->
+                    <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                        <TextBlock Text="Disabled" FontSize="16" Margin="0,0,0,5"/>
+                        <ListBox x:Name="DisabledMapsList"
+                                 ItemsSource="{Binding DisabledMaps}"
+                                 SelectionMode="Multiple"
+                                 Height="350">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding FileName}"
+                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Enable / Disable buttons -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="Enable Selected"  Width="120" Margin="0,0,5,0" Click="EnableSelectedMaps_Click"/>
+                    <Button Content="Disable Selected" Width="120" Margin="0,0,5,0" Click="DisableSelectedMaps_Click"/>
+                    <Button Content="Enable All"       Width="100" Margin="0,0,5,0" Click="EnableAllMaps_Click"/>
+                    <Button Content="Disable All"      Width="100" Margin="0,0,5,0" Click="DisableAllMaps_Click"/>
+                </StackPanel>
+
+                <!-- Save / Back -->
+                <StackPanel Grid.Row="3" Orientation="Horizontal">
+                    <Button Content="Save" Width="80" Margin="0,0,5,0" Click="SaveMaps_Click"/>
+                    <Button Content="Back" Width="80" Click="GoToInstalledMods"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===== INSTALLED: GENERIC GAMEDATA MODS ===== -->
+            <Grid x:Name="InstalledGenericModsView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" FontSize="22" Margin="0,0,0,10"/>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Enabled -->
+                    <StackPanel Grid.Column="0" Margin="0,0,5,0">
+                        <TextBlock Text="Enabled" FontSize="16" Margin="0,0,0,5"/>
+                        <ListBox x:Name="EnabledGenericModsList"
+                                 ItemsSource="{Binding EnabledGenericMods}"
+                                 SelectionMode="Multiple"
+                                 Height="350">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding FileName}"
+                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- Disabled -->
+                    <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                        <TextBlock Text="Disabled" FontSize="16" Margin="0,0,0,5"/>
+                        <ListBox x:Name="DisabledGenericModsList"
+                                 ItemsSource="{Binding DisabledGenericMods}"
+                                 SelectionMode="Multiple"
+                                 Height="350">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding FileName}"
+                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="Enable Selected"  Width="120" Margin="0,0,5,0" Click="EnableSelectedGenericMods_Click"/>
+                    <Button Content="Disable Selected" Width="120" Margin="0,0,5,0" Click="DisableSelectedGenericMods_Click"/>
+                    <Button Content="Enable All"       Width="100" Margin="0,0,5,0" Click="EnableAllGenericMods_Click"/>
+                    <Button Content="Disable All"      Width="100" Margin="0,0,5,0" Click="DisableAllGenericMods_Click"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3" Orientation="Horizontal">
+                    <Button Content="Save" Width="80" Margin="0,0,5,0" Click="SaveGenericMods_Click"/>
+                    <Button Content="Back" Width="80" Click="GoToInstalledMods"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===== DOWNLOAD MODS CATEGORY ===== -->
             <StackPanel x:Name="DownloadModsView" Visibility="Collapsed">
                 <TextBlock Text="Download Mods" FontSize="22" Margin="0,0,0,20"/>
-
-                <Button Content="Custom Maps" x:Name="DownloadCustomMaps"/>
-                <Button Content="Hotkeys" x:Name="DownloadHotkeys"/>
-                <Button Content="Balance Mods" x:Name="DownloadBalanceMods"/>
-                <Button Content="Visual Mods" x:Name="DownloadVisualMods"/>
-                <Button Content="Generic Gamedata Mods" x:Name="DownloadGamedataMods"/>
-
-                <Button Content="Back" Click="GoToMods"/>
+                <Button Content="Custom Maps"           Height="35" Margin="0,5" Click="GoToDownloadMaps"/>
+                <Button Content="Hotkeys"               Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Balance Mods"          Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Visual Mods"           Height="35" Margin="0,5" IsEnabled="False"/>
+                <Button Content="Generic Gamedata Mods" Height="35" Margin="0,5" Click="GoToDownloadGenericMods"/>
+                <Button Content="Manual Import"         Height="35" Margin="0,5" Click="GoToManualImport"/>
+                <Button Content="Back"                  Height="35" Margin="0,5" Click="GoToMods"/>
             </StackPanel>
 
-            <!-- MAPS -->
-            <StackPanel x:Name="MapsView" Visibility="Collapsed">
-                <TextBlock Text="Custom Maps" FontSize="22" Margin="0,0,0,20"/>
+            <!-- ===== DOWNLOAD: CUSTOM MAPS ===== -->
+            <Grid x:Name="DownloadMapsView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <ListBox ItemsSource="{Binding Maps}" AllowDrop="True" Drop="Maps_Drop" Height="250">
+                <TextBlock Grid.Row="0" Text="Download Custom Maps" FontSize="22" Margin="0,0,0,10"/>
+
+                <ListBox Grid.Row="1"
+                         x:Name="DownloadMapsList"
+                         ItemsSource="{Binding DownloadableMaps}"
+                         SelectionMode="Multiple"
+                         Height="380">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <CheckBox Content="{Binding FileName}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
+                                          VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                <TextBlock Text=" (Downloaded)" Foreground="Green" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button Content="Select All" Click="SelectAll"/>
-                    <Button Content="Remove All" Click="RemoveAll"/>
-                    <Button Content="Save" Click="SaveMaps"/>
-                    <Button Content="Import Maps" Click="ImportMaps"/>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="Select All"   Width="100" Margin="0,0,5,0" Click="SelectAllDownloadMaps_Click"/>
+                    <Button Content="Deselect All" Width="100" Margin="0,0,5,0" Click="DeselectAllDownloadMaps_Click"/>
+                    <Button Content="Download"     Width="100" Click="DownloadSelectedMaps_Click"/>
                 </StackPanel>
 
-                <Button Content="Back" Click="GoToInstalledMods" Margin="0,10,0,0"/>
-            </StackPanel>
+                <Button Grid.Row="3" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+            </Grid>
+
+            <!-- ===== DOWNLOAD: GENERIC GAMEDATA MODS ===== -->
+            <Grid x:Name="DownloadGenericModsView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" FontSize="22" Margin="0,0,0,10"/>
+
+                <ListBox Grid.Row="1"
+                         x:Name="DownloadGenericModsList"
+                         ItemsSource="{Binding DownloadableGenericMods}"
+                         SelectionMode="Multiple"
+                         Height="380">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
+                                          VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                <TextBlock Text=" (Downloaded)" Foreground="Green" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="Select All"   Width="100" Margin="0,0,5,0" Click="SelectAllDownloadGenericMods_Click"/>
+                    <Button Content="Deselect All" Width="100" Margin="0,0,5,0" Click="DeselectAllDownloadGenericMods_Click"/>
+                    <Button Content="Download"     Width="100" Click="DownloadSelectedGenericMods_Click"/>
+                </StackPanel>
+
+                <Button Grid.Row="3" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+            </Grid>
+
+            <!-- ===== MANUAL IMPORT ===== -->
+            <Grid x:Name="ManualImportView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Manual Import" FontSize="22" Margin="0,0,0,10"/>
+
+                <!-- Drop zone -->
+                <Border Grid.Row="1"
+                        x:Name="DropZone"
+                        BorderBrush="Gray"
+                        BorderThickness="2"
+                        Background="#22FFFFFF"
+                        AllowDrop="True"
+                        Drop="ManualImport_Drop"
+                        DragOver="ManualImport_DragOver"
+                        Margin="0,0,0,10">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Drag and drop .scd or .zip files here"
+                                   FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock Text="or" Margin="0,8" HorizontalAlignment="Center" Foreground="Gray"/>
+                        <Button Content="Browse for File" Width="140" Click="ManualImportBrowse_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <Button Grid.Row="2" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+            </Grid>
 
         </Grid>
     </Grid>

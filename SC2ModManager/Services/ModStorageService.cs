@@ -5,136 +5,332 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
     public class ModStorageService
     {
-        private readonly string mapsPath;
-        private readonly string genericModsPath;
+        // ================= PATHS =================
+
+        private readonly string mapsEnabledPath;
+        private readonly string mapsDisabledPath;
+        private readonly string genericModsEnabledPath;
+        private readonly string genericModsDisabledPath;
+
+        private readonly string mapsStatePath;
+        private readonly string genericModsStatePath;
 
         private readonly HttpClient httpClient = new HttpClient();
 
-        /// <summary>
-        ///     This class is how we manage the AppData folder stuff
-        /// </summary>
         public ModStorageService()
         {
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager/1.0");
+
             string appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 Globals.LauncherName
             );
 
-            mapsPath = Path.Combine(appData, "Maps");
-            genericModsPath = Path.Combine(appData, "GenericMods");
+            string modsRoot = Path.Combine(appData, "Mods");
+            string mapsRoot = Path.Combine(modsRoot, "Maps");
+            string genericRoot = Path.Combine(modsRoot, "GenericMods");
 
-            Directory.CreateDirectory(mapsPath);
-            Directory.CreateDirectory(genericModsPath);
+            mapsEnabledPath = Path.Combine(mapsRoot, "Enabled");
+            mapsDisabledPath = Path.Combine(mapsRoot, "Disabled");
+            genericModsEnabledPath = Path.Combine(genericRoot, "Enabled");
+            genericModsDisabledPath = Path.Combine(genericRoot, "Disabled");
+
+            mapsStatePath = Path.Combine(mapsRoot, "maps_state.json");
+            genericModsStatePath = Path.Combine(genericRoot, "genericmods_state.json");
+
+            Directory.CreateDirectory(mapsEnabledPath);
+            Directory.CreateDirectory(mapsDisabledPath);
+            Directory.CreateDirectory(genericModsEnabledPath);
+            Directory.CreateDirectory(genericModsDisabledPath);
         }
 
-        // ---------------- MAPS ----------------
-
-        public List<string> GetDownloadedMaps()
+        // ================= HELPERS =================
+        private async Task ExtractScdFromZipAsync(string zipPath, string destinationFolder)
         {
-            return Directory.GetFiles(mapsPath, "*.scd")
-                            .Select(Path.GetFileName)
-                            .ToList();
+            await Task.Run(() =>
+            {
+                using ZipArchive archive = ZipFile.OpenRead(zipPath);
+
+                foreach (var entry in archive.Entries)
+                {
+                    if (!entry.FullName.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    string destPath = Path.Combine(destinationFolder, Path.GetFileName(entry.FullName));
+                    entry.ExtractToFile(destPath, overwrite: true);
+                }
+            });
         }
 
+        // ================= MAPS: DISK =================
+
+        /// <summary>Returns all installed maps (enabled + disabled) with IsEnabled set correctly.</summary>
+        public List<Map> GetInstalledMaps()
+        {
+            var result = new List<Map>();
+
+            foreach (var file in Directory.GetFiles(mapsEnabledPath, "*.scd"))
+                result.Add(new Map(Path.GetFileName(file)) { IsEnabled = true, IsDownloaded = true });
+
+            foreach (var file in Directory.GetFiles(mapsDisabledPath, "*.scd"))
+                result.Add(new Map(Path.GetFileName(file)) { IsEnabled = false, IsDownloaded = true });
+
+            return result;
+        }
+
+        /// <summary>Moves a map file to the Enabled folder.</summary>
+        public void MoveMapToEnabled(Map map)
+        {
+            string src = Path.Combine(mapsDisabledPath, map.FileName);
+            string dest = Path.Combine(mapsEnabledPath, map.FileName);
+
+            if (File.Exists(src))
+                File.Move(src, dest, true);
+        }
+
+        /// <summary>Moves a map file to the Disabled folder.</summary>
+        public void MoveMapToDisabled(Map map)
+        {
+            string src = Path.Combine(mapsEnabledPath, map.FileName);
+            string dest = Path.Combine(mapsDisabledPath, map.FileName);
+
+            if (File.Exists(src))
+                File.Move(src, dest, true);
+        }
+
+        /// <summary>Deletes a map from both folders.</summary>
+        public void DeleteMap(Map map)
+        {
+            string enabledPath = Path.Combine(mapsEnabledPath, map.FileName);
+            string disabledPath = Path.Combine(mapsDisabledPath, map.FileName);
+
+            if (File.Exists(enabledPath)) File.Delete(enabledPath);
+            if (File.Exists(disabledPath)) File.Delete(disabledPath);
+        }
+
+        /// <summary>Downloads a map from GitHub into the Disabled folder.</summary>
         public async Task DownloadMapAsync(Map map)
         {
             if (string.IsNullOrEmpty(map.DownloadURL))
                 throw new Exception("Map has no download URL.");
 
-            var data = await httpClient.GetByteArrayAsync(map.DownloadURL);
+            string url = map.DownloadURL;
 
-            string path = Path.Combine(mapsPath, map.FileName);
-
-            await File.WriteAllBytesAsync(path, data);
-        }
-
-        public void DeleteMap(Map map)
-        {
-            string path = Path.Combine(mapsPath, map.FileName);
-
-            if (File.Exists(path))
-                File.Delete(path);
-        }
-
-        public async Task ExtractAndAddMapsAsync(string zipPath)
-        {
-            if (!File.Exists(zipPath))
-                throw new Exception("Zip file not found.");
-
-            string tempExtractPath = Path.Combine(Path.GetTempPath(), "SC2_map_extract");
-
-            if (Directory.Exists(tempExtractPath))
+            if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                Directory.Delete(tempExtractPath, true);
+                string tempZip = Path.Combine(Path.GetTempPath(), $"{map.ID}_download.zip");
+                var data = await httpClient.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(tempZip, data);
+                await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
+                File.Delete(tempZip);
             }
-
-            Directory.CreateDirectory(tempExtractPath);
-
-            await Task.Run(() =>
+            else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
             {
-                ZipFile.ExtractToDirectory(zipPath, tempExtractPath);
-            });
-
-            var scdFiles = Directory.GetFiles(tempExtractPath, "*.scd", SearchOption.AllDirectories);
-
-            foreach (var file in scdFiles)
-            {
-                string fileName = Path.GetFileName(file);
-                string destination = Path.Combine(mapsPath, fileName);
-
-                File.Copy(file, destination, true);
+                var data = await httpClient.GetByteArrayAsync(url);
+                string path = Path.Combine(mapsDisabledPath, map.FileName);
+                await File.WriteAllBytesAsync(path, data);
             }
-
-            Directory.Delete(tempExtractPath, true);
+            else
+            {
+                throw new Exception($"Unsupported download format for: {url}");
+            }
         }
 
-        public async Task AddMapAsync(string filePath)
+        /// <summary>Copies a .scd file from an external path into the Disabled folder.</summary>
+        public async Task ImportMapAsync(string filePath)
         {
             if (!File.Exists(filePath))
                 throw new Exception("Map file not found.");
 
             string fileName = Path.GetFileName(filePath);
-            string destination = Path.Combine(mapsPath, fileName);
+            string dest = Path.Combine(mapsDisabledPath, fileName);
 
-            await Task.Run(() =>
-            {
-                File.Copy(filePath, destination, true);
-            });
+            await Task.Run(() => File.Copy(filePath, dest, true));
         }
 
-        // ---------------- GENERIC MODS ----------------
-
-        public List<string> GetDownloadedGenericMods()
+        /// <summary>Extracts .scd files from a zip into the Disabled folder.</summary>
+        public async Task ExtractAndImportMapsAsync(string zipPath)
         {
-            return Directory.GetFiles(genericModsPath, "*.scd")
-                            .Select(Path.GetFileName)
-                            .ToList();
+            if (!File.Exists(zipPath))
+                throw new Exception("Zip file not found.");
+
+            string tempDir = Path.Combine(Path.GetTempPath(), "SC2_map_extract");
+
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+
+            Directory.CreateDirectory(tempDir);
+
+            await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, tempDir));
+
+            foreach (var file in Directory.GetFiles(tempDir, "*.scd", SearchOption.AllDirectories))
+            {
+                string dest = Path.Combine(mapsDisabledPath, Path.GetFileName(file));
+                File.Copy(file, dest, true);
+            }
+
+            Directory.Delete(tempDir, true);
         }
 
+        // ================= MAPS: STATE JSON =================
+
+        public void SaveMapsState(IEnumerable<Map> allMaps)
+        {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(allMaps, options);
+            File.WriteAllText(mapsStatePath, json);
+        }
+
+        public List<Map> LoadMapsState()
+        {
+            if (!File.Exists(mapsStatePath))
+                return new List<Map>();
+
+            try
+            {
+                string json = File.ReadAllText(mapsStatePath);
+                return JsonSerializer.Deserialize<List<Map>>(json) ?? new List<Map>();
+            }
+            catch
+            {
+                return new List<Map>();
+            }
+        }
+
+        // ================= MAPS: GITHUB =================
+
+        public async Task<List<Map>> GetDownloadableMapsAsync()
+        {
+            string json = await httpClient.GetStringAsync(Globals.MapsListUrl);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            return JsonSerializer.Deserialize<List<Map>>(json, options) ?? new List<Map>();
+        }
+
+        // ================= GENERIC MODS: DISK =================
+
+        /// <summary>Returns all installed generic mods (enabled + disabled) with IsEnabled set correctly.</summary>
+        public List<GenericGamedataMod> GetInstalledGenericMods()
+        {
+            var result = new List<GenericGamedataMod>();
+
+            foreach (var file in Directory.GetFiles(genericModsEnabledPath, "*.scd"))
+                result.Add(new GenericGamedataMod(Path.GetFileName(file)) { IsEnabled = true, IsDownloaded = true });
+
+            foreach (var file in Directory.GetFiles(genericModsDisabledPath, "*.scd"))
+                result.Add(new GenericGamedataMod(Path.GetFileName(file)) { IsEnabled = false, IsDownloaded = true });
+
+            return result;
+        }
+
+        /// <summary>Moves a generic mod file to the Enabled folder.</summary>
+        public void MoveGenericModToEnabled(GenericGamedataMod mod)
+        {
+            string src = Path.Combine(genericModsDisabledPath, mod.FileName);
+            string dest = Path.Combine(genericModsEnabledPath, mod.FileName);
+
+            if (File.Exists(src))
+                File.Move(src, dest, true);
+        }
+
+        /// <summary>Moves a generic mod file to the Disabled folder.</summary>
+        public void MoveGenericModToDisabled(GenericGamedataMod mod)
+        {
+            string src = Path.Combine(genericModsEnabledPath, mod.FileName);
+            string dest = Path.Combine(genericModsDisabledPath, mod.FileName);
+
+            if (File.Exists(src))
+                File.Move(src, dest, true);
+        }
+
+        /// <summary>Deletes a generic mod from both folders.</summary>
+        public void DeleteGenericMod(GenericGamedataMod mod)
+        {
+            string enabledPath = Path.Combine(genericModsEnabledPath, mod.FileName);
+            string disabledPath = Path.Combine(genericModsDisabledPath, mod.FileName);
+
+            if (File.Exists(enabledPath)) File.Delete(enabledPath);
+            if (File.Exists(disabledPath)) File.Delete(disabledPath);
+        }
+
+        /// <summary>Downloads a generic mod from GitHub into the Disabled folder.</summary>
         public async Task DownloadGenericModAsync(GenericGamedataMod mod)
         {
             if (string.IsNullOrEmpty(mod.DownloadURL))
                 throw new Exception("Mod has no download URL.");
 
-            var data = await httpClient.GetByteArrayAsync(mod.DownloadURL);
+            string url = mod.DownloadURL;
 
-            string path = Path.Combine(genericModsPath, mod.FileName);
-
-            await File.WriteAllBytesAsync(path, data);
+            if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                string tempZip = Path.Combine(Path.GetTempPath(), $"{mod.ID}_download.zip");
+                var data = await httpClient.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(tempZip, data);
+                await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
+                File.Delete(tempZip);
+            }
+            else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
+            {
+                var data = await httpClient.GetByteArrayAsync(url);
+                string path = Path.Combine(genericModsDisabledPath, mod.FileName);
+                await File.WriteAllBytesAsync(path, data);
+            }
+            else
+            {
+                throw new Exception($"Unsupported download format for: {url}");
+            }
         }
 
-        public void DeleteGenericMod(GenericGamedataMod mod)
+        /// <summary>Copies any .scd file from an external path into GenericMods/Disabled (manual import).</summary>
+        public async Task ImportGenericModAsync(string filePath)
         {
-            string path = Path.Combine(genericModsPath, mod.FileName);
+            if (!File.Exists(filePath))
+                throw new Exception("File not found.");
 
-            if (File.Exists(path))
-                File.Delete(path);
+            string fileName = Path.GetFileName(filePath);
+            string dest = Path.Combine(genericModsDisabledPath, fileName);
+
+            await Task.Run(() => File.Copy(filePath, dest, true));
+        }
+
+        // ================= GENERIC MODS: STATE JSON =================
+
+        public void SaveGenericModsState(IEnumerable<GenericGamedataMod> allMods)
+        {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(allMods, options);
+            File.WriteAllText(genericModsStatePath, json);
+        }
+
+        public List<GenericGamedataMod> LoadGenericModsState()
+        {
+            if (!File.Exists(genericModsStatePath))
+                return new List<GenericGamedataMod>();
+
+            try
+            {
+                string json = File.ReadAllText(genericModsStatePath);
+                return JsonSerializer.Deserialize<List<GenericGamedataMod>>(json) ?? new List<GenericGamedataMod>();
+            }
+            catch
+            {
+                return new List<GenericGamedataMod>();
+            }
+        }
+
+        // ================= GENERIC MODS: GITHUB =================
+
+        public async Task<List<GenericGamedataMod>> GetDownloadableGenericModsAsync()
+        {
+            string json = await httpClient.GetStringAsync(Globals.GenericModsListUrl);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            return JsonSerializer.Deserialize<List<GenericGamedataMod>>(json, options) ?? new List<GenericGamedataMod>();
         }
     }
 }

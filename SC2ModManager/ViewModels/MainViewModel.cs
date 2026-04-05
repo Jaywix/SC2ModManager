@@ -18,23 +18,29 @@ namespace SC2ModManager.ViewModels
     public enum MainView
     {
         Home,
-        Mods,
-        CustomMaps,
-        Hotkeys
+        ManageMods,
+        Backups,
+        InstalledMods,
+        InstalledMaps,
+        InstalledGenericMods,
+        DownloadMods,
+        DownloadMaps,
+        DownloadGenericMods,
+        ManualImport
     }
 
     public class MainViewModel : INotifyPropertyChanged
     {
         // ================= SERVICES =================
+
         private readonly ModRepositoryService repositoryService;
         private readonly ModStorageService storageService;
         private readonly GamedataService gamedataService;
         private readonly ConfigService configService;
         private readonly GameService gameService;
+        private readonly UpdateService updateService = new();
 
-        // ================= DATA =================
-        public ObservableCollection<Map> Maps { get; set; } = new();
-        public ObservableCollection<GenericGamedataMod> GenericMods { get; set; } = new();
+        // ================= NAVIGATION =================
 
         private MainView currentView;
         public MainView CurrentView
@@ -43,18 +49,30 @@ namespace SC2ModManager.ViewModels
             set { currentView = value; OnPropertyChanged(nameof(CurrentView)); }
         }
 
+        // ================= INSTALLED MOD LISTS =================
+
+        public ObservableCollection<Map> EnabledMaps { get; set; } = new();
+        public ObservableCollection<Map> DisabledMaps { get; set; } = new();
+
+        public ObservableCollection<GenericGamedataMod> EnabledGenericMods { get; set; } = new();
+        public ObservableCollection<GenericGamedataMod> DisabledGenericMods { get; set; } = new();
+
+        // ================= DOWNLOADABLE MOD LISTS =================
+
+        public ObservableCollection<Map> DownloadableMaps { get; set; } = new();
+        public ObservableCollection<GenericGamedataMod> DownloadableGenericMods { get; set; } = new();
+
+        // ================= GAME PATH =================
+
         private string gamePath;
         public string GamePath
         {
             get => gamePath;
-            set
-            {
-                gamePath = value;
-                OnPropertyChanged(nameof(GamePath));
-            }
+            set { gamePath = value; OnPropertyChanged(nameof(GamePath)); }
         }
 
-        private readonly UpdateService updateService = new();
+        // ================= UPDATE =================
+
         private string? updateDownloadUrl;
 
         private bool updateAvailable;
@@ -68,11 +86,7 @@ namespace SC2ModManager.ViewModels
         public double DownloadProgress
         {
             get => downloadProgress;
-            set
-            {
-                downloadProgress = value;
-                OnPropertyChanged(nameof(DownloadProgress));
-            }
+            set { downloadProgress = value; OnPropertyChanged(nameof(DownloadProgress)); }
         }
 
         // ================= INIT =================
@@ -88,180 +102,15 @@ namespace SC2ModManager.ViewModels
             InitializeGamePath();
 
             _ = CheckForUpdatesAsync();
-            _ = LoadAllDataAsync();
-        }
-
-        // ================= PUBLIC LOAD =================
-
-        public async Task LoadAllDataAsync()
-        {
-            await LoadMapsAsync();
-            await LoadGenericModsAsync();
-        }
-
-        public async Task LoadMapsAsync()
-        {
-            var available = await repositoryService.GetAvailableMapsAsync();
-
-            var downloaded = storageService.GetDownloadedMaps();
-            var config = configService.Load();
-            var enabled = config.EnabledMaps ?? new List<string>();
-
-            foreach (var map in available)
-            {
-                map.IsDownloaded = downloaded.Contains(map.FileName);
-                map.IsEnabled = enabled.Contains(map.FileName);
-            }
-
-            Maps = new ObservableCollection<Map>(available);
-            OnPropertyChanged(nameof(Maps));
-        }
-
-        private async Task LoadGenericModsAsync()
-        {
-            var available = await repositoryService.GetAvailableGenericModsAsync();
-
-            var downloaded = storageService.GetDownloadedGenericMods();
-            var config = configService.Load();
-            var enabled = config.EnabledGenericMods ?? new List<string>();
-
-            foreach (var mod in available)
-            {
-                mod.IsDownloaded = downloaded.Contains(mod.FileName);
-                mod.IsEnabled = enabled.Contains(mod.FileName);
-            }
-
-            GenericMods = new ObservableCollection<GenericGamedataMod>(available);
-            OnPropertyChanged(nameof(GenericMods));
-        }
-
-        // ================= MAP IMPORT =================
-
-        public async Task AddMapsFromFiles(IEnumerable<string> files)
-        {
-            foreach (var file in files)
-            {
-                if (file.EndsWith(".zip"))
-                {
-                    await storageService.ExtractAndAddMapsAsync(file);
-                }
-                else if (file.EndsWith(".scd"))
-                {
-                    await storageService.AddMapAsync(file);
-                }
-            }
-
-            await LoadMapsAsync();
-        }
-
-        public async Task ImportMaps()
-        {
-            // You can reuse your existing drag/drop logic here
-            // Or open a file picker
-
-            var dialog = new OpenFileDialog
-            {
-                Filter = "ZIP files (*.zip)|*.zip|SC2 Maps (*.scd)|*.scd",
-                Multiselect = true
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            await AddMapsFromFiles(dialog.FileNames);
-        }
-
-        // ================= MAP ACTIONS =================
-
-        public async Task DownloadMap(Map map)
-        {
-            await storageService.DownloadMapAsync(map);
-            map.IsDownloaded = true;
-        }
-
-        public void EnableMap(Map map)
-        {
-            if (string.IsNullOrEmpty(GamePath))
-                return;
-
-            var mapsPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName,
-                "Maps"
-            );
-
-            var gameDataPath = Path.Combine(GamePath, "gamedata");
-
-            gamedataService.EnableMap(map, mapsPath, gameDataPath);
-            map.IsEnabled = true;
-
-            SaveMapsState();
-        }
-
-        public void DisableMap(Map map)
-        {
-            var gameDataPath = Path.Combine(GamePath, "gamedata");
-
-            gamedataService.DisableMap(map, gameDataPath);
-            map.IsEnabled = false;
-
-            SaveMapsState();
-        }
-
-        private void SaveMapsState()
-        {
-            var config = configService.Load();
-
-            config.EnabledMaps = Maps
-                .Where(m => m.IsEnabled)
-                .Select(m => m.FileName)
-                .ToList();
-
-            configService.Save(config);
-        }
-
-        public void SaveMaps()
-        {
-            SaveMapsState();
-        }
-
-        public void RemoveAllMaps()
-        {
-            foreach (var map in Maps)
-            {
-                map.IsEnabled = false;
-            }
-
-            SaveMapsState();
-            OnPropertyChanged(nameof(Maps));
-        }
-
-        public void SelectAllMaps()
-        {
-            foreach (var map in Maps)
-            {
-                map.IsEnabled = true;
-            }
-
-            SaveMapsState();
-            OnPropertyChanged(nameof(Maps));
         }
 
         // ================= GAME =================
 
         public void LaunchGame()
         {
-            try
-            {
-                gameService.LaunchGame();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error launching game: {ex.Message}");
-            }
+            try { gameService.LaunchGame(); }
+            catch (Exception ex) { MessageBox.Show($"Error launching game: {ex.Message}"); }
         }
-
-        // ================= GAME PATH =================
 
         public void InitializeGamePath()
         {
@@ -273,14 +122,13 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
-            var detectedPath = configService.DetectGamePath();
+            var detected = configService.DetectGamePath();
 
-            if (!string.IsNullOrEmpty(detectedPath))
+            if (!string.IsNullOrEmpty(detected))
             {
-                config.GamePath = detectedPath;
+                config.GamePath = detected;
                 configService.Save(config);
-
-                GamePath = detectedPath;
+                GamePath = detected;
             }
             else
             {
@@ -296,19 +144,386 @@ namespace SC2ModManager.ViewModels
                 Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
             };
 
-            if (dialog.ShowDialog() != true)
-                return;
+            if (dialog.ShowDialog() != true) return;
 
             var path = Path.GetDirectoryName(dialog.FileName);
-
             var config = configService.Load();
             config.GamePath = path;
             configService.Save(config);
-
             GamePath = path;
         }
 
+        // ================= BACKUPS =================
+
+        public async Task RestoreOriginalGamedataAsync()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            try
+            {
+                await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
+                MessageBox.Show("Original gamedata restored successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to restore gamedata: {ex.Message}");
+            }
+        }
+
+        // ================= INSTALLED: MAPS =================
+
+        /// <summary>
+        /// Loads installed maps from disk into EnabledMaps and DisabledMaps.
+        /// Merges with saved state JSON so richer metadata (author, version, etc.) is preserved.
+        /// </summary>
+        public void LoadInstalledMaps()
+        {
+            var onDisk = storageService.GetInstalledMaps();
+            var savedState = storageService.LoadMapsState();
+
+            // Build a lookup from the saved state to merge metadata back in
+            var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
+
+            var enriched = onDisk.Select(m =>
+            {
+                if (stateByFile.TryGetValue(m.FileName, out var saved))
+                {
+                    // Preserve richer metadata from state, keep IsEnabled from disk
+                    saved.IsEnabled = m.IsEnabled;
+                    saved.IsDownloaded = true;
+                    return saved;
+                }
+                return m;
+            }).ToList();
+
+            EnabledMaps = new ObservableCollection<Map>(enriched.Where(m => m.IsEnabled));
+            DisabledMaps = new ObservableCollection<Map>(enriched.Where(m => !m.IsEnabled));
+
+            OnPropertyChanged(nameof(EnabledMaps));
+            OnPropertyChanged(nameof(DisabledMaps));
+        }
+
+        /// <summary>
+        /// Moves selected maps from Disabled to Enabled (storage + collection).
+        /// Does not touch gamedata yet — that happens on Save.
+        /// </summary>
+        public void EnableSelectedMaps(IEnumerable<Map> maps)
+        {
+            foreach (var map in maps.ToList())
+            {
+                storageService.MoveMapToEnabled(map);
+                map.IsEnabled = true;
+                DisabledMaps.Remove(map);
+                EnabledMaps.Add(map);
+            }
+        }
+
+        /// <summary>
+        /// Moves selected maps from Enabled to Disabled (storage + collection).
+        /// Does not touch gamedata yet — that happens on Save.
+        /// </summary>
+        public void DisableSelectedMaps(IEnumerable<Map> maps)
+        {
+            foreach (var map in maps.ToList())
+            {
+                storageService.MoveMapToDisabled(map);
+                map.IsEnabled = false;
+                EnabledMaps.Remove(map);
+                DisabledMaps.Add(map);
+            }
+        }
+
+        public void EnableAllMaps() => EnableSelectedMaps(DisabledMaps.ToList());
+        public void DisableAllMaps() => DisableSelectedMaps(EnabledMaps.ToList());
+
+        /// <summary>
+        /// Syncs the game's gamedata folder to match EnabledMaps, then persists state.
+        /// </summary>
+        public void SaveMapsToGamedata()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string mapsEnabledPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Globals.LauncherName, "Mods", "Maps", "Enabled"
+            );
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            // Remove all previously enabled maps from gamedata
+            var allInstalled = EnabledMaps.Concat(DisabledMaps);
+            foreach (var map in allInstalled)
+                gamedataService.DisableMap(map, gameDataPath);
+
+            // Copy currently enabled maps into gamedata
+            foreach (var map in EnabledMaps)
+            {
+                try { gamedataService.EnableMap(map, mapsEnabledPath, gameDataPath); }
+                catch (Exception ex) { MessageBox.Show($"Could not enable {map.FileName}: {ex.Message}"); }
+            }
+
+            // Persist state
+            storageService.SaveMapsState(EnabledMaps.Concat(DisabledMaps));
+        }
+
+        public void UninstallMap(Map map)
+        {
+            storageService.DeleteMap(map);
+            EnabledMaps.Remove(map);
+            DisabledMaps.Remove(map);
+        }
+
+        public void UninstallAllMaps()
+        {
+            foreach (var map in EnabledMaps.Concat(DisabledMaps).ToList())
+                storageService.DeleteMap(map);
+
+            EnabledMaps.Clear();
+            DisabledMaps.Clear();
+        }
+
+        // ================= INSTALLED: GENERIC MODS =================
+
+        /// <summary>
+        /// Loads installed generic mods from disk, merging with saved state JSON.
+        /// </summary>
+        public void LoadInstalledGenericMods()
+        {
+            var onDisk = storageService.GetInstalledGenericMods();
+            var savedState = storageService.LoadGenericModsState();
+
+            var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
+
+            var enriched = onDisk.Select(m =>
+            {
+                if (stateByFile.TryGetValue(m.FileName, out var saved))
+                {
+                    saved.IsEnabled = m.IsEnabled;
+                    saved.IsDownloaded = true;
+                    return saved;
+                }
+                return m;
+            }).ToList();
+
+            EnabledGenericMods = new ObservableCollection<GenericGamedataMod>(enriched.Where(m => m.IsEnabled));
+            DisabledGenericMods = new ObservableCollection<GenericGamedataMod>(enriched.Where(m => !m.IsEnabled));
+
+            OnPropertyChanged(nameof(EnabledGenericMods));
+            OnPropertyChanged(nameof(DisabledGenericMods));
+        }
+
+        public void EnableSelectedGenericMods(IEnumerable<GenericGamedataMod> mods)
+        {
+            foreach (var mod in mods.ToList())
+            {
+                storageService.MoveGenericModToEnabled(mod);
+                mod.IsEnabled = true;
+                DisabledGenericMods.Remove(mod);
+                EnabledGenericMods.Add(mod);
+            }
+        }
+
+        public void DisableSelectedGenericMods(IEnumerable<GenericGamedataMod> mods)
+        {
+            foreach (var mod in mods.ToList())
+            {
+                storageService.MoveGenericModToDisabled(mod);
+                mod.IsEnabled = false;
+                EnabledGenericMods.Remove(mod);
+                DisabledGenericMods.Add(mod);
+            }
+        }
+
+        public void EnableAllGenericMods() => EnableSelectedGenericMods(DisabledGenericMods.ToList());
+        public void DisableAllGenericMods() => DisableSelectedGenericMods(EnabledGenericMods.ToList());
+
+        public void SaveGenericModsToGamedata()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string modsEnabledPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Globals.LauncherName, "Mods", "GenericMods", "Enabled"
+            );
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            var allInstalled = EnabledGenericMods.Concat(DisabledGenericMods);
+            foreach (var mod in allInstalled)
+                gamedataService.DisableGenericMod(mod, gameDataPath);
+
+            foreach (var mod in EnabledGenericMods)
+            {
+                try { gamedataService.EnableGenericMod(mod, modsEnabledPath, gameDataPath); }
+                catch (Exception ex) { MessageBox.Show($"Could not enable {mod.FileName}: {ex.Message}"); }
+            }
+
+            storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
+        }
+
+        public void UninstallGenericMod(GenericGamedataMod mod)
+        {
+            storageService.DeleteGenericMod(mod);
+            EnabledGenericMods.Remove(mod);
+            DisabledGenericMods.Remove(mod);
+        }
+
+        public void UninstallAllGenericMods()
+        {
+            foreach (var mod in EnabledGenericMods.Concat(DisabledGenericMods).ToList())
+                storageService.DeleteGenericMod(mod);
+
+            EnabledGenericMods.Clear();
+            DisabledGenericMods.Clear();
+        }
+
+        // ================= DOWNLOAD: MAPS =================
+
+        public async Task LoadDownloadableMapsAsync()
+        {
+            var all = await storageService.GetDownloadableMapsAsync();
+            var installed = storageService.GetInstalledMaps();
+            var fileNames = installed.Select(m => m.FileName).ToHashSet();
+
+            foreach (var map in all)
+                map.IsDownloaded = fileNames.Contains(map.FileName);
+
+            DownloadableMaps = new ObservableCollection<Map>(all);
+            OnPropertyChanged(nameof(DownloadableMaps));
+        }
+
+        public async Task DownloadSelectedMapsAsync(IEnumerable<Map> maps)
+        {
+            foreach (var map in maps)
+            {
+                try
+                {
+                    await storageService.DownloadMapAsync(map);
+                    map.IsDownloaded = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to download {map.FileName}: {ex.Message}");
+                }
+            }
+        }
+
+        // ================= DOWNLOAD: GENERIC MODS =================
+
+        public async Task LoadDownloadableGenericModsAsync()
+        {
+            var all = await storageService.GetDownloadableGenericModsAsync();
+            var installed = storageService.GetInstalledGenericMods();
+            var fileNames = installed.Select(m => m.FileName).ToHashSet();
+
+            foreach (var mod in all)
+                mod.IsDownloaded = fileNames.Contains(mod.FileName);
+
+            DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
+            OnPropertyChanged(nameof(DownloadableGenericMods));
+        }
+
+        public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
+        {
+            foreach (var mod in mods)
+            {
+                try
+                {
+                    await storageService.DownloadGenericModAsync(mod);
+                    mod.IsDownloaded = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to download {mod.FileName}: {ex.Message}");
+                }
+            }
+        }
+
+        // ================= MANUAL IMPORT =================
+
+        public async Task ImportModFromFilePickerAsync()
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Select a mod file",
+                Filter = "SC2 Mod Files (*.scd)|*.scd|ZIP files (*.zip)|*.zip",
+                Multiselect = true
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            await ImportModFilesAsync(dialog.FileNames);
+        }
+
+        public async Task ImportModFilesAsync(IEnumerable<string> files)
+        {
+            foreach (var file in files)
+            {
+                try
+                {
+                    if (file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Extract any .scd inside as generic mods
+                        string tempDir = Path.Combine(Path.GetTempPath(), "SC2_import_extract");
+                        if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+                        Directory.CreateDirectory(tempDir);
+
+                        await Task.Run(() => System.IO.Compression.ZipFile.ExtractToDirectory(file, tempDir));
+
+                        foreach (var scd in Directory.GetFiles(tempDir, "*.scd", SearchOption.AllDirectories))
+                            await storageService.ImportGenericModAsync(scd);
+
+                        Directory.Delete(tempDir, true);
+                    }
+                    else if (file.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await storageService.ImportGenericModAsync(file);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to import {Path.GetFileName(file)}: {ex.Message}");
+                }
+            }
+
+            // Refresh the installed generic mods list after import
+            LoadInstalledGenericMods();
+        }
+
         // ================= UPDATER =================
+
+        public async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var (latestVersion, downloadUrl) = await updateService.GetLatestRelease();
+                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+                if (latestVersion.CompareTo(currentVersion) > 0)
+                {
+                    UpdateAvailable = true;
+                    updateDownloadUrl = downloadUrl;
+                }
+                else
+                {
+                    UpdateAvailable = false;
+                }
+            }
+            catch
+            {
+                UpdateAvailable = false;
+            }
+        }
 
         public async Task RunUpdater()
         {
@@ -332,7 +547,6 @@ namespace SC2ModManager.ViewModels
                 }
 
                 await DownloadFileWithProgress(updateDownloadUrl, zipPath);
-
                 MessageBox.Show("Download complete. Installing update...");
 
                 Process.Start(new ProcessStartInfo
@@ -351,36 +565,10 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        public async Task CheckForUpdatesAsync()
-        {
-            try
-            {
-                var (latestVersion, downloadUrl) = await updateService.GetLatestRelease();
-
-                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-                if (latestVersion.CompareTo(currentVersion) > 0)
-                {
-                    UpdateAvailable = true;
-                    updateDownloadUrl = downloadUrl;
-                }
-                else
-                {
-                    UpdateAvailable = false;
-                }
-            }
-            catch
-            {
-                // silently fail (no update UI shown)
-                UpdateAvailable = false;
-            }
-        }
-
         public async Task DownloadFileWithProgress(string url, string outputPath)
         {
             using HttpClient client = new HttpClient();
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-
             response.EnsureSuccessStatusCode();
 
             var totalBytes = response.Content.Headers.ContentLength ?? -1L;
@@ -396,58 +584,18 @@ namespace SC2ModManager.ViewModels
             while ((read = await stream.ReadAsync(buffer)) > 0)
             {
                 await fileStream.WriteAsync(buffer, 0, read);
-
                 totalRead += read;
 
                 if (canReport)
-                {
                     DownloadProgress = (double)totalRead / totalBytes * 100;
-                }
             }
         }
-
-        // ================= MOD MANAGER =================
-        // ===============================================
-        // ===============================================
-
-        // ================= RESTORE ORIGINAL GAMEDATA =================
-        public async Task RestoreOriginalGamedataAsync()
-        {
-            if (string.IsNullOrEmpty(GamePath))
-            {
-                MessageBox.Show("Game path not set.");
-                return;
-            }
-            try
-            {
-                await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
-                MessageBox.Show("Original gamedata restored successfully.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to restore gamedata: {ex.Message}");
-            }
-        }
-
-
-
-        // ================= INSTALLED MODS =================
-
-
-
-
-        // ================= DOWNLOADED MODS =================
-
-
-
 
         // ================= EVENTS =================
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected void OnPropertyChanged(string name)
-        {
+        protected void OnPropertyChanged(string name) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
     }
 }

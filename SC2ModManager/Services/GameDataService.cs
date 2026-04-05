@@ -1,29 +1,31 @@
 ﻿using SC2ModManager.Models;
+using SC2ModManager.Views;
+using SC2ModManager.ViewModels;
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
-using SC2ModManager.Views;
-using SC2ModManager.ViewModels;
+using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
-    /// <summary>
-    ///     This class handles all of the gamedata manipulation
-    /// </summary>
     public class GamedataService
     {
-        public void EnableMap(Map map, string mapsPath, string gameDataPath)
+        // ================= MAPS =================
+
+        /// <summary>Copies the map from Mods/Maps/Enabled into the game's gamedata folder.</summary>
+        public void EnableMap(Map map, string mapsEnabledPath, string gameDataPath)
         {
-            string source = Path.Combine(mapsPath, map.FileName);
+            string source = Path.Combine(mapsEnabledPath, map.FileName);
             string destination = Path.Combine(gameDataPath, map.FileName);
 
             if (!File.Exists(source))
-                throw new Exception($"Map not found in storage: {map.FileName}");
+                throw new Exception($"Map not found in Enabled folder: {map.FileName}");
 
             File.Copy(source, destination, true);
         }
 
+        /// <summary>Removes the map from the game's gamedata folder.</summary>
         public void DisableMap(Map map, string gameDataPath)
         {
             string path = Path.Combine(gameDataPath, map.FileName);
@@ -32,17 +34,21 @@ namespace SC2ModManager.Services
                 File.Delete(path);
         }
 
-        public void EnableGenericMod(GenericGamedataMod mod, string modsPath, string gameDataPath)
+        // ================= GENERIC MODS =================
+
+        /// <summary>Copies the mod from Mods/GenericMods/Enabled into the game's gamedata folder.</summary>
+        public void EnableGenericMod(GenericGamedataMod mod, string genericModsEnabledPath, string gameDataPath)
         {
-            string source = Path.Combine(modsPath, mod.FileName);
+            string source = Path.Combine(genericModsEnabledPath, mod.FileName);
             string destination = Path.Combine(gameDataPath, mod.FileName);
 
             if (!File.Exists(source))
-                throw new Exception($"Mod not found in storage: {mod.FileName}");
+                throw new Exception($"Mod not found in Enabled folder: {mod.FileName}");
 
             File.Copy(source, destination, true);
         }
 
+        /// <summary>Removes the mod from the game's gamedata folder.</summary>
         public void DisableGenericMod(GenericGamedataMod mod, string gameDataPath)
         {
             string path = Path.Combine(gameDataPath, mod.FileName);
@@ -51,6 +57,8 @@ namespace SC2ModManager.Services
                 File.Delete(path);
         }
 
+        // ================= RESTORE =================
+
         public async Task RestoreOriginalGamedataAsync(string gameDataPath)
         {
             var progressVm = new ProgressViewModel { Status = "Restoring original gamedata..." };
@@ -58,13 +66,11 @@ namespace SC2ModManager.Services
 
             progressWindow.Show();
 
-            // Ensure directory exists
             if (!Directory.Exists(gameDataPath))
                 Directory.CreateDirectory(gameDataPath);
 
             progressVm.Status = "Deleting current gamedata...";
 
-            // This will delete everything inside gamedata to reset it to the original files found at github
             foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
             {
                 try
@@ -78,17 +84,10 @@ namespace SC2ModManager.Services
                 }
             }
 
-            // Delete empty directories (bottom-up)
             foreach (var dir in Directory.GetDirectories(gameDataPath, "*", SearchOption.AllDirectories))
             {
-                try
-                {
-                    Directory.Delete(dir, false);
-                }
-                catch
-                {
-                    // ignore non-empty dirs or failures
-                }
+                try { Directory.Delete(dir, false); }
+                catch { }
             }
 
             var progress = new Progress<int>(value =>
@@ -97,8 +96,6 @@ namespace SC2ModManager.Services
                 progressVm.Status = $"Downloading... {value}%";
             });
 
-
-            // Get the files from github and extract them to the gamedata directory
             await GetGamedataFilesFromGithub(gameDataPath, progress, progressVm);
 
             await Task.Delay(500);
@@ -118,10 +115,10 @@ namespace SC2ModManager.Services
 
             using (HttpClient client = new HttpClient())
             {
-                var task1 = DownloadToFileAsync(client, url1, zip1Path, progress);
-                var task2 = DownloadToFileAsync(client, url2, zip2Path, progress);
-
-                await Task.WhenAll(task1, task2);
+                await Task.WhenAll(
+                    DownloadToFileAsync(client, url1, zip1Path, progress),
+                    DownloadToFileAsync(client, url2, zip2Path, progress)
+                );
             }
 
             Directory.CreateDirectory(gameDataPath);
@@ -135,51 +132,41 @@ namespace SC2ModManager.Services
 
         private async Task DownloadToFileAsync(HttpClient client, string url, string filePath, IProgress<int> progress)
         {
-            using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
-            using (var stream = await response.Content.ReadAsStreamAsync())
-            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            var totalRead = 0L;
+            var buffer = new byte[81920];
+            int read;
+
+            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var totalRead = 0L;
-                var buffer = new byte[81920];
-                int read;
+                await fileStream.WriteAsync(buffer, 0, read);
+                totalRead += read;
 
-                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    await fileStream.WriteAsync(buffer, 0, read);
-                    totalRead += read;
-
-                    if(totalBytes > 0)
-                    {
-                        int percent = (int)((totalRead * 100) / totalBytes);
-                        progress?.Report(percent);
-                    }
-                }
-                //await stream.CopyToAsync(fileStream);
+                if (totalBytes > 0)
+                    progress?.Report((int)(totalRead * 100 / totalBytes));
             }
         }
 
         private void ExtractZipToDirectory(string zipPath, string destination)
         {
-            using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+            using ZipArchive archive = ZipFile.OpenRead(zipPath);
+
+            foreach (var entry in archive.Entries)
             {
-                foreach (var entry in archive.Entries)
+                string fullPath = Path.Combine(destination, entry.FullName);
+
+                if (string.IsNullOrEmpty(entry.Name))
                 {
-                    string fullPath = Path.Combine(destination, entry.FullName);
-
-                    // If it's a directory
-                    if (string.IsNullOrEmpty(entry.Name))
-                    {
-                        Directory.CreateDirectory(fullPath);
-                        continue;
-                    }
-
-                    // Ensure directory exists
-                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-
-                    // Extract file (overwrite)
-                    entry.ExtractToFile(fullPath, true);
+                    Directory.CreateDirectory(fullPath);
+                    continue;
                 }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                entry.ExtractToFile(fullPath, true);
             }
         }
     }

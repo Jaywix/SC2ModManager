@@ -12,45 +12,45 @@ namespace SC2ModManager.Models
     public class Map : INotifyPropertyChanged
     {
         [JsonPropertyName("id")]
-        public string ID { get; private set; }
+        public string ID { get; set; }
 
         [JsonPropertyName("fileName")]
-        public string FileName { get; private set; }
+        public string FileName { get; set; }
 
         [JsonPropertyName("author")]
-        public string Author { get; private set; }
+        public string Author { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; private set; }
+        public string Type { get; set; }
 
         [JsonPropertyName("version")]
-        public string Version { get; private set; }
+        public string Version { get; set; }
 
         [JsonPropertyName("lastUpdatedDate")]
-        public string LastUpdated { get; private set; }
+        public string LastUpdated { get; set; }
 
         [JsonPropertyName("downloadURL")]
-        public string DownloadURL { get; private set; }
+        public string DownloadURL { get; set; }
 
 
 
         [JsonPropertyName("playerCount")]
-        public string PlayerCount { get; private set; }
+        public string PlayerCount { get; set; }
 
         [JsonPropertyName("mapTeamStyle")]
-        public string MapTeamStyle { get; private set; }
+        public string MapTeamStyle { get; set; }
 
         [JsonPropertyName("size")]
-        public string Size { get; private set; }
+        public string Size { get; set; }
 
         [JsonPropertyName("mapName")]
-        public string MapName { get; private set; }
+        public string MapName { get; set; }
 
         [JsonPropertyName("description")]
-        public string Description { get; private set; }
+        public string Description { get; set; }
 
         [JsonPropertyName("mapPictureFileName")]
-        public string MapPictureFileName { get; private set; }
+        public string MapPictureFileName { get; set; }
 
 
         private bool isEnabled;

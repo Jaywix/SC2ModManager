@@ -13,25 +13,25 @@ namespace SC2ModManager.Models
     {
 
         [JsonPropertyName("id")]
-        public string ID { get; private set; }
+        public string ID { get; set; }
 
         [JsonPropertyName("fileName")]
-        public string FileName { get; private set; }
+        public string FileName { get; set; }
 
         [JsonPropertyName("author")]
-        public string Author { get; private set; }
+        public string Author { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; private set; }
+        public string Type { get; set; }
 
         [JsonPropertyName("version")]
-        public string Version { get; private set; }
+        public string Version { get; set; }
 
         [JsonPropertyName("lastUpdatedDate")]
-        public string LastUpdated { get; private set; }
+        public string LastUpdated { get; set; }
 
         [JsonPropertyName("downloadURL")]
-        public string DownloadURL { get; private set; }
+        public string DownloadURL { get; set; }
 
 
 

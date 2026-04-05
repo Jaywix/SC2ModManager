@@ -12,9 +12,15 @@ namespace SC2ModManager.Services
         private readonly HttpClient httpClient = new HttpClient();
 
         // Update these URLs to your actual raw GitHub JSON files
-        private readonly string mapsUrl = "https://raw.githubusercontent.com/YOUR_REPO/maps.json";
+        private readonly string mapsUrl = Globals.MapsListUrl;
         //private readonly string hotkeysUrl = "https://raw.githubusercontent.com/YOUR_REPO/hotkeys.json";
-        private readonly string genericModsUrl = "https://raw.githubusercontent.com/YOUR_REPO/genericMods.json";
+        private readonly string genericModsUrl = Globals.GenericModsListUrl;
+
+
+        public ModRepositoryService()
+        {
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager/1.0");
+        }
 
         public async Task<List<Map>> GetAvailableMapsAsync()
         {
