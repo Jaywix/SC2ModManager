@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Models
 {
-    public class Map : INotifyPropertyChanged
+    public class GenericGamedataMod : INotifyPropertyChanged
     {
+
         [JsonPropertyName("id")]
         public string ID { get; private set; }
 
@@ -34,24 +35,6 @@ namespace SC2ModManager.Models
 
 
 
-        [JsonPropertyName("playerCount")]
-        public string PlayerCount { get; private set; }
-
-        [JsonPropertyName("mapTeamStyle")]
-        public string MapTeamStyle { get; private set; }
-
-        [JsonPropertyName("size")]
-        public string Size { get; private set; }
-
-        [JsonPropertyName("mapName")]
-        public string MapName { get; private set; }
-
-        [JsonPropertyName("description")]
-        public string Description { get; private set; }
-
-        [JsonPropertyName("mapPictureFileName")]
-        public string MapPictureFileName { get; private set; }
-
 
         private bool isEnabled;
         [JsonIgnore]
@@ -70,7 +53,8 @@ namespace SC2ModManager.Models
 
         private bool isDownloaded;
         [JsonIgnore]
-        public bool IsDownloaded { 
+        public bool IsDownloaded
+        {
             get => isDownloaded;
             set
             {
@@ -83,10 +67,12 @@ namespace SC2ModManager.Models
         }
 
 
+
+
         /// <summary>
         ///     This should only be necessary for the JSON. Do not use in the code
         /// </summary>
-        public Map()
+        public GenericGamedataMod()
         {
             this.ID = string.Empty;
             this.FileName = "Unknown";
@@ -95,12 +81,6 @@ namespace SC2ModManager.Models
             this.Version = "Unknown";
             this.LastUpdated = "Unknown";
             this.DownloadURL = string.Empty;
-            this.PlayerCount = "Unknown";
-            this.MapTeamStyle = "Unknown";
-            this.Size = "Unknown";
-            this.MapName = "Unknown";
-            this.Description = "No description available.";
-            this.MapPictureFileName = string.Empty;
             this.IsEnabled = false;
             this.IsDownloaded = true;
 
@@ -121,7 +101,7 @@ namespace SC2ModManager.Models
         ///     This is for when users manually import a map
         /// </summary>
         /// <param name="fileName"></param>
-        public Map(string fileName)
+        public GenericGamedataMod(string fileName)
         {
             this.ID = fileName;
             this.FileName = fileName;
@@ -130,12 +110,6 @@ namespace SC2ModManager.Models
             this.Version = "Unknown";
             this.LastUpdated = "Unknown";
             this.DownloadURL = string.Empty;
-            this.PlayerCount = "Unknown";
-            this.MapTeamStyle = "Unknown";
-            this.Size = "Unknown";
-            this.MapName = "Unknown";
-            this.Description = "No description available.";
-            this.MapPictureFileName = string.Empty;
             this.IsEnabled = false;
             this.IsDownloaded = true;
 
@@ -152,22 +126,19 @@ namespace SC2ModManager.Models
         }
 
 
-
-        public List<Map> BuildMapState(
-                                        List<Map> availableMaps,
-                                        List<string> downloadedMaps,
-                                        List<string> enabledMaps)
+        public List<GenericGamedataMod> BuildModState(
+                                                        List<GenericGamedataMod> availableMods,
+                                                        List<string> downloadedMods,
+                                                        List<string> enabledMods)
         {
-            foreach (var map in availableMaps)
+            foreach (var mod in availableMods)
             {
-                map.IsDownloaded = downloadedMaps.Contains(map.FileName);
-                map.IsEnabled = enabledMaps.Contains(map.FileName);
+                mod.IsDownloaded = downloadedMods.Contains(mod.FileName);
+                mod.IsEnabled = enabledMods.Contains(mod.FileName);
             }
 
-            return availableMaps;
+            return availableMods;
         }
-
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -177,4 +148,3 @@ namespace SC2ModManager.Models
         }
     }
 }
-

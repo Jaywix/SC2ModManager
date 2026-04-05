@@ -1,183 +1,220 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using SC2ModManager.Models;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.IO;
+//using System.Linq;
+//using System.Text.Json;
+//using SC2ModManager.Models;
 
-namespace SC2ModManager.Services
-{
-    class ModService
-    {
-        private readonly string appDataPath;
-        private readonly string mapsPath;
-        private readonly string backupPath;
-        private readonly ConfigService configService;
+//namespace SC2ModManager.Services
+//{
+//    class ModService
+//    {
+//        private readonly string appDataPath;
+//        private readonly string mapsPath;
+//        private readonly string genericModsPath;
+//        private readonly string backupPath;
+//        private readonly ConfigService configService;
 
-        public ModService(ConfigService configService)
-        {
-            this.configService = configService;
-
-            this.appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName
-            );
-
-            this.mapsPath = Path.Combine(this.appDataPath, "Maps");
-            this.backupPath = Path.Combine(this.appDataPath, "GameBackup");
-
-            EnsureDirectories();
-        }
+//        private const string MapsFolderName = "Maps";
+//        private const string GenericModsFolderName = "GenericMods";
+//        private const string BackupFolderName = "GameBackup";
 
 
+//        public ModService(ConfigService configService)
+//        {
+//            this.configService = configService;
 
-        public List<Map> GetAllMaps()
-        {
-            var config = this.configService.Load();
+//            this.appDataPath = Path.Combine(
+//                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+//                Globals.LauncherName
+//            );
 
-            var enabledSet = new HashSet<string>(
-                config.EnabledMaps ?? new List<string>(),
-                StringComparer.OrdinalIgnoreCase
-            );
+//            this.mapsPath = Path.Combine(this.appDataPath, "Maps");
+//            this.genericModsPath = Path.Combine(this.appDataPath, "GenericMods");
+//            this.backupPath = Path.Combine(this.appDataPath, "GameBackup");
 
-            return Directory.GetFiles(this.mapsPath, "*.scd")
-                .Select(file => new Map
-                {
-                    Name = Path.GetFileName(file),
-                    Path = file,
-                    IsEnabled = enabledSet.Contains(Path.GetFileName(file))
-                })
-                .ToList();
-        }
-
-        public void SaveMaps(IEnumerable<Map> maps)
-        {
-            var config = this.configService.Load();
-
-            config.EnabledMaps = maps
-                .Where(m => m.IsEnabled)
-                .Select(m => m.Name)
-                .ToList();
-
-            this.configService.Save(config);
-
-            RebuildGameData(config);
-        }
-
-        public void AddMap(string sourceFilePath)
-        {
-            if (!File.Exists(sourceFilePath))
-                throw new Exception("Map file does not exist.");
-
-            string fileName = Path.GetFileName(sourceFilePath);
-            string destPath = Path.Combine(this.mapsPath, fileName);
-
-            File.Copy(sourceFilePath, destPath, true);
-        }
-
-        public void RemoveMap(Map map)
-        {
-            if (File.Exists(map.Path))
-            {
-                File.Delete(map.Path);
-            }
-        }
+//            EnsureDirectories();
+//        }
 
 
+//        // TODO This must become obsolete
+//        public List<Map> GetAllMaps()
+//        {
+//            var config = this.configService.Load();
 
-        // ------------ Helpers ---------------
+//            var enabledSet = new HashSet<string>(
+//                config.EnabledMaps ?? new List<string>(),
+//                StringComparer.OrdinalIgnoreCase
+//            );
 
-        private void RebuildGameData(AppConfig config)
-        {
-            string gameDataPath = Path.Combine(config.GamePath, "gamedata");
+//            return Directory.GetFiles(this.mapsPath, "*.scd")
+//                .Select(file => new Map
+//                {
+//                    Name = Path.GetFileName(file),
+//                    Path = file,
+//                    IsEnabled = enabledSet.Contains(Path.GetFileName(file))
+//                })
+//                .ToList();
+//        }
 
-            if (!Directory.Exists(gameDataPath))
-                throw new Exception("gamedata folder not found.");
+//        public List<GenericGamedataMod> GetAllDownloadedGenericMods()
+//        {
+//            var config = this.configService.Load();
+//            var enabledSet = new HashSet<string>(
+//                config.EnabledMaps ?? new List<string>(),
+//                StringComparer.OrdinalIgnoreCase
+//            );
+//            return Directory.GetFiles(this.genericModsPath, "*.scd")
+//                .Select(file => new GenericGamedataMod
+//                {
+//                    FileName = Path.GetFileName(file),
+//                    IsEnabled = enabledSet.Contains(Path.GetFileName(file))
+//                })
+//                .ToList();
+//        }
 
-            // Clear existing gamedata
-            ClearDirectory(gameDataPath);
+//        public void SaveMaps(IEnumerable<Map> maps)
+//        {
+//            var config = this.configService.Load();
 
-            // Restore from backup
-            CopyDirectory(this.backupPath, gameDataPath);
+//            config.EnabledMaps = maps
+//                .Where(m => m.IsEnabled)
+//                .Select(m => m.FileName)
+//                .ToList();
 
-            // Add enabled maps
-            if (config.EnabledMaps == null)
-                return;
+//            this.configService.Save(config);
 
-            foreach (var mapName in config.EnabledMaps)
-            {
-                string source = Path.Combine(this.mapsPath, mapName);
-                string dest = Path.Combine(gameDataPath, mapName);
+//            RebuildGameData(config);
+//        }
 
-                if (File.Exists(source))
-                {
-                    File.Copy(source, dest, true);
-                }
-            }
-        }
+//        public void AddMap(string sourceFilePath)
+//        {
+//            if (!File.Exists(sourceFilePath))
+//                throw new Exception("Map file does not exist.");
+
+//            string fileName = Path.GetFileName(sourceFilePath);
+//            string destPath = Path.Combine(this.mapsPath, fileName);
+
+//            File.Copy(sourceFilePath, destPath, true);
+//        }
+
+//        public void RemoveMap(Map map)
+//        {
+//            if (File.Exists(map.Path))
+//            {
+//                File.Delete(map.Path);
+//            }
+//        }
 
 
 
+//        // ------------ Helpers ---------------
 
-        private void EnsureDirectories()
-        {
-            try
-            {
-                if (!Directory.Exists(this.appDataPath))
-                    Directory.CreateDirectory(this.appDataPath);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to create app data directory: {ex.Message}");
-            }
+//        private void RebuildGameData(AppConfig config)
+//        {
+//            string gameDataPath = Path.Combine(config.GamePath, "gamedata");
 
-            try
-            {
-                if (!Directory.Exists(this.mapsPath))
-                    Directory.CreateDirectory(this.mapsPath);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to create maps directory: {ex.Message}");
-            }
+//            if (!Directory.Exists(gameDataPath))
+//                throw new Exception("gamedata folder not found.");
 
-            try
-            {
-                if (!Directory.Exists(this.backupPath))
-                    Directory.CreateDirectory(this.backupPath);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to create backup directory: {ex.Message}");
-            }
-        }
+//            // Clear existing gamedata
+//            ClearDirectory(gameDataPath);
 
-        private void ClearDirectory(string path)
-        {
-            foreach (var file in Directory.GetFiles(path))
-            {
-                File.Delete(file);
-            }
+//            // Restore from backup
+//            CopyDirectory(this.backupPath, gameDataPath);
 
-            foreach (var dir in Directory.GetDirectories(path))
-            {
-                Directory.Delete(dir, true);
-            }
-        }
+//            // Add enabled maps
+//            if (config.EnabledMaps == null)
+//                return;
 
-        private void CopyDirectory(string sourceDir, string targetDir)
-        {
-            foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
-            {
-                string relativePath = Path.GetRelativePath(sourceDir, file);
-                string destFile = Path.Combine(targetDir, relativePath);
+//            foreach (var mapName in config.EnabledMaps)
+//            {
+//                string source = Path.Combine(this.mapsPath, mapName);
+//                string dest = Path.Combine(gameDataPath, mapName);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(destFile));
-                File.Copy(file, destFile, true);
-            }
-        }
+//                if (File.Exists(source))
+//                {
+//                    File.Copy(source, dest, true);
+//                }
+//            }
+//        }
 
 
 
-    }
-}
+
+//        private void EnsureDirectories()
+//        {
+//            // Create AppData directory if it doesn't exist
+//            try
+//            {
+//                if (!Directory.Exists(this.appDataPath))
+//                    Directory.CreateDirectory(this.appDataPath);
+//            }
+//            catch (Exception ex)
+//            {
+//                throw new Exception($"Failed to create app data directory: {ex.Message}");
+//            }
+
+//            // Create Maps directory if it doesn't exist
+//            try
+//            {
+//                if (!Directory.Exists(this.mapsPath))
+//                    Directory.CreateDirectory(this.mapsPath);
+//            }
+//            catch (Exception ex)
+//            {
+//                throw new Exception($"Failed to create maps directory: {ex.Message}");
+//            }
+
+//            // Create GenericMods directory if it doesn't exist
+//            try
+//            {
+//                if (!Directory.Exists(this.genericModsPath))
+//                    Directory.CreateDirectory(this.genericModsPath);
+//            }
+//            catch (Exception ex)
+//            {
+//                throw new Exception($"Failed to create generic mods directory: {ex.Message}");
+//            }
+
+//            // Create Backup directory if it doesn't exist
+//            try
+//            {
+//                if (!Directory.Exists(this.backupPath))
+//                    Directory.CreateDirectory(this.backupPath);
+//            }
+//            catch (Exception ex)
+//            {
+//                throw new Exception($"Failed to create backup directory: {ex.Message}");
+//            }
+//        }
+
+//        private void ClearDirectory(string path)
+//        {
+//            foreach (var file in Directory.GetFiles(path))
+//            {
+//                File.Delete(file);
+//            }
+
+//            foreach (var dir in Directory.GetDirectories(path))
+//            {
+//                Directory.Delete(dir, true);
+//            }
+//        }
+
+//        private void CopyDirectory(string sourceDir, string targetDir)
+//        {
+//            foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+//            {
+//                string relativePath = Path.GetRelativePath(sourceDir, file);
+//                string destFile = Path.Combine(targetDir, relativePath);
+
+//                Directory.CreateDirectory(Path.GetDirectoryName(destFile));
+//                File.Copy(file, destFile, true);
+//            }
+//        }
+
+
+
+//    }
+//}

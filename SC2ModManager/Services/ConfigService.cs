@@ -1,19 +1,13 @@
 ﻿using SC2ModManager.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
-    class ConfigService
+    public class ConfigService
     {
         private readonly string configPath;
-
-        public string GamePath { get; set; }
 
         public ConfigService()
         {
@@ -22,43 +16,55 @@ namespace SC2ModManager.Services
                 Globals.LauncherName
             );
 
+            Directory.CreateDirectory(appDataPath);
+
             this.configPath = Path.Combine(appDataPath, "config.json");
         }
 
         public AppConfig Load()
         {
-            if (!File.Exists(this.configPath))
+            try
             {
+                if (!File.Exists(configPath))
+                    return new AppConfig();
+
+                string json = File.ReadAllText(configPath);
+
+                return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+            }
+            catch
+            {
+                // If config is corrupted, return default
                 return new AppConfig();
             }
-
-            string json = File.ReadAllText(this.configPath);
-
-            return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
         }
 
         public void Save(AppConfig config)
         {
-            File.WriteAllText(
-                this.configPath,
-                JsonSerializer.Serialize(config, new JsonSerializerOptions
+            try
+            {
+                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions
                 {
                     WriteIndented = true
-                })
-            );
+                });
+
+                File.WriteAllText(configPath, json);
+            }
+            catch (Exception ex)
+            {
+                // You could log this instead
+                throw new Exception("Failed to save config", ex);
+            }
         }
 
         public bool ConfigExists()
         {
-            return File.Exists(this.configPath);
+            return File.Exists(configPath);
         }
-
-
 
         public string DetectGamePath()
         {
             string path = TryGetFromSteam();
-
             if (!string.IsNullOrEmpty(path))
                 return path;
 
@@ -92,7 +98,7 @@ namespace SC2ModManager.Services
                 @"C:\Program Files\Steam\steamapps\common\Supreme Commander 2",
                 @"D:\Steam\steamapps\common\Supreme Commander 2",
                 @"D:\Program Files (x86)\Steam\steamapps\common\Supreme Commander 2"
-    };
+            };
 
             foreach (var path in paths)
             {

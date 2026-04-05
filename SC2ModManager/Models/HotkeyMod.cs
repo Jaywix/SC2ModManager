@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Models
 {
-    class HotkeyMod : ModBase
+    class HotkeyMod
     {
         public string ConfigFilePath { get; set; }
 
-        public HotkeyMod(string name, string path, bool isEnabled) : base(name, path, isEnabled)
+        public HotkeyMod(string name, string path, bool isEnabled)
         {
                 this.ConfigFilePath = path;
         }

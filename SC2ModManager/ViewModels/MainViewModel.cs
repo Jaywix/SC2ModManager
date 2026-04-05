@@ -1,10 +1,13 @@
 ﻿using Microsoft.Win32;
 using SC2ModManager.Models;
 using SC2ModManager.Services;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -12,7 +15,6 @@ using System.Windows;
 
 namespace SC2ModManager.ViewModels
 {
-
     public enum MainView
     {
         Home,
@@ -23,51 +25,45 @@ namespace SC2ModManager.ViewModels
 
     public class MainViewModel : INotifyPropertyChanged
     {
-        // Data properties
-        private ModService modService;
-        private GameService gameService;
-        private ConfigService configService;
+        // ================= SERVICES =================
+        private readonly ModRepositoryService repositoryService;
+        private readonly ModStorageService storageService;
+        private readonly GamedataService gamedataService;
+        private readonly ConfigService configService;
+        private readonly GameService gameService;
 
-        private ObservableCollection<Map> maps;
-        public ObservableCollection<Map> Maps
-        {
-            get => this.maps;
-            set
-            {
-                this.maps = value;
-                OnPropertyChanged(nameof(Maps));
-            }
-        }
+        // ================= DATA =================
+        public ObservableCollection<Map> Maps { get; set; } = new();
+        public ObservableCollection<GenericGamedataMod> GenericMods { get; set; } = new();
 
-        // View management
         private MainView currentView;
         public MainView CurrentView
         {
-            get { return currentView; }
+            get => currentView;
+            set { currentView = value; OnPropertyChanged(nameof(CurrentView)); }
+        }
+
+        private string gamePath;
+        public string GamePath
+        {
+            get => gamePath;
             set
             {
-                currentView = value;
-                OnPropertyChanged("CurrentView");
+                gamePath = value;
+                OnPropertyChanged(nameof(GamePath));
             }
         }
 
-        // Update checking properties
-        private UpdateService updateService;
+        private readonly UpdateService updateService = new();
+        private string? updateDownloadUrl;
 
         private bool updateAvailable;
         public bool UpdateAvailable
         {
             get => updateAvailable;
-            set
-            {
-                updateAvailable = value;
-                OnPropertyChanged(nameof(UpdateAvailable));
-            }
+            set { updateAvailable = value; OnPropertyChanged(nameof(UpdateAvailable)); }
         }
 
-        private string updateDownloadUrl;
-
-        // Download progress properties
         private double downloadProgress;
         public double DownloadProgress
         {
@@ -79,68 +75,185 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        // Game path
-        private string gamePath;
-        public string GamePath
-        {
-            get => gamePath;
-            set
-            {
-                gamePath = value;
-                configService.GamePath = value;
-                OnPropertyChanged(nameof(GamePath));
-            }
-        }
-
-
+        // ================= INIT =================
 
         public MainViewModel()
         {
-            try
-            {
-                this.configService = new ConfigService();
+            configService = new ConfigService();
+            repositoryService = new ModRepositoryService();
+            storageService = new ModStorageService();
+            gamedataService = new GamedataService();
+            gameService = new GameService(configService);
 
-                this.modService = new ModService(this.configService);
-                this.gameService = new GameService(this.configService);
+            InitializeGamePath();
 
-                InitializeGamePath();
-                LoadMaps();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error initializing application: {ex.Message}");
-            }
-
-            this.CurrentView = MainView.Home;
-
-            this.updateService = new UpdateService();
-            _ = CheckForUpdates();
+            _ = CheckForUpdatesAsync();
+            _ = LoadAllDataAsync();
         }
 
-        public void LoadMaps()
+        // ================= PUBLIC LOAD =================
+
+        public async Task LoadAllDataAsync()
         {
-            var mapList = this.modService.GetAllMaps();
-            this.Maps = new ObservableCollection<Map>(mapList);
+            await LoadMapsAsync();
+            await LoadGenericModsAsync();
         }
 
-        public void Save()
+        public async Task LoadMapsAsync()
         {
-            try
+            var available = await repositoryService.GetAvailableMapsAsync();
+
+            var downloaded = storageService.GetDownloadedMaps();
+            var config = configService.Load();
+            var enabled = config.EnabledMaps ?? new List<string>();
+
+            foreach (var map in available)
             {
-                this.modService.SaveMaps(this.Maps);
-                MessageBox.Show("Maps saved successfully!");
+                map.IsDownloaded = downloaded.Contains(map.FileName);
+                map.IsEnabled = enabled.Contains(map.FileName);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving maps: {ex.Message}");
-            }
+
+            Maps = new ObservableCollection<Map>(available);
+            OnPropertyChanged(nameof(Maps));
         }
+
+        private async Task LoadGenericModsAsync()
+        {
+            var available = await repositoryService.GetAvailableGenericModsAsync();
+
+            var downloaded = storageService.GetDownloadedGenericMods();
+            var config = configService.Load();
+            var enabled = config.EnabledGenericMods ?? new List<string>();
+
+            foreach (var mod in available)
+            {
+                mod.IsDownloaded = downloaded.Contains(mod.FileName);
+                mod.IsEnabled = enabled.Contains(mod.FileName);
+            }
+
+            GenericMods = new ObservableCollection<GenericGamedataMod>(available);
+            OnPropertyChanged(nameof(GenericMods));
+        }
+
+        // ================= MAP IMPORT =================
+
+        public async Task AddMapsFromFiles(IEnumerable<string> files)
+        {
+            foreach (var file in files)
+            {
+                if (file.EndsWith(".zip"))
+                {
+                    await storageService.ExtractAndAddMapsAsync(file);
+                }
+                else if (file.EndsWith(".scd"))
+                {
+                    await storageService.AddMapAsync(file);
+                }
+            }
+
+            await LoadMapsAsync();
+        }
+
+        public async Task ImportMaps()
+        {
+            // You can reuse your existing drag/drop logic here
+            // Or open a file picker
+
+            var dialog = new OpenFileDialog
+            {
+                Filter = "ZIP files (*.zip)|*.zip|SC2 Maps (*.scd)|*.scd",
+                Multiselect = true
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            await AddMapsFromFiles(dialog.FileNames);
+        }
+
+        // ================= MAP ACTIONS =================
+
+        public async Task DownloadMap(Map map)
+        {
+            await storageService.DownloadMapAsync(map);
+            map.IsDownloaded = true;
+        }
+
+        public void EnableMap(Map map)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+                return;
+
+            var mapsPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Globals.LauncherName,
+                "Maps"
+            );
+
+            var gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            gamedataService.EnableMap(map, mapsPath, gameDataPath);
+            map.IsEnabled = true;
+
+            SaveMapsState();
+        }
+
+        public void DisableMap(Map map)
+        {
+            var gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            gamedataService.DisableMap(map, gameDataPath);
+            map.IsEnabled = false;
+
+            SaveMapsState();
+        }
+
+        private void SaveMapsState()
+        {
+            var config = configService.Load();
+
+            config.EnabledMaps = Maps
+                .Where(m => m.IsEnabled)
+                .Select(m => m.FileName)
+                .ToList();
+
+            configService.Save(config);
+        }
+
+        public void SaveMaps()
+        {
+            SaveMapsState();
+        }
+
+        public void RemoveAllMaps()
+        {
+            foreach (var map in Maps)
+            {
+                map.IsEnabled = false;
+            }
+
+            SaveMapsState();
+            OnPropertyChanged(nameof(Maps));
+        }
+
+        public void SelectAllMaps()
+        {
+            foreach (var map in Maps)
+            {
+                map.IsEnabled = true;
+            }
+
+            SaveMapsState();
+            OnPropertyChanged(nameof(Maps));
+        }
+
+        // ================= GAME =================
 
         public void LaunchGame()
         {
             try
             {
-                this.gameService.LaunchGame();
+                gameService.LaunchGame();
             }
             catch (Exception ex)
             {
@@ -148,78 +261,97 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        public void AddMap(string filePath)
+        // ================= GAME PATH =================
+
+        public void InitializeGamePath()
         {
-            try
+            var config = configService.Load();
+
+            if (!string.IsNullOrEmpty(config.GamePath))
             {
-                this.modService.AddMap(filePath);
-                LoadMaps();
+                GamePath = config.GamePath;
+                return;
             }
-            catch (Exception ex)
+
+            var detectedPath = configService.DetectGamePath();
+
+            if (!string.IsNullOrEmpty(detectedPath))
             {
-                MessageBox.Show($"Error adding map: {ex.Message}");
+                config.GamePath = detectedPath;
+                configService.Save(config);
+
+                GamePath = detectedPath;
+            }
+            else
+            {
+                MessageBox.Show("Game path not found. Please select it manually.");
             }
         }
 
-
-        public void SelectAllMaps()
-        {
-            foreach (var map in Maps)
-                map.IsEnabled = true;
-        }
-
-        public void RemoveAllMaps()
-        {
-            foreach (var map in Maps)
-                map.IsEnabled = false;
-        }
-
-        public void SaveMaps()
-        {
-            modService.SaveMaps(Maps);
-        }
-
-        public void ImportMaps()
+        public void SelectGamePath()
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "Maps (*.scd;*.zip)|*.scd;*.zip",
-                Multiselect = true
+                Title = "Select SupremeCommander2.exe",
+                Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
             };
 
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var path = Path.GetDirectoryName(dialog.FileName);
+
+            var config = configService.Load();
+            config.GamePath = path;
+            configService.Save(config);
+
+            GamePath = path;
+        }
+
+        // ================= UPDATER =================
+
+        public async Task RunUpdater()
+        {
+            try
             {
-                foreach (var file in dialog.FileNames)
+                if (string.IsNullOrEmpty(updateDownloadUrl))
                 {
-                    if (file.EndsWith(".zip"))
-                    {
-                        ExtractZip(file);
-                    }
-                    else
-                    {
-                        modService.AddMap(file);
-                    }
+                    MessageBox.Show("No update available.");
+                    return;
                 }
 
-                LoadMaps();
+                string updaterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SC2MMUpdater.exe");
+                string zipPath = Path.Combine(Path.GetTempPath(), "SC2ModManagerUpdate.zip");
+                string installPath = AppDomain.CurrentDomain.BaseDirectory;
+                string exeName = "SC2ModManager.exe";
+
+                if (!File.Exists(updaterPath))
+                {
+                    MessageBox.Show("Updater not found.");
+                    return;
+                }
+
+                await DownloadFileWithProgress(updateDownloadUrl, zipPath);
+
+                MessageBox.Show("Download complete. Installing update...");
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = updaterPath,
+                    Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
+                    UseShellExecute = true,
+                    WorkingDirectory = installPath
+                });
+
+                Application.Current.Shutdown();
             }
-        }
-
-        public void ExtractZip(string zipPath)
-        {
-            string temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, temp);
-
-            foreach (var file in Directory.GetFiles(temp, "*.scd", SearchOption.AllDirectories))
+            catch (Exception ex)
             {
-                modService.AddMap(file);
+                MessageBox.Show($"Updater failed: {ex.Message}");
             }
-
-            Directory.Delete(temp, true);
         }
 
-        public async Task CheckForUpdates()
+        public async Task CheckForUpdatesAsync()
         {
             try
             {
@@ -232,61 +364,15 @@ namespace SC2ModManager.ViewModels
                     UpdateAvailable = true;
                     updateDownloadUrl = downloadUrl;
                 }
+                else
+                {
+                    UpdateAvailable = false;
+                }
             }
             catch
             {
-                // possibly failed, but that's ok - just don't show update notification
-            }
-        }
-
-        public async Task RunUpdater()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(updateDownloadUrl))
-                {
-                    MessageBox.Show("No update URL found.");
-                    return;
-                }
-
-                // Paths
-                string zipPath = Path.Combine(Path.GetTempPath(), "SC2_update.zip");
-                string installPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-                string updaterPath = Path.Combine(installPath, Globals.UpdaterExecutableName);
-                string exeName = Globals.ModManagerExecutableName;
-
-                // Ensure updater exists
-                if (!File.Exists(updaterPath))
-                {
-                    MessageBox.Show($"Updater not found:\n{updaterPath}");
-                    return;
-                }
-
-                // Optional: create backup BEFORE downloading/installing
-                CreateBackup(installPath);
-
-                // Download with progress
-                await DownloadFileWithProgress(updateDownloadUrl, zipPath);
-
-                MessageBox.Show("Download complete. Starting updater...");
-
-                // Start updater process
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = updaterPath,
-                    Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
-                    UseShellExecute = true,
-                    WorkingDirectory = installPath
-                });
-
-                // Small delay to ensure updater launches cleanly
-                MessageBox.Show("Updating... The app will restart automatically.");
-                await Task.Delay(500);
-                Application.Current.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Update failed:\n{ex.Message}");
+                // silently fail (no update UI shown)
+                UpdateAvailable = false;
             }
         }
 
@@ -320,94 +406,48 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        public void CreateBackup(string installPath)
+        // ================= MOD MANAGER =================
+        // ===============================================
+        // ===============================================
+
+        // ================= RESTORE ORIGINAL GAMEDATA =================
+        public async Task RestoreOriginalGamedataAsync()
         {
-            string backupDir = Path.Combine(installPath, "backup");
-
-            if (Directory.Exists(backupDir))
-                Directory.Delete(backupDir, true);
-
-            Directory.CreateDirectory(backupDir);
-
-            foreach (var file in Directory.GetFiles(installPath, "*", SearchOption.AllDirectories))
+            if (string.IsNullOrEmpty(GamePath))
             {
-                if (Path.GetFullPath(file).StartsWith(Path.Combine(installPath, "backup")))
-                    continue;
-
-                var dest = Path.Combine(backupDir, Path.GetFileName(file));
-                File.Copy(file, dest, true);
-            }
-        }
-
-        public void RestoreBackup(string installPath)
-        {
-            string backupDir = Path.Combine(installPath, "backup");
-
-            foreach (var file in Directory.GetFiles(backupDir, "*", SearchOption.AllDirectories))
-            {
-                var dest = Path.Combine(installPath, Path.GetFileName(file));
-                File.Copy(file, dest, true);
-            }
-        }
-
-        public void InitializeGamePath()
-        {
-            var config = configService.Load();
-
-            if (!string.IsNullOrEmpty(config.GamePath))
-            {
-                GamePath = config.GamePath;
-            }
-            else
-            {
-                MessageBox.Show("Game path not configured. Please run setup.");
-            }
-        }
-
-        public void SelectGamePath()
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Select Supreme Commander 2 Executable",
-                Filter = "Supreme Commander 2 (SupremeCommander2.exe)|SupremeCommander2.exe",
-                CheckFileExists = true
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string selectedFile = dialog.FileName;
-            string selectedPath = Path.GetDirectoryName(selectedFile);
-
-            if (!IsValidGamePath(selectedPath))
-            {
-                MessageBox.Show("Invalid folder. Please select the correct game directory.");
+                MessageBox.Show("Game path not set.");
                 return;
             }
-
-            // Save once (clean + consistent with your AppConfig)
-            configService.Save(new AppConfig
+            try
             {
-                GamePath = selectedPath
-            });
-
-            GamePath = selectedPath;
-
-            MessageBox.Show("Game path saved!");
-        }
-
-        private bool IsValidGamePath(string path)
-        {
-            return File.Exists(Path.Combine(path, "SupremeCommander2.exe"));
+                await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
+                MessageBox.Show("Original gamedata restored successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to restore gamedata: {ex.Message}");
+            }
         }
 
 
+
+        // ================= INSTALLED MODS =================
+
+
+
+
+        // ================= DOWNLOADED MODS =================
+
+
+
+
+        // ================= EVENTS =================
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected void OnPropertyChanged(string propertyName)
+        protected void OnPropertyChanged(string name)
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

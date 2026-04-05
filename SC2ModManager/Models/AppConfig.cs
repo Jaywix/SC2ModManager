@@ -8,7 +8,10 @@ namespace SC2ModManager.Models
 {
     public class AppConfig
     {
-        public string GamePath { get; set; }
+        public string GamePath { get; set; } = string.Empty;
+
         public List<string> EnabledMaps { get; set; } = new();
+
+        public List<string> EnabledGenericMods { get; set; } = new();
     }
 }
