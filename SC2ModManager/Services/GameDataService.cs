@@ -3,6 +3,8 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using SC2ModManager.Views;
+using SC2ModManager.ViewModels;
 
 namespace SC2ModManager.Services
 {
@@ -51,9 +53,16 @@ namespace SC2ModManager.Services
 
         public async Task RestoreOriginalGamedataAsync(string gameDataPath)
         {
+            var progressVm = new ProgressViewModel { Status = "Restoring original gamedata..." };
+            var progressWindow = new ProgressWindow { DataContext = progressVm };
+
+            progressWindow.Show();
+
             // Ensure directory exists
             if (!Directory.Exists(gameDataPath))
                 Directory.CreateDirectory(gameDataPath);
+
+            progressVm.Status = "Deleting current gamedata...";
 
             // This will delete everything inside gamedata to reset it to the original files found at github
             foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
@@ -82,11 +91,21 @@ namespace SC2ModManager.Services
                 }
             }
 
+            var progress = new Progress<int>(value =>
+            {
+                progressVm.Progress = value;
+                progressVm.Status = $"Downloading... {value}%";
+            });
+
+
             // Get the files from github and extract them to the gamedata directory
-            await GetGamedataFilesFromGithub(gameDataPath);
+            await GetGamedataFilesFromGithub(gameDataPath, progress, progressVm);
+
+            await Task.Delay(500);
+            progressWindow.Close();
         }
 
-        private async Task GetGamedataFilesFromGithub(string gameDataPath)
+        private async Task GetGamedataFilesFromGithub(string gameDataPath, IProgress<int> progress, ProgressViewModel progressVm)
         {
             string url1 = Globals.GameDataBackupPt1GithubReleaseUrl;
             string url2 = Globals.GameDataBackupPt2GithubReleaseUrl;
@@ -99,25 +118,44 @@ namespace SC2ModManager.Services
 
             using (HttpClient client = new HttpClient())
             {
-                var task1 = DownloadToFileAsync(client, url1, zip1Path);
-                var task2 = DownloadToFileAsync(client, url2, zip2Path);
+                var task1 = DownloadToFileAsync(client, url1, zip1Path, progress);
+                var task2 = DownloadToFileAsync(client, url2, zip2Path, progress);
 
                 await Task.WhenAll(task1, task2);
             }
 
             Directory.CreateDirectory(gameDataPath);
 
+            progressVm.Status = "Extracting files...";
+            progressVm.Progress = 0;
+
             ExtractZipToDirectory(zip1Path, gameDataPath);
             ExtractZipToDirectory(zip2Path, gameDataPath);
         }
 
-        private async Task DownloadToFileAsync(HttpClient client, string url, string filePath)
+        private async Task DownloadToFileAsync(HttpClient client, string url, string filePath, IProgress<int> progress)
         {
             using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             using (var stream = await response.Content.ReadAsStreamAsync())
             using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await stream.CopyToAsync(fileStream);
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                var totalRead = 0L;
+                var buffer = new byte[81920];
+                int read;
+
+                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, read);
+                    totalRead += read;
+
+                    if(totalBytes > 0)
+                    {
+                        int percent = (int)((totalRead * 100) / totalBytes);
+                        progress?.Report(percent);
+                    }
+                }
+                //await stream.CopyToAsync(fileStream);
             }
         }
 
