@@ -9,6 +9,289 @@
 
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- ===== COLORS ===== -->
+        <Color x:Key="AccentColor">#1E90FF</Color>
+        <Color x:Key="AccentDarkColor">#1270CC</Color>
+        <Color x:Key="ButtonBaseColor">#1A2535</Color>
+        <Color x:Key="ButtonHoverColor">#1E3550</Color>
+        <Color x:Key="ButtonPressedColor">#1270CC</Color>
+        <Color x:Key="DisabledButtonColor">#2A2A2A</Color>
+
+        <SolidColorBrush x:Key="AccentBrush"          Color="{StaticResource AccentColor}"/>
+        <SolidColorBrush x:Key="AccentDarkBrush"      Color="{StaticResource AccentDarkColor}"/>
+        <SolidColorBrush x:Key="ButtonBaseBrush"       Color="{StaticResource ButtonBaseColor}"/>
+        <SolidColorBrush x:Key="ButtonHoverBrush"      Color="{StaticResource ButtonHoverColor}"/>
+        <SolidColorBrush x:Key="ButtonPressedBrush"    Color="{StaticResource ButtonPressedColor}"/>
+        <SolidColorBrush x:Key="DisabledButtonBrush"   Color="{StaticResource DisabledButtonColor}"/>
+        <SolidColorBrush x:Key="PanelBackgroundBrush"  Color="#CC0D1117"/>
+        <SolidColorBrush x:Key="SidebarOverlayBrush"   Color="#CC0A0F18"/>
+
+        <!-- ===== BUTTON STYLE ===== -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Foreground"        Value="White"/>
+            <Setter Property="Background"        Value="{StaticResource ButtonBaseBrush}"/>
+            <Setter Property="BorderBrush"       Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="Padding"           Value="12,6"/>
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="FontFamily"        Value="Segoe UI"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="Height"            Value="34"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"   Value="{StaticResource ButtonHoverBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush"  Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="{StaticResource ButtonPressedBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
+                                <Setter Property="Foreground" Value="#666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Accent-filled button for primary actions (Save, Download, Apply) -->
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background"   Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush"  Value="{StaticResource AccentDarkBrush}"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentDarkBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="#0D5FAA"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
+                                <Setter Property="Foreground" Value="#666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Danger button for destructive actions (Delete) -->
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="BorderBrush" Value="#CC2200"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="#3D0A00"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF4422"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="#CC2200"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
+                                <Setter Property="Foreground" Value="#666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sidebar button style -->
+        <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Margin"         Value="10,4"/>
+            <Setter Property="Height"         Value="36"/>
+            <Setter Property="FontSize"       Value="13"/>
+            <Setter Property="Background"     Value="#22FFFFFF"/>
+            <Setter Property="BorderBrush"    Value="#44FFFFFF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentDarkBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Global default button override -->
+        <Style TargetType="Button" BasedOn="{StaticResource ModernButton}"/>
+
+        <!-- ListBox style -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background"        Value="#CC0D1117"/>
+            <Setter Property="BorderBrush"       Value="#1E90FF"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="Foreground"        Value="White"/>
+            <Setter Property="Padding"           Value="4"/>
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding"    Value="4,3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="itemBorder"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#331E90FF"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#221E90FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- CheckBox style -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize"   Value="12"/>
+        </Style>
+
+        <!-- TextBlock style -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- TextBox style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background"      Value="#1A2535"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="BorderBrush"     Value="#1E90FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="6,4"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="CaretBrush"      Value="White"/>
+        </Style>
+
+        <!-- ComboBox style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background"      Value="#1A2535"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="BorderBrush"     Value="#1E90FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="6,4"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="Height"          Value="30"/>
+        </Style>
+
+        <!-- ProgressBar style -->
+        <Style TargetType="ProgressBar">
+            <Setter Property="Background"  Value="#1A2535"/>
+            <Setter Property="Foreground"  Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="#1E90FF"/>
+            <Setter Property="Height"      Value="14"/>
+        </Style>
+
+        <!-- Section header text -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground"  Value="White"/>
+            <Setter Property="FontSize"    Value="22"/>
+            <Setter Property="FontFamily"  Value="Segoe UI"/>
+            <Setter Property="FontWeight"  Value="Light"/>
+            <Setter Property="Margin"      Value="0,0,0,16"/>
+        </Style>
+
+        <!-- Panel card background -->
+        <Style x:Key="ContentPanel" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource PanelBackgroundBrush}"/>
+            <Setter Property="BorderBrush"     Value="#33FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="6"/>
+            <Setter Property="Padding"         Value="16"/>
+        </Style>
+
+        <!-- Column header -->
+        <Style x:Key="ColumnHeader" TargetType="TextBlock">
+            <Setter Property="Foreground"   Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontSize"     Value="14"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="FontFamily"   Value="Segoe UI"/>
+            <Setter Property="Margin"       Value="0,0,0,6"/>
+        </Style>
+
+        <!-- Separator line -->
+        <Style x:Key="HRule" TargetType="Separator">
+            <Setter Property="Background"       Value="#33FFFFFF"/>
+            <Setter Property="Margin"           Value="0,8"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
     </Window.Resources>
 
     <Grid>
@@ -21,308 +304,546 @@
             <ImageBrush ImageSource="/Assets/uef.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
-        <!-- SIDEBAR -->
-        <StackPanel Grid.Column="0">
-            <StackPanel.Background>
+        <!-- ===== SIDEBAR ===== -->
+        <Border Grid.Column="0">
+            <Border.Background>
                 <ImageBrush ImageSource="/Assets/spoiler_profile.png" Stretch="UniformToFill"/>
-            </StackPanel.Background>
+            </Border.Background>
 
-            <TextBlock Text="SC2 Mod Manager" Foreground="White" FontSize="18" Margin="10"/>
-            <Button Content="Home"        Click="GoHome"    Margin="10"/>
-            <Button Content="Manage Mods" Click="GoToMods"  Margin="10"/>
-        </StackPanel>
+            <!-- Dark overlay so text is readable -->
+            <Grid>
+                <Rectangle Fill="{StaticResource SidebarOverlayBrush}"/>
 
-        <!-- MAIN CONTENT -->
-        <Grid Grid.Column="1" Margin="10">
+                <StackPanel Margin="0,16,0,0">
 
-            <!-- ===== HOME ===== -->
-            <StackPanel x:Name="HomeView">
-                <TextBlock Text="Home" FontSize="22" Margin="0,0,0,20"/>
-                <Button Content="Launch Game" Height="40" Click="LaunchGame_Click"/>
-                <Button Content="Update Available"
-                        Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Height="40" Margin="0,10,0,0" Click="Update_Click"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="20"
-                             Value="{Binding DownloadProgress}"
-                             Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}"/>
-            </StackPanel>
+                    <!-- Logo / Title block -->
+                    <StackPanel Margin="14,0,14,16">
+                        <TextBlock Text="Supreme Commander 2"
+                                   Foreground="White"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   FontFamily="Segoe UI"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock Text="Mod Manager"
+                                   Foreground="{StaticResource AccentBrush}"
+                                   FontSize="18"
+                                   FontWeight="Light"
+                                   FontFamily="Segoe UI"/>
 
-            <!-- ===== MANAGE MODS ===== -->
-            <StackPanel x:Name="ModsView" Visibility="Collapsed">
-                <TextBlock Text="Manage Mods" FontSize="22" Margin="0,0,0,20"/>
-                <Button Content="Backups"   Height="35" Margin="0,5" Click="GoToBackups"/>
-                <Button Content="Installed" Height="35" Margin="0,5" Click="GoToInstalledMods"/>
-                <Button Content="Download"  Height="35" Margin="0,5" Click="GoToDownloadMods"/>
-                <Button Content="Back"      Height="35" Margin="0,5" Click="GoHome"/>
-            </StackPanel>
+                        <Separator Style="{StaticResource HRule}" Margin="0,8"/>
 
-            <!-- ===== BACKUPS ===== -->
-            <StackPanel x:Name="BackupsView" Visibility="Collapsed">
-                <TextBlock Text="Backups" FontSize="22" Margin="0,0,0,20"/>
-                <Button Content="Compare Current Mod State to Backup" Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Restore Original Game Files"         Height="35" Margin="0,5" Click="RestoreOriginalGameData_Click"/>
-                <Button Content="Back" Height="35" Margin="0,5"       Click="GoToMods"/>
-            </StackPanel>
+                        <TextBlock Text="by OSS | | Jaywix"
+                                   Foreground="#AAAAAA"
+                                   FontSize="11"
+                                   FontFamily="Segoe UI"/>
 
-            <!-- ===== INSTALLED MODS CATEGORY ===== -->
-            <StackPanel x:Name="InstalledModsView" Visibility="Collapsed">
-                <TextBlock Text="Installed Mods" FontSize="22" Margin="0,0,0,20"/>
-                <Button Content="Custom Maps"           Height="35" Margin="0,5" Click="GoToInstalledMaps"/>
-                <Button Content="Hotkeys"               Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Balance Mods"          Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Visual Mods"           Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Generic Gamedata Mods" Height="35" Margin="0,5" Click="GoToInstalledGenericMods"/>
-                <Button Content="Back"                  Height="35" Margin="0,5" Click="GoToMods"/>
-            </StackPanel>
-
-            <!-- ===== INSTALLED: CUSTOM MAPS ===== -->
-            <Grid x:Name="InstalledMapsView" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Text="Installed Maps" FontSize="22" Margin="0,0,0,10"/>
-
-                <!-- Enabled / Disabled split -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Enabled -->
-                    <StackPanel Grid.Column="0" Margin="0,0,5,0">
-                        <TextBlock Text="Enabled" FontSize="16" Margin="0,0,0,5"/>
-                        <ListBox x:Name="EnabledMapsList"
-                                 ItemsSource="{Binding EnabledMaps}"
-                                 SelectionMode="Multiple"
-                                 Height="350">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox Content="{Binding FileName}"
-                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <TextBlock x:Name="VersionText"
+                                   Foreground="#666666"
+                                   FontSize="10"
+                                   FontFamily="Segoe UI"
+                                   Margin="0,2,0,0"/>
                     </StackPanel>
 
-                    <!-- Disabled -->
-                    <StackPanel Grid.Column="1" Margin="5,0,0,0">
-                        <TextBlock Text="Disabled" FontSize="16" Margin="0,0,0,5"/>
-                        <ListBox x:Name="DisabledMapsList"
-                                 ItemsSource="{Binding DisabledMaps}"
-                                 SelectionMode="Multiple"
-                                 Height="350">
+                    <Separator Style="{StaticResource HRule}" Margin="14,0"/>
+
+                    <Button Content="🏠  Home"        Style="{StaticResource SidebarButton}" Click="GoHome"/>
+                    <Button Content="⚙  Manage Mods" Style="{StaticResource SidebarButton}" Click="GoToMods"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <Border Grid.Column="1" Background="#CC0A0F18">
+            <Grid Margin="20,16,20,16">
+
+                <!-- ===== HOME ===== -->
+                <StackPanel x:Name="HomeView">
+                    <TextBlock Text="Home" Style="{StaticResource SectionHeader}"/>
+
+                    <Border Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Game" Foreground="{StaticResource AccentBrush}"
+                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                            <Button Content="▶  Launch Game" Style="{StaticResource PrimaryButton}"
+                                    Height="40" Click="LaunchGame_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource ContentPanel}"
+                            Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="Update Available" Foreground="{StaticResource AccentBrush}"
+                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                            <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
+                            <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== MANAGE MODS ===== -->
+                <StackPanel x:Name="ModsView" Visibility="Collapsed">
+                    <TextBlock Text="Manage Mods" Style="{StaticResource SectionHeader}"/>
+                    <Border Style="{StaticResource ContentPanel}">
+                        <StackPanel>
+                            <Button Content="💾  Backups"   Margin="0,0,0,6" Click="GoToBackups"/>
+                            <Button Content="📦  Installed" Margin="0,0,0,6" Click="GoToInstalledMods"/>
+                            <Button Content="⬇  Download"  Margin="0,0,0,6" Click="GoToDownloadMods"/>
+                            <Separator Style="{StaticResource HRule}"/>
+                            <Button Content="← Back" Click="GoHome" HorizontalAlignment="Left" Width="80"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== BACKUPS ===== -->
+                <StackPanel x:Name="BackupsView" Visibility="Collapsed">
+                    <TextBlock Text="Backups" Style="{StaticResource SectionHeader}"/>
+                    <Border Style="{StaticResource ContentPanel}">
+                        <StackPanel>
+                            <Button Content="💾  Save Current State as Preset" Margin="0,0,0,6" Click="GoToPresets"/>
+                            <Button Content="🔍  Compare Presets"              Margin="0,0,0,6" Click="GoToComparePresets"/>
+                            <Button Content="🔄  Restore Original Game Files"  Margin="0,0,0,6" Click="RestoreOriginalGameData_Click"/>
+                            <Separator Style="{StaticResource HRule}"/>
+                            <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== PRESETS ===== -->
+                <Grid x:Name="PresetsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Mod Presets" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Save new preset -->
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Save Current Gamedata State as Preset"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Width="220" Margin="0,0,8,0"
+                                         Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                         VerticalContentAlignment="Center"/>
+                                <Button Content="💾  Save" Style="{StaticResource PrimaryButton}"
+                                        Width="100" Click="SavePreset_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Preset list -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <ListBox x:Name="PresetsList"
+                                 ItemsSource="{Binding Presets}"
+                                 SelectedItem="{Binding SelectedPreset}"
+                                 BorderThickness="0"
+                                 Background="Transparent">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <CheckBox Content="{Binding FileName}"
-                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                    <StackPanel Margin="2,4">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="SemiBold" FontSize="13"/>
+                                        <TextBlock Text="{Binding CreatedAt, StringFormat='Saved: {0:MM/dd/yyyy HH:mm}'}"
+                                                   FontSize="11" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="{Binding Files.Count, StringFormat='{}{0} files'}"
+                                                   FontSize="11" Foreground="#AAAAAA"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                    </Border>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="✅  Apply"       Style="{StaticResource PrimaryButton}" Width="110" Margin="0,0,6,0" Click="ApplyPreset_Click"/>
+                        <Button Content="🗑  Delete"      Style="{StaticResource DangerButton}"  Width="110" Margin="0,0,6,0" Click="DeletePreset_Click"/>
+                        <Button Content="📄  View Files"  Width="110" Click="ViewPresetFiles_Click"/>
+                    </StackPanel>
+
+                    <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToBackups"/>
+                </Grid>
+
+                <!-- ===== COMPARE PRESETS ===== -->
+                <Grid x:Name="ComparePresetsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Compare Presets" Style="{StaticResource SectionHeader}"/>
+
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="Left Preset" Style="{StaticResource ColumnHeader}"/>
+                                <ComboBox ItemsSource="{Binding ComparePresetNames}"
+                                          SelectedItem="{Binding CompareLeftSelection}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                <TextBlock Text="Right Preset" Style="{StaticResource ColumnHeader}"/>
+                                <ComboBox ItemsSource="{Binding ComparePresetNames}"
+                                          SelectedItem="{Binding CompareRightSelection}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Button Grid.Row="2" Content="🔍  Compare" Style="{StaticResource PrimaryButton}"
+                            Width="120" HorizontalAlignment="Left" Margin="0,0,0,10"
+                            Click="RunComparison_Click"/>
+
+                    <Border Grid.Row="3" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <ListBox ItemsSource="{Binding CompareResults}"
+                                 BorderThickness="0" Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding FileName}" Padding="2">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDifferent}" Value="True">
+                                                        <Setter Property="Foreground" Value="#FF4444"/>
+                                                        <Setter Property="FontWeight"  Value="Bold"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+
+                    <Button Grid.Row="4" Content="← Back" Width="80"
+                            HorizontalAlignment="Left" Click="GoToBackups"/>
+                </Grid>
+
+                <!-- ===== INSTALLED MODS CATEGORY ===== -->
+                <StackPanel x:Name="InstalledModsView" Visibility="Collapsed">
+                    <TextBlock Text="Installed Mods" Style="{StaticResource SectionHeader}"/>
+                    <Border Style="{StaticResource ContentPanel}">
+                        <StackPanel>
+                            <Button Content="🗺  Custom Maps"           Margin="0,0,0,6" Click="GoToInstalledMaps"/>
+                            <Button Content="⌨  Hotkeys"               Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="⚖  Balance Mods"          Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="🎨  Visual Mods"           Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToInstalledGenericMods"/>
+                            <Separator Style="{StaticResource HRule}"/>
+                            <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== INSTALLED: CUSTOM MAPS ===== -->
+                <Grid x:Name="InstalledMapsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Installed Maps" Style="{StaticResource SectionHeader}"/>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Enabled -->
+                        <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="EnabledMapsList"
+                         ItemsSource="{Binding EnabledMaps}"
+                         SelectionMode="Multiple"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding FileName}"
+                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <!-- Disabled -->
+                        <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="DisabledMapsList"
+                         ItemsSource="{Binding DisabledMaps}"
+                         SelectionMode="Multiple"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding FileName}"
+                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedMaps_Click"/>
+                        <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedMaps_Click"/>
+                        <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllMaps_Click"/>
+                        <Button Content="Disable All"          Width="95"  Click="DisableAllMaps_Click"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
+                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
+                        <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
+                        <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
                     </StackPanel>
                 </Grid>
 
-                <!-- Enable / Disable buttons -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
-                    <Button Content="Enable Selected"  Width="120" Margin="0,0,5,0" Click="EnableSelectedMaps_Click"/>
-                    <Button Content="Disable Selected" Width="120" Margin="0,0,5,0" Click="DisableSelectedMaps_Click"/>
-                    <Button Content="Enable All"       Width="100" Margin="0,0,5,0" Click="EnableAllMaps_Click"/>
-                    <Button Content="Disable All"      Width="100" Margin="0,0,5,0" Click="DisableAllMaps_Click"/>
-                </StackPanel>
+                <!-- ===== INSTALLED: GENERIC GAMEDATA MODS ===== -->
+                <Grid x:Name="InstalledGenericModsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Save / Back -->
-                <StackPanel Grid.Row="3" Orientation="Horizontal">
-                    <Button Content="Save" Width="80" Margin="0,0,5,0" Click="SaveMaps_Click"/>
-                    <Button Content="Back" Width="80" Click="GoToInstalledMods"/>
-                </StackPanel>
-            </Grid>
+                    <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
-            <!-- ===== INSTALLED: GENERIC GAMEDATA MODS ===== -->
-            <Grid x:Name="InstalledGenericModsView" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" FontSize="22" Margin="0,0,0,10"/>
+                        <!-- Enabled -->
+                        <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="EnabledGenericModsList"
+                         ItemsSource="{Binding EnabledGenericMods}"
+                         SelectionMode="Multiple"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding FileName}"
+                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
 
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                        <!-- Disabled -->
+                        <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="DisabledGenericModsList"
+                         ItemsSource="{Binding DisabledGenericMods}"
+                         SelectionMode="Multiple"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding FileName}"
+                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
 
-                    <!-- Enabled -->
-                    <StackPanel Grid.Column="0" Margin="0,0,5,0">
-                        <TextBlock Text="Enabled" FontSize="16" Margin="0,0,0,5"/>
-                        <ListBox x:Name="EnabledGenericModsList"
-                                 ItemsSource="{Binding EnabledGenericMods}"
-                                 SelectionMode="Multiple"
-                                 Height="350">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox Content="{Binding FileName}"
-                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedGenericMods_Click"/>
+                        <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedGenericMods_Click"/>
+                        <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllGenericMods_Click"/>
+                        <Button Content="Disable All"          Width="95"  Click="DisableAllGenericMods_Click"/>
                     </StackPanel>
 
-                    <!-- Disabled -->
-                    <StackPanel Grid.Column="1" Margin="5,0,0,0">
-                        <TextBlock Text="Disabled" FontSize="16" Margin="0,0,0,5"/>
-                        <ListBox x:Name="DisabledGenericModsList"
-                                 ItemsSource="{Binding DisabledGenericMods}"
-                                 SelectionMode="Multiple"
-                                 Height="350">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox Content="{Binding FileName}"
-                                              IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
+                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
+                        <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
+                        <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
                     </StackPanel>
                 </Grid>
 
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
-                    <Button Content="Enable Selected"  Width="120" Margin="0,0,5,0" Click="EnableSelectedGenericMods_Click"/>
-                    <Button Content="Disable Selected" Width="120" Margin="0,0,5,0" Click="DisableSelectedGenericMods_Click"/>
-                    <Button Content="Enable All"       Width="100" Margin="0,0,5,0" Click="EnableAllGenericMods_Click"/>
-                    <Button Content="Disable All"      Width="100" Margin="0,0,5,0" Click="DisableAllGenericMods_Click"/>
+                <!-- ===== DOWNLOAD MODS CATEGORY ===== -->
+                <StackPanel x:Name="DownloadModsView" Visibility="Collapsed">
+                    <TextBlock Text="Download Mods" Style="{StaticResource SectionHeader}"/>
+                    <Border Style="{StaticResource ContentPanel}">
+                        <StackPanel>
+                            <Button Content="🗺  Custom Maps"           Margin="0,0,0,6" Click="GoToDownloadMaps"/>
+                            <Button Content="⌨  Hotkeys"               Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="⚖  Balance Mods"          Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="🎨  Visual Mods"           Margin="0,0,0,6" IsEnabled="False"/>
+                            <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToDownloadGenericMods"/>
+                            <Button Content="📂  Manual Import"         Margin="0,0,0,6" Click="GoToManualImport"/>
+                            <Separator Style="{StaticResource HRule}"/>
+                            <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
-                <StackPanel Grid.Row="3" Orientation="Horizontal">
-                    <Button Content="Save" Width="80" Margin="0,0,5,0" Click="SaveGenericMods_Click"/>
-                    <Button Content="Back" Width="80" Click="GoToInstalledMods"/>
-                </StackPanel>
-            </Grid>
+                <!-- ===== DOWNLOAD: CUSTOM MAPS ===== -->
+                <Grid x:Name="DownloadMapsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-            <!-- ===== DOWNLOAD MODS CATEGORY ===== -->
-            <StackPanel x:Name="DownloadModsView" Visibility="Collapsed">
-                <TextBlock Text="Download Mods" FontSize="22" Margin="0,0,0,20"/>
-                <Button Content="Custom Maps"           Height="35" Margin="0,5" Click="GoToDownloadMaps"/>
-                <Button Content="Hotkeys"               Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Balance Mods"          Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Visual Mods"           Height="35" Margin="0,5" IsEnabled="False"/>
-                <Button Content="Generic Gamedata Mods" Height="35" Margin="0,5" Click="GoToDownloadGenericMods"/>
-                <Button Content="Manual Import"         Height="35" Margin="0,5" Click="GoToManualImport"/>
-                <Button Content="Back"                  Height="35" Margin="0,5" Click="GoToMods"/>
-            </StackPanel>
+                    <TextBlock Grid.Row="0" Text="Download Custom Maps" Style="{StaticResource SectionHeader}"/>
 
-            <!-- ===== DOWNLOAD: CUSTOM MAPS ===== -->
-            <Grid x:Name="DownloadMapsView" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <ListBox x:Name="DownloadMapsList"
+                                 ItemsSource="{Binding DownloadableMaps}"
+                                 SelectionMode="Multiple"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2">
+                                        <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
+                                                   FontSize="11" VerticalAlignment="Center"
+                                                   Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
 
-                <TextBlock Grid.Row="0" Text="Download Custom Maps" FontSize="22" Margin="0,0,0,10"/>
-
-                <ListBox Grid.Row="1"
-                         x:Name="DownloadMapsList"
-                         ItemsSource="{Binding DownloadableMaps}"
-                         SelectionMode="Multiple"
-                         Height="380">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
-                                          VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
-                                <TextBlock Text=" (Downloaded)" Foreground="Green" VerticalAlignment="Center"
-                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
-                    <Button Content="Select All"   Width="100" Margin="0,0,5,0" Click="SelectAllDownloadMaps_Click"/>
-                    <Button Content="Deselect All" Width="100" Margin="0,0,5,0" Click="DeselectAllDownloadMaps_Click"/>
-                    <Button Content="Download"     Width="100" Click="DownloadSelectedMaps_Click"/>
-                </StackPanel>
-
-                <Button Grid.Row="3" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
-            </Grid>
-
-            <!-- ===== DOWNLOAD: GENERIC GAMEDATA MODS ===== -->
-            <Grid x:Name="DownloadGenericModsView" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" FontSize="22" Margin="0,0,0,10"/>
-
-                <ListBox Grid.Row="1"
-                         x:Name="DownloadGenericModsList"
-                         ItemsSource="{Binding DownloadableGenericMods}"
-                         SelectionMode="Multiple"
-                         Height="380">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
-                                          VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
-                                <TextBlock Text=" (Downloaded)" Foreground="Green" VerticalAlignment="Center"
-                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
-                    <Button Content="Select All"   Width="100" Margin="0,0,5,0" Click="SelectAllDownloadGenericMods_Click"/>
-                    <Button Content="Deselect All" Width="100" Margin="0,0,5,0" Click="DeselectAllDownloadGenericMods_Click"/>
-                    <Button Content="Download"     Width="100" Click="DownloadSelectedGenericMods_Click"/>
-                </StackPanel>
-
-                <Button Grid.Row="3" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
-            </Grid>
-
-            <!-- ===== MANUAL IMPORT ===== -->
-            <Grid x:Name="ManualImportView" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Text="Manual Import" FontSize="22" Margin="0,0,0,10"/>
-
-                <!-- Drop zone -->
-                <Border Grid.Row="1"
-                        x:Name="DropZone"
-                        BorderBrush="Gray"
-                        BorderThickness="2"
-                        Background="#22FFFFFF"
-                        AllowDrop="True"
-                        Drop="ManualImport_Drop"
-                        DragOver="ManualImport_DragOver"
-                        Margin="0,0,0,10">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Drag and drop .scd or .zip files here"
-                                   FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
-                        <TextBlock Text="or" Margin="0,8" HorizontalAlignment="Center" Foreground="Gray"/>
-                        <Button Content="Browse for File" Width="140" Click="ManualImportBrowse_Click"/>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadMaps_Click"/>
+                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadMaps_Click"/>
+                        <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedMaps_Click"/>
                     </StackPanel>
-                </Border>
 
-                <Button Grid.Row="2" Content="Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                    <Button Grid.Row="3" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                </Grid>
+
+                <!-- ===== DOWNLOAD: GENERIC GAMEDATA MODS ===== -->
+                <Grid x:Name="DownloadGenericModsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <ListBox x:Name="DownloadGenericModsList"
+                                 ItemsSource="{Binding DownloadableGenericMods}"
+                                 SelectionMode="Multiple"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2">
+                                        <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
+                                                   FontSize="11" VerticalAlignment="Center"
+                                                   Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadGenericMods_Click"/>
+                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadGenericMods_Click"/>
+                        <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedGenericMods_Click"/>
+                    </StackPanel>
+
+                    <Button Grid.Row="3" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                </Grid>
+
+                <!-- ===== MANUAL IMPORT ===== -->
+                <Grid x:Name="ManualImportView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Manual Import" Style="{StaticResource SectionHeader}"/>
+
+                    <Border Grid.Row="1"
+                            x:Name="DropZone"
+                            BorderBrush="#1E90FF"
+                            BorderThickness="2"
+                            Background="#110D1117"
+                            CornerRadius="6"
+                            AllowDrop="True"
+                            Drop="ManualImport_Drop"
+                            DragOver="ManualImport_DragOver"
+                            Margin="0,0,0,12">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="📂" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <TextBlock Text="Drag and drop .scd or .zip files here"
+                                       FontSize="15" Foreground="#AAAAAA" HorizontalAlignment="Center"/>
+                            <TextBlock Text="or" Margin="0,10" HorizontalAlignment="Center" Foreground="#666666"/>
+                            <Button Content="Browse for File" Style="{StaticResource PrimaryButton}"
+                                    Width="150" Click="ManualImportBrowse_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Row="2" Content="← Back" Width="80"
+                            HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                </Grid>
+
             </Grid>
+        </Border>
 
-        </Grid>
     </Grid>
 </Window>

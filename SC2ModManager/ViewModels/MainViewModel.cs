@@ -20,6 +20,8 @@ namespace SC2ModManager.ViewModels
         Home,
         ManageMods,
         Backups,
+        Presets,
+        ComparePresets,
         InstalledMods,
         InstalledMaps,
         InstalledGenericMods,
@@ -38,6 +40,7 @@ namespace SC2ModManager.ViewModels
         private readonly GamedataService gamedataService;
         private readonly ConfigService configService;
         private readonly GameService gameService;
+        private readonly PresetService presetService;
         private readonly UpdateService updateService = new();
 
         // ================= NAVIGATION =================
@@ -61,6 +64,44 @@ namespace SC2ModManager.ViewModels
 
         public ObservableCollection<Map> DownloadableMaps { get; set; } = new();
         public ObservableCollection<GenericGamedataMod> DownloadableGenericMods { get; set; } = new();
+
+        // ================= PRESETS =================
+
+        public ObservableCollection<ModPreset> Presets { get; set; } = new();
+
+        private ModPreset selectedPreset;
+        public ModPreset SelectedPreset
+        {
+            get => selectedPreset;
+            set { selectedPreset = value; OnPropertyChanged(nameof(SelectedPreset)); }
+        }
+
+        private string newPresetName = string.Empty;
+        public string NewPresetName
+        {
+            get => newPresetName;
+            set { newPresetName = value; OnPropertyChanged(nameof(NewPresetName)); }
+        }
+
+        // ================= COMPARE =================
+
+        public ObservableCollection<string> ComparePresetNames { get; set; } = new();
+
+        private string compareLeftSelection;
+        public string CompareLeftSelection
+        {
+            get => compareLeftSelection;
+            set { compareLeftSelection = value; OnPropertyChanged(nameof(CompareLeftSelection)); }
+        }
+
+        private string compareRightSelection;
+        public string CompareRightSelection
+        {
+            get => compareRightSelection;
+            set { compareRightSelection = value; OnPropertyChanged(nameof(CompareRightSelection)); }
+        }
+
+        public ObservableCollection<CompareResultItem> CompareResults { get; set; } = new();
 
         // ================= GAME PATH =================
 
@@ -98,9 +139,9 @@ namespace SC2ModManager.ViewModels
             storageService = new ModStorageService();
             gamedataService = new GamedataService();
             gameService = new GameService(configService);
+            presetService = new PresetService();
 
             InitializeGamePath();
-
             _ = CheckForUpdatesAsync();
         }
 
@@ -166,6 +207,10 @@ namespace SC2ModManager.ViewModels
             try
             {
                 await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
+
+                // Snapshot the original files list after a clean restore
+                presetService.SaveOriginalFilesList(GamePath + "\\gamedata");
+
                 MessageBox.Show("Original gamedata restored successfully.");
             }
             catch (Exception ex)
@@ -174,25 +219,186 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        // ================= INSTALLED: MAPS =================
+        // ================= PRESETS =================
+
+        public void LoadPresets()
+        {
+            var all = presetService.LoadAllPresets();
+            Presets = new ObservableCollection<ModPreset>(all);
+            OnPropertyChanged(nameof(Presets));
+        }
+
+        public void SaveCurrentStateAsPreset()
+        {
+            if (string.IsNullOrWhiteSpace(NewPresetName))
+            {
+                MessageBox.Show("Please enter a preset name.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            try
+            {
+                presetService.SavePreset(NewPresetName, Path.Combine(GamePath, "gamedata"));
+                NewPresetName = string.Empty;
+                LoadPresets();
+                MessageBox.Show("Preset saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save preset: {ex.Message}");
+            }
+        }
+
+        public void DeleteSelectedPreset()
+        {
+            if (SelectedPreset == null)
+            {
+                MessageBox.Show("No preset selected.");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Delete preset '{SelectedPreset.Name}'?",
+                "Confirm Delete",
+                MessageBoxButton.YesNo);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            presetService.DeletePreset(SelectedPreset.Name);
+            LoadPresets();
+        }
 
         /// <summary>
-        /// Loads installed maps from disk into EnabledMaps and DisabledMaps.
-        /// Merges with saved state JSON so richer metadata (author, version, etc.) is preserved.
+        /// Removes deleted filenames from all presets.
+        /// Deletes any preset that becomes empty as a result.
         /// </summary>
+        public void CleanupPresetsAfterDeletion(IEnumerable<string> deletedFileNames)
+        {
+            var deleted = deletedFileNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var presets = presetService.LoadAllPresets();
+            bool anyChanged = false;
+
+            foreach (var preset in presets)
+            {
+                int before = preset.Files.Count;
+                preset.Files.RemoveAll(f => deleted.Contains(Path.GetFileName(f)));
+
+                if (preset.Files.Count == 0)
+                {
+                    // Preset is now empty — delete it entirely
+                    presetService.DeletePreset(preset.Name);
+                    anyChanged = true;
+                }
+                else if (preset.Files.Count != before)
+                {
+                    // Preset was affected but still has files — resave it
+                    presetService.ResavePreset(preset);
+                    anyChanged = true;
+                }
+            }
+
+            if (anyChanged)
+                LoadPresets();
+        }
+
+        public void ApplySelectedPreset()
+        {
+            if (SelectedPreset == null)
+            {
+                MessageBox.Show("No preset selected.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Apply preset '{SelectedPreset.Name}'? This will remove files from gamedata that are not in the preset.",
+                "Confirm Apply",
+                MessageBoxButton.YesNo);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                presetService.ApplyPreset(SelectedPreset, Path.Combine(GamePath, "gamedata"));
+                MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to apply preset: {ex.Message}");
+            }
+        }
+
+        // ================= COMPARE =================
+
+        public void LoadCompareOptions()
+        {
+            var presets = presetService.LoadAllPresets();
+
+            ComparePresetNames = new ObservableCollection<string>();
+            ComparePresetNames.Add("Original Files");
+
+            foreach (var p in presets)
+                ComparePresetNames.Add(p.Name);
+
+            OnPropertyChanged(nameof(ComparePresetNames));
+
+            CompareLeftSelection = ComparePresetNames.FirstOrDefault();
+            CompareRightSelection = ComparePresetNames.Skip(1).FirstOrDefault()
+                                    ?? ComparePresetNames.FirstOrDefault();
+        }
+
+        public void RunComparison()
+        {
+            var leftFiles = GetFilesForSelection(CompareLeftSelection);
+            var rightFiles = GetFilesForSelection(CompareRightSelection);
+
+            var results = presetService.Compare(leftFiles, rightFiles);
+
+            CompareResults = new ObservableCollection<CompareResultItem>(
+                results.Select(r => new CompareResultItem
+                {
+                    FileName = r.FileName,
+                    IsDifferent = r.IsDifferent
+                })
+            );
+
+            OnPropertyChanged(nameof(CompareResults));
+        }
+
+        private List<string> GetFilesForSelection(string selectionName)
+        {
+            if (selectionName == "Original Files")
+                return presetService.LoadOriginalFilesList();
+
+            var preset = presetService.LoadAllPresets()
+                .FirstOrDefault(p => p.Name == selectionName);
+
+            return preset?.Files ?? new List<string>();
+        }
+
+        // ================= INSTALLED: MAPS =================
+
         public void LoadInstalledMaps()
         {
             var onDisk = storageService.GetInstalledMaps();
             var savedState = storageService.LoadMapsState();
-
-            // Build a lookup from the saved state to merge metadata back in
             var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
 
             var enriched = onDisk.Select(m =>
             {
                 if (stateByFile.TryGetValue(m.FileName, out var saved))
                 {
-                    // Preserve richer metadata from state, keep IsEnabled from disk
                     saved.IsEnabled = m.IsEnabled;
                     saved.IsDownloaded = true;
                     return saved;
@@ -207,10 +413,6 @@ namespace SC2ModManager.ViewModels
             OnPropertyChanged(nameof(DisabledMaps));
         }
 
-        /// <summary>
-        /// Moves selected maps from Disabled to Enabled (storage + collection).
-        /// Does not touch gamedata yet — that happens on Save.
-        /// </summary>
         public void EnableSelectedMaps(IEnumerable<Map> maps)
         {
             foreach (var map in maps.ToList())
@@ -222,10 +424,6 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        /// <summary>
-        /// Moves selected maps from Enabled to Disabled (storage + collection).
-        /// Does not touch gamedata yet — that happens on Save.
-        /// </summary>
         public void DisableSelectedMaps(IEnumerable<Map> maps)
         {
             foreach (var map in maps.ToList())
@@ -240,9 +438,6 @@ namespace SC2ModManager.ViewModels
         public void EnableAllMaps() => EnableSelectedMaps(DisabledMaps.ToList());
         public void DisableAllMaps() => DisableSelectedMaps(EnabledMaps.ToList());
 
-        /// <summary>
-        /// Syncs the game's gamedata folder to match EnabledMaps, then persists state.
-        /// </summary>
         public void SaveMapsToGamedata()
         {
             if (string.IsNullOrEmpty(GamePath))
@@ -257,19 +452,15 @@ namespace SC2ModManager.ViewModels
             );
             string gameDataPath = Path.Combine(GamePath, "gamedata");
 
-            // Remove all previously enabled maps from gamedata
-            var allInstalled = EnabledMaps.Concat(DisabledMaps);
-            foreach (var map in allInstalled)
+            foreach (var map in EnabledMaps.Concat(DisabledMaps))
                 gamedataService.DisableMap(map, gameDataPath);
 
-            // Copy currently enabled maps into gamedata
             foreach (var map in EnabledMaps)
             {
                 try { gamedataService.EnableMap(map, mapsEnabledPath, gameDataPath); }
                 catch (Exception ex) { MessageBox.Show($"Could not enable {map.FileName}: {ex.Message}"); }
             }
 
-            // Persist state
             storageService.SaveMapsState(EnabledMaps.Concat(DisabledMaps));
         }
 
@@ -289,16 +480,13 @@ namespace SC2ModManager.ViewModels
             DisabledMaps.Clear();
         }
 
+
         // ================= INSTALLED: GENERIC MODS =================
 
-        /// <summary>
-        /// Loads installed generic mods from disk, merging with saved state JSON.
-        /// </summary>
         public void LoadInstalledGenericMods()
         {
             var onDisk = storageService.GetInstalledGenericMods();
             var savedState = storageService.LoadGenericModsState();
-
             var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
 
             var enriched = onDisk.Select(m =>
@@ -358,8 +546,7 @@ namespace SC2ModManager.ViewModels
             );
             string gameDataPath = Path.Combine(GamePath, "gamedata");
 
-            var allInstalled = EnabledGenericMods.Concat(DisabledGenericMods);
-            foreach (var mod in allInstalled)
+            foreach (var mod in EnabledGenericMods.Concat(DisabledGenericMods))
                 gamedataService.DisableGenericMod(mod, gameDataPath);
 
             foreach (var mod in EnabledGenericMods)
@@ -404,18 +591,34 @@ namespace SC2ModManager.ViewModels
 
         public async Task DownloadSelectedMapsAsync(IEnumerable<Map> maps)
         {
+            int successCount = 0;
+            var errors = new List<string>();
+            
+            List<Map> installed = this.storageService.GetInstalledMaps();
+
             foreach (var map in maps)
             {
                 try
                 {
+                    if (installed.Any(m => m.FileName.Equals(map.FileName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new Exception($"A mod with the filename '{map.FileName}' is already installed. Please uninstall it before downloading.");
+                    }
+
                     await storageService.DownloadMapAsync(map);
                     map.IsDownloaded = true;
+                    successCount++;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to download {map.FileName}: {ex.Message}");
+                    errors.Add($"{map.FileName}: {ex.Message}");
                 }
             }
+
+            if (errors.Any())
+                MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
+            else
+                MessageBox.Show($"{successCount} map(s) downloaded successfully.");
         }
 
         // ================= DOWNLOAD: GENERIC MODS =================
@@ -435,18 +638,34 @@ namespace SC2ModManager.ViewModels
 
         public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
         {
+            int successCount = 0;
+            var errors = new List<string>();
+
+            List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
+
             foreach (var mod in mods)
             {
                 try
                 {
+                    if(installed.Any(m => m.FileName.Equals(mod.FileName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new Exception($"A mod with the filename '{mod.FileName}' is already installed. Please uninstall it before downloading.");
+                    }
+
                     await storageService.DownloadGenericModAsync(mod);
                     mod.IsDownloaded = true;
+                    successCount++;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to download {mod.FileName}: {ex.Message}");
+                    errors.Add($"{mod.FileName}: {ex.Message}");
                 }
             }
+
+            if (errors.Any())
+                MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
+            else
+                MessageBox.Show($"{successCount} mod(s) downloaded successfully.");
         }
 
         // ================= MANUAL IMPORT =================
@@ -467,13 +686,14 @@ namespace SC2ModManager.ViewModels
 
         public async Task ImportModFilesAsync(IEnumerable<string> files)
         {
+            List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
+
             foreach (var file in files)
             {
                 try
                 {
                     if (file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Extract any .scd inside as generic mods
                         string tempDir = Path.Combine(Path.GetTempPath(), "SC2_import_extract");
                         if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
                         Directory.CreateDirectory(tempDir);
@@ -481,13 +701,29 @@ namespace SC2ModManager.ViewModels
                         await Task.Run(() => System.IO.Compression.ZipFile.ExtractToDirectory(file, tempDir));
 
                         foreach (var scd in Directory.GetFiles(tempDir, "*.scd", SearchOption.AllDirectories))
-                            await storageService.ImportGenericModAsync(scd);
-
+                        {
+                            if (installed.Any(m => m.FileName.Equals(Path.GetFileName(scd), StringComparison.OrdinalIgnoreCase)))
+                            {
+                                // Do nothing for now - Maybe add something that says that it failed in the future, but for now it will just say success even if it fails
+                            }
+                            else
+                            {
+                                await storageService.ImportGenericModAsync(scd);
+                            }
+                        }
                         Directory.Delete(tempDir, true);
                     }
                     else if (file.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
                     {
+                        if (installed.Any(m => m.FileName.Equals(Path.GetFileName(file), StringComparison.OrdinalIgnoreCase)))
+                        {
+                            throw new Exception($"A mod with the filename '{Path.GetFileName(file)}' is already installed. Please uninstall it before downloading.");
+                        }
+
                         await storageService.ImportGenericModAsync(file);
+                    }
+                    else {
+                        MessageBox.Show($"Unsupported file type: {Path.GetFileName(file)}");
                     }
                 }
                 catch (Exception ex)
@@ -496,7 +732,6 @@ namespace SC2ModManager.ViewModels
                 }
             }
 
-            // Refresh the installed generic mods list after import
             LoadInstalledGenericMods();
         }
 

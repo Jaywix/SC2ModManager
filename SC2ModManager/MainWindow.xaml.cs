@@ -2,12 +2,10 @@
 using SC2ModManager.Models;
 using SC2ModManager.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace SC2ModManager
 {
@@ -20,6 +18,11 @@ namespace SC2ModManager
             InitializeComponent();
             vm = new MainViewModel();
             DataContext = vm;
+
+            // Set version label in sidebar
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            VersionText.Text = $"v{version?.Major}.{version?.Minor}.{version?.Build}";
+
             ShowView("Home");
         }
 
@@ -30,6 +33,8 @@ namespace SC2ModManager
             HomeView.Visibility = Visibility.Collapsed;
             ModsView.Visibility = Visibility.Collapsed;
             BackupsView.Visibility = Visibility.Collapsed;
+            PresetsView.Visibility = Visibility.Collapsed;
+            ComparePresetsView.Visibility = Visibility.Collapsed;
             InstalledModsView.Visibility = Visibility.Collapsed;
             InstalledMapsView.Visibility = Visibility.Collapsed;
             InstalledGenericModsView.Visibility = Visibility.Collapsed;
@@ -43,6 +48,8 @@ namespace SC2ModManager
                 case "Home": HomeView.Visibility = Visibility.Visible; break;
                 case "Mods": ModsView.Visibility = Visibility.Visible; break;
                 case "Backups": BackupsView.Visibility = Visibility.Visible; break;
+                case "Presets": PresetsView.Visibility = Visibility.Visible; break;
+                case "ComparePresets": ComparePresetsView.Visibility = Visibility.Visible; break;
                 case "InstalledMods": InstalledModsView.Visibility = Visibility.Visible; break;
                 case "InstalledMaps": InstalledMapsView.Visibility = Visibility.Visible; break;
                 case "InstalledGenericMods": InstalledGenericModsView.Visibility = Visibility.Visible; break;
@@ -58,6 +65,19 @@ namespace SC2ModManager
         private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
+        private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
+
+        private void GoToPresets(object sender, RoutedEventArgs e)
+        {
+            vm.LoadPresets();
+            ShowView("Presets");
+        }
+
+        private void GoToComparePresets(object sender, RoutedEventArgs e)
+        {
+            vm.LoadCompareOptions();
+            ShowView("ComparePresets");
+        }
 
         private void GoToInstalledMaps(object sender, RoutedEventArgs e)
         {
@@ -83,8 +103,6 @@ namespace SC2ModManager
             ShowView("DownloadGenericMods");
         }
 
-        private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
-
         // ================= HOME =================
 
         private void LaunchGame_Click(object sender, RoutedEventArgs e) => vm.LaunchGame();
@@ -95,24 +113,50 @@ namespace SC2ModManager
         private async void RestoreOriginalGameData_Click(object sender, RoutedEventArgs e)
             => await vm.RestoreOriginalGamedataAsync();
 
+        // ================= PRESETS =================
+
+        private void SavePreset_Click(object sender, RoutedEventArgs e)
+            => vm.SaveCurrentStateAsPreset();
+
+        private void ApplyPreset_Click(object sender, RoutedEventArgs e)
+            => vm.ApplySelectedPreset();
+
+        private void DeletePreset_Click(object sender, RoutedEventArgs e)
+            => vm.DeleteSelectedPreset();
+
+        private void ViewPresetFiles_Click(object sender, RoutedEventArgs e)
+        {
+            if (vm.SelectedPreset == null)
+            {
+                MessageBox.Show("No preset selected.");
+                return;
+            }
+
+            var files = vm.SelectedPreset.Files;
+            string msg = files.Count == 0
+                ? "No files in this preset."
+                : string.Join("\n", files);
+
+            MessageBox.Show(msg, $"Files in '{vm.SelectedPreset.Name}'",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // ================= COMPARE =================
+
+        private void RunComparison_Click(object sender, RoutedEventArgs e)
+            => vm.RunComparison();
+
         // ================= INSTALLED: MAPS =================
 
         private void EnableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledMapsList.SelectedItems.Cast<Map>()
-                .Concat(DisabledMapsList.SelectedItems.Cast<Map>())
-                .Where(m => !m.IsEnabled)
-                .ToList();
-
+            var selected = DisabledMapsList.SelectedItems.Cast<Map>().ToList();
             vm.EnableSelectedMaps(selected);
         }
 
         private void DisableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledMapsList.SelectedItems.Cast<Map>()
-                .Where(m => m.IsEnabled)
-                .ToList();
-
+            var selected = EnabledMapsList.SelectedItems.Cast<Map>().ToList();
             vm.DisableSelectedMaps(selected);
         }
 
@@ -125,21 +169,57 @@ namespace SC2ModManager
             MessageBox.Show("Maps saved successfully.");
         }
 
+        private void DeleteSelectedMaps_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = EnabledMapsList.SelectedItems.Cast<Map>()
+                .Concat(DisabledMapsList.SelectedItems.Cast<Map>())
+                .ToList();
+
+            if (!selected.Any()) { MessageBox.Show("No maps selected."); return; }
+
+            var confirm = MessageBox.Show(
+                $"Delete {selected.Count} map(s) from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            foreach (var map in selected)
+                vm.UninstallMap(map);
+
+            vm.CleanupPresetsAfterDeletion(selected.Select(m => m.FileName));
+        }
+
+        private void DeleteAllMaps_Click(object sender, RoutedEventArgs e)
+        {
+            var allMaps = vm.EnabledMaps.Concat(vm.DisabledMaps).ToList();
+
+            if (!allMaps.Any()) { MessageBox.Show("No maps installed."); return; }
+
+            var confirm = MessageBox.Show(
+                "Delete ALL installed maps from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            vm.UninstallAllMaps();
+            vm.CleanupPresetsAfterDeletion(allMaps.Select(m => m.FileName));
+        }
+
         // ================= INSTALLED: GENERIC MODS =================
 
         private void EnableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DisabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>()
-                .ToList();
-
+            var selected = DisabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>().ToList();
             vm.EnableSelectedGenericMods(selected);
         }
 
         private void DisableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>()
-                .ToList();
-
+            var selected = EnabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>().ToList();
             vm.DisableSelectedGenericMods(selected);
         }
 
@@ -150,6 +230,46 @@ namespace SC2ModManager
         {
             vm.SaveGenericModsToGamedata();
             MessageBox.Show("Generic mods saved successfully.");
+        }
+
+        private void DeleteSelectedGenericMods_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = EnabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>()
+                .Concat(DisabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>())
+                .ToList();
+
+            if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
+
+            var confirm = MessageBox.Show(
+                $"Delete {selected.Count} mod(s) from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            foreach (var mod in selected)
+                vm.UninstallGenericMod(mod);
+
+            vm.CleanupPresetsAfterDeletion(selected.Select(m => m.FileName));
+        }
+
+        private void DeleteAllGenericMods_Click(object sender, RoutedEventArgs e)
+        {
+            var allMods = vm.EnabledGenericMods.Concat(vm.DisabledGenericMods).ToList();
+
+            if (!allMods.Any()) { MessageBox.Show("No mods installed."); return; }
+
+            var confirm = MessageBox.Show(
+                "Delete ALL installed generic mods from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            vm.UninstallAllGenericMods();
+            vm.CleanupPresetsAfterDeletion(allMods.Select(m => m.FileName));
         }
 
         // ================= DOWNLOAD: MAPS =================
@@ -166,7 +286,6 @@ namespace SC2ModManager
             if (!selected.Any()) { MessageBox.Show("No maps selected."); return; }
 
             await vm.DownloadSelectedMapsAsync(selected);
-            MessageBox.Show($"{selected.Count} map(s) downloaded.");
         }
 
         // ================= DOWNLOAD: GENERIC MODS =================
@@ -183,7 +302,6 @@ namespace SC2ModManager
             if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
 
             await vm.DownloadSelectedGenericModsAsync(selected);
-            MessageBox.Show($"{selected.Count} mod(s) downloaded.");
         }
 
         // ================= MANUAL IMPORT =================
