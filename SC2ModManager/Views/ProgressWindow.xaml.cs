@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -17,7 +26,7 @@ using System.Windows.Shapes;
 namespace SC2ModManager.Views
 {
     /// <summary>
-    /// Interaction logic for ProgressWindow.xaml
+    ///     Interaction logic for ProgressWindow.xaml
     /// </summary>
     public partial class ProgressWindow : Window, INotifyPropertyChanged
     {
@@ -49,7 +58,6 @@ namespace SC2ModManager.Views
             InitializeComponent();
             DataContext = this;
 
-            // Optional default values
             Status = "Starting...";
             Progress = 0;
         }

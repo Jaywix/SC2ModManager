@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -7,13 +16,18 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service is responsible for fetching the list of available mods from the repository. 
+    ///     It has methods for each mod type, and each method returns a list of the corresponding mod model. 
+    ///     The service uses HttpClient to make requests to the repository's API endpoints and deserializes the JSON responses into C# objects. 
+    ///     If there is an error during the fetch process, it throws an exception with a descriptive message.
+    /// </summary>
     public class ModRepositoryService
     {
         private readonly HttpClient httpClient = new HttpClient();
 
-        // Update these URLs to your actual raw GitHub JSON files
+        // Probably should not use these and just use the globals directly
         private readonly string mapsUrl = Globals.MapsListUrl;
-        //private readonly string hotkeysUrl = "https://raw.githubusercontent.com/YOUR_REPO/hotkeys.json";
         private readonly string genericModsUrl = Globals.GenericModsListUrl;
 
 
@@ -35,6 +49,7 @@ namespace SC2ModManager.Services
             }
         }
 
+        // For future use
         //public async Task<List<HotkeyMod>> GetAvailableHotkeyModsAsync()
         //{
         //    try

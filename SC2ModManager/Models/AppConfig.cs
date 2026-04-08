@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,12 +15,27 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Models
 {
+    /// <summary>
+    ///     This model represents the application's configuration, including the game path, enabled maps, and enabled generic mods. 
+    ///     It is used to store and retrieve user preferences and settings for the mod manager.
+    /// </summary>
     public class AppConfig
     {
+        /// <summary>
+        ///     This is the path to Supreme Commander 2's installation directory. It is used to locate the game's gamedata folder where mods will be enabled/disabled.
+        /// </summary>
         public string GamePath { get; set; } = string.Empty;
 
+        /// <summary>
+        ///     This is a json representation of all the maps installed. This json must be of the same format as the Map model 
+        ///     and the github repository's maps.json file. This is used to keep track of which maps are enabled and to display map information in the UI.
+        /// </summary>
         public List<string> EnabledMaps { get; set; } = new();
 
+        /// <summary>
+        ///     This is a json representation of all the generic gamedata mods installed. This json must be of the same format as the GenericGamedataMod model 
+        ///     and the github repository's generic gamedata mods' .json file. This is used to keep track of which maps are enabled and to display map information in the UI.
+        /// </summary>
         public List<string> EnabledGenericMods { get; set; } = new();
     }
 }

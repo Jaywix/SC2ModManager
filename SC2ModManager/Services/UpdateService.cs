@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +18,10 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service is extremely important. This will allow the application to check if there is a new version available and prompt the user to download it.
+    ///     DO NOT BREAK THIS SERVICE PLEEEEEEASE
+    /// </summary>
     public class UpdateService
     {
         public async Task<(Version version, string downloadUrl)> GetLatestRelease()

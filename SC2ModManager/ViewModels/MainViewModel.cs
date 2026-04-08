@@ -1,16 +1,22 @@
-﻿using Microsoft.Win32;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+
+using Microsoft.Win32;
 using SC2ModManager.Models;
 using SC2ModManager.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace SC2ModManager.ViewModels
@@ -31,6 +37,10 @@ namespace SC2ModManager.ViewModels
         ManualImport
     }
 
+    /// <summary>
+    ///     This is the main model for the main view. There is a ton of logic in here. It might be a good idea to somehow split it into different view models at some point.
+    ///     For now, keep it very, very organized. I have included headings below, so stick with that style
+    /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
         // ================= SERVICES =================
@@ -275,8 +285,8 @@ namespace SC2ModManager.ViewModels
         }
 
         /// <summary>
-        /// Removes deleted filenames from all presets.
-        /// Deletes any preset that becomes empty as a result.
+        ///     Removes deleted filenames from all presets.
+        ///     Deletes any preset that becomes empty as a result.
         /// </summary>
         public void CleanupPresetsAfterDeletion(IEnumerable<string> deletedFileNames)
         {

@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +18,9 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service handles saving and loading mod presets, which are named collections of gamedata files that can be applied to quickly switch between mod setups.
+    /// </summary>
     public class PresetService
     {
         private readonly string presetsPath;
@@ -29,7 +41,9 @@ namespace SC2ModManager.Services
 
         // ================= PRESETS =================
 
-        /// <summary>Saves current gamedata folder contents as a named preset.</summary>
+        /// <summary>
+        ///     Saves current gamedata folder contents as a named preset.
+        /// </summary>
         public void SavePreset(string name, string gameDataPath)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -54,7 +68,9 @@ namespace SC2ModManager.Services
             File.WriteAllText(path, JsonSerializer.Serialize(preset, options));
         }
 
-        /// <summary>Overwrites an existing preset file with updated data.</summary>
+        /// <summary>
+        ///     Overwrites an existing preset file with updated data.
+        /// </summary>
         public void ResavePreset(ModPreset preset)
         {
             string safeName = MakeSafeFileName(preset.Name);
@@ -63,7 +79,9 @@ namespace SC2ModManager.Services
             File.WriteAllText(path, JsonSerializer.Serialize(preset, options));
         }
 
-        /// <summary>Returns all saved presets.</summary>
+        /// <summary>
+        ///     Returns all saved presets.
+        /// </summary>
         public List<ModPreset> LoadAllPresets()
         {
             var result = new List<ModPreset>();
@@ -87,7 +105,9 @@ namespace SC2ModManager.Services
             return result.OrderBy(p => p.CreatedAt).ToList();
         }
 
-        /// <summary>Deletes a preset by name.</summary>
+        /// <summary>
+        ///     Deletes a preset by name.
+        /// </summary>
         public void DeletePreset(string name)
         {
             string safeName = MakeSafeFileName(name);
@@ -98,10 +118,10 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
-        /// Applies a preset by copying gamedata to match the preset's file list.
-        /// Files in the preset that exist in gamedata are kept; everything else is removed.
-        /// NOTE: This only manages which files are present — it does not restore file contents.
-        /// Use RestoreOriginalGamedata first if you want a clean slate.
+        ///     Applies a preset by copying gamedata to match the preset's file list.
+        ///     Files in the preset that exist in gamedata are kept; everything else is removed.
+        ///     NOTE: This only manages which files are present — it does not restore file contents.
+        ///     Use RestoreOriginalGamedata first if you want a clean slate.
         /// </summary>
         public void ApplyPreset(ModPreset preset, string gameDataPath)
         {
@@ -119,7 +139,7 @@ namespace SC2ModManager.Services
         // ================= ORIGINAL FILES =================
 
         /// <summary>
-        /// Saves the list of original gamedata files (call this after RestoreOriginalGamedata).
+        ///     Saves the list of original gamedata files (call this after RestoreOriginalGamedata).
         /// </summary>
         public void SaveOriginalFilesList(string gameDataPath)
         {
@@ -132,7 +152,9 @@ namespace SC2ModManager.Services
             File.WriteAllText(originalFilesListPath, JsonSerializer.Serialize(files, options));
         }
 
-        /// <summary>Returns the list of original gamedata filenames, or empty if never saved.</summary>
+        /// <summary>
+        ///     Returns the list of original gamedata filenames, or empty if never saved.
+        /// </summary>
         public List<string> LoadOriginalFilesList()
         {
             if (!File.Exists(originalFilesListPath))
@@ -152,8 +174,8 @@ namespace SC2ModManager.Services
         // ================= COMPARE =================
 
         /// <summary>
-        /// Compares two file lists and returns all unique filenames,
-        /// with a flag indicating whether each differs between the two.
+        ///     Compares two file lists and returns all unique filenames,
+        ///     with a flag indicating whether each differs between the two.
         /// </summary>
         public List<(string FileName, bool IsDifferent)> Compare(
             List<string> leftFiles,

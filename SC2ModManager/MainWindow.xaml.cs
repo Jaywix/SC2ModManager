@@ -1,4 +1,13 @@
-﻿using Microsoft.Win32;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using Microsoft.Win32;
 using SC2ModManager.Models;
 using SC2ModManager.ViewModels;
 using System;
@@ -19,7 +28,6 @@ namespace SC2ModManager
             vm = new MainViewModel();
             DataContext = vm;
 
-            // Set version label in sidebar
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             VersionText.Text = $"v{version?.Major}.{version?.Minor}.{version?.Build}";
 

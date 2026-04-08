@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,10 +19,14 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service is responsible for all interactions with the local storage of mods.
+    ///     Currently, the file structure is as follows:
+    ///     AppData/Roaming/SC2ModManager/Mods/
+    ///     Inside Mods exists each mod type folder (e.g. Maps, GenericMods), and inside each of those exists an Enabled and Disabled folder.
+    /// </summary>
     public class ModStorageService
     {
-        // ================= PATHS =================
-
         private readonly string mapsEnabledPath;
         private readonly string mapsDisabledPath;
         private readonly string genericModsEnabledPath;
@@ -69,9 +82,15 @@ namespace SC2ModManager.Services
             });
         }
 
+
+        // When adding new mods, you can probably copy and paste an entire section like the Maps one below.
+        // If it is just a .scd file that doesn't overwrite any original game file, then the logic should be very similar to below
+
         // ================= MAPS: DISK =================
 
-        /// <summary>Returns all installed maps (enabled + disabled) with IsEnabled set correctly.</summary>
+        /// <summary>
+        ///     Returns all installed maps (enabled + disabled) with IsEnabled set correctly.
+        /// </summary>
         public List<Map> GetInstalledMaps()
         {
             var result = new List<Map>();
@@ -85,7 +104,9 @@ namespace SC2ModManager.Services
             return result;
         }
 
-        /// <summary>Moves a map file to the Enabled folder.</summary>
+        /// <summary>
+        ///     Moves a map file to the Enabled folder.
+        /// </summary>
         public void MoveMapToEnabled(Map map)
         {
             string src = Path.Combine(mapsDisabledPath, map.FileName);
@@ -95,7 +116,9 @@ namespace SC2ModManager.Services
                 File.Move(src, dest, true);
         }
 
-        /// <summary>Moves a map file to the Disabled folder.</summary>
+        /// <summary>
+        ///     Moves a map file to the Disabled folder.
+        /// </summary>
         public void MoveMapToDisabled(Map map)
         {
             string src = Path.Combine(mapsEnabledPath, map.FileName);
@@ -105,7 +128,9 @@ namespace SC2ModManager.Services
                 File.Move(src, dest, true);
         }
 
-        /// <summary>Deletes a map from both folders.</summary>
+        /// <summary>
+        ///     Deletes a map from both folders.
+        /// </summary>
         public void DeleteMap(Map map)
         {
             string enabledPath = Path.Combine(mapsEnabledPath, map.FileName);
@@ -115,7 +140,9 @@ namespace SC2ModManager.Services
             if (File.Exists(disabledPath)) File.Delete(disabledPath);
         }
 
-        /// <summary>Downloads a map from GitHub into the Disabled folder.</summary>
+        /// <summary>
+        ///     Downloads a map from GitHub into the Disabled folder.
+        /// </summary>
         public async Task DownloadMapAsync(Map map)
         {
             if (string.IsNullOrEmpty(map.DownloadURL))
@@ -143,7 +170,9 @@ namespace SC2ModManager.Services
             }
         }
 
-        /// <summary>Copies a .scd file from an external path into the Disabled folder.</summary>
+        /// <summary>
+        ///     Copies a .scd file from an external path into the Disabled folder.
+        /// </summary>
         public async Task ImportMapAsync(string filePath)
         {
             if (!File.Exists(filePath))
@@ -155,7 +184,9 @@ namespace SC2ModManager.Services
             await Task.Run(() => File.Copy(filePath, dest, true));
         }
 
-        /// <summary>Extracts .scd files from a zip into the Disabled folder.</summary>
+        /// <summary>
+        ///     Extracts .scd files from a zip into the Disabled folder.
+        /// </summary>
         public async Task ExtractAndImportMapsAsync(string zipPath)
         {
             if (!File.Exists(zipPath))
@@ -181,6 +212,9 @@ namespace SC2ModManager.Services
 
         // ================= MAPS: STATE JSON =================
 
+        /// <summary>
+        ///     Saves the state of all maps in the enabled/disabled view from a json file
+        /// </summary>
         public void SaveMapsState(IEnumerable<Map> allMaps)
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
@@ -188,6 +222,9 @@ namespace SC2ModManager.Services
             File.WriteAllText(mapsStatePath, json);
         }
 
+        /// <summary>
+        ///     Loads the state of all the maps to put into the enabled/disabled view
+        /// </summary>
         public List<Map> LoadMapsState()
         {
             if (!File.Exists(mapsStatePath))
@@ -206,6 +243,9 @@ namespace SC2ModManager.Services
 
         // ================= MAPS: GITHUB =================
 
+        /// <summary>
+        ///     Gets the json file from github and deserializes it into a list of maps that are available for download
+        /// </summary>
         public async Task<List<Map>> GetDownloadableMapsAsync()
         {
             string json = await httpClient.GetStringAsync(Globals.MapsListUrl);
@@ -213,9 +253,18 @@ namespace SC2ModManager.Services
             return JsonSerializer.Deserialize<List<Map>>(json, options) ?? new List<Map>();
         }
 
+
+
+
+
+
+
+
         // ================= GENERIC MODS: DISK =================
 
-        /// <summary>Returns all installed generic mods (enabled + disabled) with IsEnabled set correctly.</summary>
+        /// <summary>
+        ///     Returns all installed generic mods (enabled + disabled) with IsEnabled set correctly.
+        /// </summary>
         public List<GenericGamedataMod> GetInstalledGenericMods()
         {
             var result = new List<GenericGamedataMod>();
@@ -229,7 +278,9 @@ namespace SC2ModManager.Services
             return result;
         }
 
-        /// <summary>Moves a generic mod file to the Enabled folder.</summary>
+        /// <summary>
+        ///     Moves a generic mod file to the Enabled folder.
+        /// </summary>
         public void MoveGenericModToEnabled(GenericGamedataMod mod)
         {
             string src = Path.Combine(genericModsDisabledPath, mod.FileName);
@@ -239,7 +290,9 @@ namespace SC2ModManager.Services
                 File.Move(src, dest, true);
         }
 
-        /// <summary>Moves a generic mod file to the Disabled folder.</summary>
+        /// <summary>
+        ///     Moves a generic mod file to the Disabled folder.
+        /// </summary>
         public void MoveGenericModToDisabled(GenericGamedataMod mod)
         {
             string src = Path.Combine(genericModsEnabledPath, mod.FileName);
@@ -249,7 +302,9 @@ namespace SC2ModManager.Services
                 File.Move(src, dest, true);
         }
 
-        /// <summary>Deletes a generic mod from both folders.</summary>
+        /// <summary>
+        ///     Deletes a generic mod from both folders.
+        /// </summary>
         public void DeleteGenericMod(GenericGamedataMod mod)
         {
             string enabledPath = Path.Combine(genericModsEnabledPath, mod.FileName);
@@ -259,7 +314,9 @@ namespace SC2ModManager.Services
             if (File.Exists(disabledPath)) File.Delete(disabledPath);
         }
 
-        /// <summary>Downloads a generic mod from GitHub into the Disabled folder.</summary>
+        /// <summary>
+        ///     Downloads a generic mod from GitHub into the Disabled folder.
+        /// </summary>
         public async Task DownloadGenericModAsync(GenericGamedataMod mod)
         {
             if (string.IsNullOrEmpty(mod.DownloadURL))
@@ -287,7 +344,9 @@ namespace SC2ModManager.Services
             }
         }
 
-        /// <summary>Copies any .scd file from an external path into GenericMods/Disabled (manual import).</summary>
+        /// <summary>
+        ///     Copies any .scd file from an external path into GenericMods/Disabled (manual import).
+        /// </summary>
         public async Task ImportGenericModAsync(string filePath)
         {
             if (!File.Exists(filePath))
@@ -301,6 +360,9 @@ namespace SC2ModManager.Services
 
         // ================= GENERIC MODS: STATE JSON =================
 
+        /// <summary>
+        ///     Saves the state of all generic mods in the enabled/disabled view to a json file
+        /// </summary>
         public void SaveGenericModsState(IEnumerable<GenericGamedataMod> allMods)
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
@@ -308,6 +370,9 @@ namespace SC2ModManager.Services
             File.WriteAllText(genericModsStatePath, json);
         }
 
+        /// <summary>
+        ///     Gets the state of all generic mods in the enabled/disabled view from a json file
+        /// </summary>
         public List<GenericGamedataMod> LoadGenericModsState()
         {
             if (!File.Exists(genericModsStatePath))
@@ -326,6 +391,9 @@ namespace SC2ModManager.Services
 
         // ================= GENERIC MODS: GITHUB =================
 
+        /// <summary>
+        ///     Returns a list of all the generic mods available for download from GitHub by getting the json file and deserializing it into a list of GenericGamedataMod objects
+        /// </summary>
         public async Task<List<GenericGamedataMod>> GetDownloadableGenericModsAsync()
         {
             string json = await httpClient.GetStringAsync(Globals.GenericModsListUrl);

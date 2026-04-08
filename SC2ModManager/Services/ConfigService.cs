@@ -1,13 +1,27 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.IO;
 using System.Text.Json;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service is responsible for loading and saving the application's configuration, which includes the game path, enabled maps, and enabled generic mods.
+    /// </summary>
     public class ConfigService
     {
         private readonly string configPath;
+
+
 
         public ConfigService()
         {
@@ -21,6 +35,8 @@ namespace SC2ModManager.Services
             this.configPath = Path.Combine(appDataPath, "config.json");
         }
 
+
+        // ========= Public Methods =========
         public AppConfig Load()
         {
             try
@@ -52,7 +68,6 @@ namespace SC2ModManager.Services
             }
             catch (Exception ex)
             {
-                // You could log this instead
                 throw new Exception("Failed to save config", ex);
             }
         }
@@ -71,6 +86,21 @@ namespace SC2ModManager.Services
             return TryCommonPaths();
         }
 
+        public void UpdateGamePath(AppConfig config, string newPath)
+        {
+            if (newPath is null || newPath == string.Empty || !Directory.Exists(newPath))
+                throw new DirectoryNotFoundException("The specified game path does not exist.");
+            if (!IsValidGamePath(newPath))
+                throw new InvalidDataException("The specified path does not appear to be a valid Supreme Commander 2 installation.");
+
+            config.GamePath = newPath;
+            Save(config);
+        }
+
+
+
+
+        // ========= Private Methods =========
         private string TryGetFromSteam()
         {
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
@@ -108,5 +138,14 @@ namespace SC2ModManager.Services
 
             return null;
         }
+
+        private bool IsValidGamePath(string path)
+        {
+            // Check for existence of gamedata folder and exe file
+            return Directory.Exists(Path.Combine(path, "gamedata")) &&
+                   File.Exists(Path.Combine(path, "bin\\SupremeCommander2.exe"));
+        }
+
+
     }
 }

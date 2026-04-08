@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: 2024-01-01
+ * Last updated: 2024-06-01
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using SC2ModManager.Views;
 using SC2ModManager.ViewModels;
 using System;
@@ -9,11 +18,19 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service does everything that has to do with the gamedata folder.
+    ///     For now, each type of mod is going to need its own enable/disable methods.
+    ///     Each mod is split up into labled sections, so whenever adding a mod type, copy one 
+    ///     of the existing ones and modify it to fit the new mod type. The restore method is just for the original gamedata backup
+    /// </summary>
     public class GamedataService
     {
         // ================= MAPS =================
 
-        /// <summary>Copies the map from Mods/Maps/Enabled into the game's gamedata folder.</summary>
+        /// <summary>
+        ///     Copies the map from Mods/Maps/Enabled into the game's gamedata folder.
+        /// </summary>
         public void EnableMap(Map map, string mapsEnabledPath, string gameDataPath)
         {
             string source = Path.Combine(mapsEnabledPath, map.FileName);
@@ -25,7 +42,9 @@ namespace SC2ModManager.Services
             File.Copy(source, destination, true);
         }
 
-        /// <summary>Removes the map from the game's gamedata folder.</summary>
+        /// <summary>
+        ///     Removes the map from the game's gamedata folder.
+        /// </summary>
         public void DisableMap(Map map, string gameDataPath)
         {
             string path = Path.Combine(gameDataPath, map.FileName);
@@ -36,7 +55,9 @@ namespace SC2ModManager.Services
 
         // ================= GENERIC MODS =================
 
-        /// <summary>Copies the mod from Mods/GenericMods/Enabled into the game's gamedata folder.</summary>
+        /// <summary>
+        ///     Copies the mod from Mods/GenericMods/Enabled into the game's gamedata folder.
+        /// </summary>
         public void EnableGenericMod(GenericGamedataMod mod, string genericModsEnabledPath, string gameDataPath)
         {
             string source = Path.Combine(genericModsEnabledPath, mod.FileName);
@@ -48,7 +69,9 @@ namespace SC2ModManager.Services
             File.Copy(source, destination, true);
         }
 
-        /// <summary>Removes the mod from the game's gamedata folder.</summary>
+        /// <summary>
+        ///     Removes the mod from the game's gamedata folder.
+        /// </summary>
         public void DisableGenericMod(GenericGamedataMod mod, string gameDataPath)
         {
             string path = Path.Combine(gameDataPath, mod.FileName);
