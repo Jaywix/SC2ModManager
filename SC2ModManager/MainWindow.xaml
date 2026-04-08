@@ -348,6 +348,7 @@
 
                     <Button Content="🏠  Home"        Style="{StaticResource SidebarButton}" Click="GoHome"/>
                     <Button Content="⚙  Manage Mods" Style="{StaticResource SidebarButton}" Click="GoToMods"/>
+                    <Button Content="⚙  Settings" Style="{StaticResource SidebarButton}" Click="GoToSettings"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -376,6 +377,34 @@
                                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
                             <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== SETTINGS ===== -->
+                <StackPanel x:Name="SettingsView" Visibility="Collapsed">
+                    <TextBlock Text="Settings" Style="{StaticResource SectionHeader}"/>
+                    <Border Style="{StaticResource ContentPanel}">
+                        <StackPanel>
+                            <TextBlock Text="Game Path"
+                       Foreground="{StaticResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                            <TextBlock Text="Current path:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding GamePath}" Foreground="White"
+                       FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <Separator Style="{StaticResource HRule}"/>
+                            <TextBlock Text="Change Game Path" Foreground="#AAAAAA"
+                       FontSize="11" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="GamePathInput"
+                         Width="320" Margin="0,0,8,0"
+                         VerticalContentAlignment="Center"
+                         />
+                                <Button Content="📁  Browse" Width="100" Margin="0,0,6,0"
+                        Click="BrowseGamePath_Click"/>
+                                <Button Content="✅  Set Path" Style="{StaticResource PrimaryButton}"
+                        Width="100" Click="SetGamePath_Click"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>

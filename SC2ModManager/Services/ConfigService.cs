@@ -141,9 +141,13 @@ namespace SC2ModManager.Services
 
         private bool IsValidGamePath(string path)
         {
-            // Check for existence of gamedata folder and exe file
-            return Directory.Exists(Path.Combine(path, "gamedata")) &&
-                   File.Exists(Path.Combine(path, "bin\\SupremeCommander2.exe"));
+            var binPath = Path.Combine(path, "bin");
+            var exePath = Path.Combine(binPath, "SupremeCommander2.exe");
+            var gamedataPath = Path.Combine(path, "gamedata");
+
+            return Directory.Exists(binPath) &&
+                   File.Exists(exePath) &&
+                   Directory.Exists(gamedataPath);
         }
 
 

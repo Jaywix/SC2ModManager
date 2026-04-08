@@ -40,6 +40,7 @@ namespace SC2ModManager
         {
             HomeView.Visibility = Visibility.Collapsed;
             ModsView.Visibility = Visibility.Collapsed;
+            SettingsView.Visibility = Visibility.Collapsed;
             BackupsView.Visibility = Visibility.Collapsed;
             PresetsView.Visibility = Visibility.Collapsed;
             ComparePresetsView.Visibility = Visibility.Collapsed;
@@ -55,6 +56,7 @@ namespace SC2ModManager
             {
                 case "Home": HomeView.Visibility = Visibility.Visible; break;
                 case "Mods": ModsView.Visibility = Visibility.Visible; break;
+                case "Settings": SettingsView.Visibility = Visibility.Visible; break;
                 case "Backups": BackupsView.Visibility = Visibility.Visible; break;
                 case "Presets": PresetsView.Visibility = Visibility.Visible; break;
                 case "ComparePresets": ComparePresetsView.Visibility = Visibility.Visible; break;
@@ -65,11 +67,14 @@ namespace SC2ModManager
                 case "DownloadMaps": DownloadMapsView.Visibility = Visibility.Visible; break;
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
+
             }
         }
 
         private void GoHome(object sender, RoutedEventArgs e) => ShowView("Home");
         private void GoToMods(object sender, RoutedEventArgs e) => ShowView("Mods");
+        private void GoToSettings(object sender, RoutedEventArgs e) => ShowView("Settings");
+
         private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
@@ -115,6 +120,50 @@ namespace SC2ModManager
 
         private void LaunchGame_Click(object sender, RoutedEventArgs e) => vm.LaunchGame();
         private async void Update_Click(object sender, RoutedEventArgs e) => await vm.RunUpdater();
+
+        // ================= SETTINGS =================
+        private void BrowseGamePath_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Select SupremeCommander2.exe",
+                Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            GamePathInput.Text = System.IO.Path.GetDirectoryName(dialog.FileName);
+        }
+
+        private void SetGamePath_Click(object sender, RoutedEventArgs e)
+        {
+            string path = GamePathInput.Text?.Trim();
+
+            if (string.IsNullOrEmpty(path))
+            {
+                MessageBox.Show("Please enter or browse for a path.", "No Path",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var parentDir = Directory.GetParent(path)?.FullName;
+                if (parentDir == null)
+                    return;
+
+                vm.SetGamePath(parentDir);
+                GamePathInput.Text = string.Empty;
+                MessageBox.Show("Game path updated successfully.", "Saved",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error setting game path: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                GamePathInput.Text = string.Empty;
+            }
+        }
 
         // ================= BACKUPS =================
 

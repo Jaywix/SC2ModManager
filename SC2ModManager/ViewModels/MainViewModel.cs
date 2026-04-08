@@ -45,13 +45,16 @@ namespace SC2ModManager.ViewModels
     {
         // ================= SERVICES =================
 
-        private readonly ModRepositoryService repositoryService;
-        private readonly ModStorageService storageService;
-        private readonly GamedataService gamedataService;
-        private readonly ConfigService configService;
-        private readonly GameService gameService;
-        private readonly PresetService presetService;
+        private readonly ModRepositoryService repositoryService = new();
+        private readonly ModStorageService storageService = new();
+        private readonly GamedataService gamedataService = new();
+        private readonly ConfigService configService = new();
+        private readonly PresetService presetService = new();
         private readonly UpdateService updateService = new();
+
+        // This can't be read only because the way I set it up makes it so that if the config is updated with a new game path, I need to create a new instance of the GameService with the updated config
+        // I could maybe change this in the future
+        private GameService gameService;
 
         // ================= NAVIGATION =================
 
@@ -120,6 +123,17 @@ namespace SC2ModManager.ViewModels
         {
             get => gamePath;
             set { gamePath = value; OnPropertyChanged(nameof(GamePath)); }
+        }
+
+        public void SetGamePath(string path)
+        {
+            configService.UpdateGamePath(configService.Load(), path);
+            gameService = new GameService(configService);
+
+            InitializeGamePath();
+
+            this.DisableAllGenericMods();
+            this.DisableAllMaps();
         }
 
         // ================= UPDATE =================
