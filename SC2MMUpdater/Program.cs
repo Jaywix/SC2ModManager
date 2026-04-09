@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+ * SC2 Mod Manager Updater
+ * The updater for the SC2 Mod Manager
+ * 
+ * Created on: April 1, 2026
+ * Last updated: April 8, 2026
+ * Author: Jacob Wixom
+ * 
+*/
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
