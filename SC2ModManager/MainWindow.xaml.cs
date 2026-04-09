@@ -394,6 +394,66 @@ namespace SC2ModManager
             vm.ScanGamedataForUnknownMods();
         }
 
+        private void SelectAllMatchResults_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in vm.ScanMatchResults)
+                item.IsSelected = true;
+        }
+
+        private void DeselectAllMatchResults_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in vm.ScanMatchResults)
+                item.IsSelected = false;
+        }
+
+        private async void ImportMatchedMods_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = vm.ScanMatchResults.Where(r => r.IsSelected).ToList();
+
+            if (!selected.Any())
+            {
+                MessageBox.Show("No mods selected.", "Nothing to Import",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Import {selected.Count} mod(s) with full metadata?\n\n" +
+                "These will appear in Installed as Disabled and can be managed normally.",
+                "Confirm Import",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            await vm.ImportMetadataForMatchedMods(selected);
+            await vm.ScanGamedataForUnknownMods();
+        }
+
+        private void DeleteMatchedMods_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = vm.ScanMatchResults.Where(r => r.IsSelected).ToList();
+
+            if (!selected.Any())
+            {
+                MessageBox.Show("No mods selected.", "Nothing to Delete",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Delete {selected.Count} file(s) from gamedata?\n\n" +
+                "You can re-download them anytime from the Download screen.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            vm.DeleteMatchedMods(selected);
+            _ = vm.ScanGamedataForUnknownMods();
+        }
+
         // ================= DOWNLOAD: MAPS =================
 
         private void SelectAllDownloadMaps_Click(object sender, RoutedEventArgs e)

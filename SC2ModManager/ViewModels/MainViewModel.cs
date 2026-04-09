@@ -67,7 +67,7 @@ namespace SC2ModManager.ViewModels
 
         // ================= SCAN RESULTS =================
         public ObservableCollection<ScanResultItem> ScanResults { get; set; } = new();
-
+        public ObservableCollection<ScanResultItem> ScanMatchResults { get; set; } = new();
 
         // ================= INSTALLED MOD LISTS =================
 
@@ -416,33 +416,163 @@ namespace SC2ModManager.ViewModels
         }
 
         // ================= INSTALLED: SCAN =================
-        public void ScanGamedataForUnknownMods()
+        public async Task ScanGamedataForUnknownMods()
         {
-            if(string.IsNullOrEmpty(GamePath))
+            if (string.IsNullOrEmpty(GamePath))
             {
                 MessageBox.Show("Game path not set.");
                 return;
             }
-            
-            string gamedataPath = Path.Combine(GamePath, "gamedata");
 
-            if(!Directory.Exists(gamedataPath))
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            if (!Directory.Exists(gameDataPath))
             {
-                MessageBox.Show("Gamedata folder not found in game path.");
+                MessageBox.Show("Gamedata folder not found.");
                 return;
             }
 
             HashSet<string> knownMods = storageService.GetAllKnownModFileNames();
 
-            var originalFiles = presetService.LoadOriginalFilesList().Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> originalFiles = presetService.LoadOriginalFilesList()
+                .Select(f => Path.GetFileName(f))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var inGamedata = Directory.GetFiles(gamedataPath, "*.scd", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            List<string> inGamedata = Directory.GetFiles(gameDataPath, "*.scd", SearchOption.AllDirectories)
+                .Select(f => Path.GetFileName(f))
+                .ToList();
 
-            var unknown = inGamedata.Where(f => !knownMods.Contains(f) && !originalFiles.Contains(f)).OrderBy(f => f).ToList();
 
 
-            ScanResults = new ObservableCollection<ScanResultItem>(unknown.Select(f => new ScanResultItem { FileName = f, IsSelected = true } ));
+            List<Map> downloadableMaps = new List<Map>();
+            List<GenericGamedataMod> downloadableGenericMods = new List<GenericGamedataMod>();
+
+            try
+            {
+                downloadableMaps = await storageService.GetDownloadableMapsAsync();
+                downloadableGenericMods = await storageService.GetDownloadableGenericModsAsync();
+            }
+            catch { }
+
+            var downloadableMapsByFile = downloadableMaps
+                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.Ordinal);
+
+            var downloadableGenericByFile = downloadableGenericMods
+                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.Ordinal);
+
+            var unknown = new List<ScanResultItem>();
+            var matched = new List<ScanResultItem>();
+
+            foreach (string file in inGamedata.OrderBy(f => f))
+            {
+                if (knownMods.Contains(file) || originalFiles.Contains(file))
+                    continue;
+
+                if (downloadableMapsByFile.TryGetValue(file, out var matchedMap))
+                {
+                    matched.Add(new ScanResultItem
+                    {
+                        FileName = file,
+                        ResultType = ScanResultType.MatchesDownloadable,
+                        MatchedMod = matchedMap,
+                        IsSelected = true
+                    });
+                }
+                else if (downloadableGenericByFile.TryGetValue(file, out var matchedMod))
+                {
+                    matched.Add(new ScanResultItem
+                    {
+                        FileName = file,
+                        ResultType = ScanResultType.MatchesDownloadable,
+                        MatchedMod = matchedMod,
+                        IsSelected = true
+                    });
+                }
+                else
+                {
+                    unknown.Add(new ScanResultItem
+                    {
+                        FileName = file,
+                        ResultType = ScanResultType.Unknown,
+                        IsSelected = true
+                    });
+                }
+            }
+
+            ScanResults = new ObservableCollection<ScanResultItem>(unknown);
+            ScanMatchResults = new ObservableCollection<ScanResultItem>(matched);
+
             OnPropertyChanged(nameof(ScanResults));
+            OnPropertyChanged(nameof(ScanMatchResults));
+        }
+
+        public async Task ImportMetadataForMatchedMods(IEnumerable<ScanResultItem> items)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+            int successCount = 0;
+            var errors = new List<string>();
+
+            foreach (var item in items.Where(i => i.IsSelected))
+            {
+                try
+                {
+                    string sourcePath = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories).FirstOrDefault();
+
+                    if (sourcePath == null)
+                        throw new Exception("File not found in gamedata.");
+
+                    if (item.MatchedMod is Map)
+                        await storageService.ImportMapAsync(sourcePath);
+                    else
+                        await storageService.ImportGenericModAsync(sourcePath);
+
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{item.FileName}: {ex.Message}");
+                }
+            }
+
+            LoadInstalledMaps();
+            LoadInstalledGenericMods();
+
+            if (errors.Any())
+                MessageBox.Show($"Some files could not be imported:\n{string.Join("\n", errors)}");
+            else
+                MessageBox.Show($"{successCount} mod(s) imported with full metadata.\n\nYou can manage them from the Installed screen.");
+        }
+
+        public void DeleteMatchedMods(IEnumerable<ScanResultItem> items)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+            int deletedCount = 0;
+
+            foreach (var item in items.Where(i => i.IsSelected))
+            {
+                string path = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+
+                if (path != null)
+                {
+                    File.Delete(path);
+                    deletedCount++;
+                }
+            }
+
+            MessageBox.Show($"{deletedCount} file(s) removed from gamedata.\n\nYou can re-download them from the Download screen whenever you want.");
         }
 
         public async Task ImportSelectedScanResultsAsync(IEnumerable<ScanResultItem> items)

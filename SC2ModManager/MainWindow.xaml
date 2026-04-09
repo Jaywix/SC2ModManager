@@ -747,6 +747,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -759,30 +761,76 @@
                             <TextBlock Text="⚠  Before you import" Foreground="#FFCC00"
                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
                             <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="12" LineHeight="18">
-                <Run>Any files you import here will be treated as </Run>
+                <Run>Unknown files will be imported as </Run>
                 <Run FontWeight="Bold" Foreground="White">Generic Gamedata Mods</Run>
-                <Run> and can be enabled or disabled from Installed → Generic Gamedata Mods.</Run>
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="12"
-                       Margin="0,6,0,0" LineHeight="18">
-                <Run FontWeight="Bold" Foreground="#FF8888">Important: </Run>
-                <Run>If you delete these mods from the mod manager, they cannot be restored — even if a copy exists in the original game backup. Only import files you have a copy of elsewhere, or that you don't mind losing.</Run>
+                <Run>. If deleted from the mod manager they cannot be restored automatically.</Run>
                             </TextBlock>
                         </StackPanel>
                     </Border>
 
-                    <!-- Results list -->
-                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                    <!-- SECTION 1: Matches downloadable list -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="Unrecognized files found in gamedata"
-                       Style="{StaticResource ColumnHeader}" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="0" Style="{StaticResource ColumnHeader}"
+                       Text="Found in Downloadable List"/>
 
-                            <ListBox Grid.Row="1"
+                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="11"
+                       Margin="0,0,0,8">
+                These files match mods available for download. You can import them so the mod manager
+                tracks them with full metadata, or delete them and re-download cleanly later.
+                            </TextBlock>
+
+                            <ListBox Grid.Row="2"
+                     x:Name="ScanMatchResultsList"
+                     ItemsSource="{Binding ScanMatchResults}"
+                     BorderThickness="0"
+                     Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding FileName}"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Margin="2,3"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Action buttons for matched mods -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button Content="Select All"    Width="95"  Margin="0,0,6,0" Click="SelectAllMatchResults_Click"/>
+                        <Button Content="Deselect All"  Width="95"  Margin="0,0,6,0" Click="DeselectAllMatchResults_Click"/>
+                        <Button Content="📥  Import &amp; Track" Style="{StaticResource PrimaryButton}"
+                Width="140" Margin="0,0,6,0" Click="ImportMatchedMods_Click"/>
+                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"
+                Width="140" Click="DeleteMatchedMods_Click"/>
+                    </StackPanel>
+
+                    <!-- SECTION 2: Fully unknown -->
+                    <Border Grid.Row="4" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Style="{StaticResource ColumnHeader}"
+                       Text="Unrecognized Files"/>
+
+                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="11"
+                       Margin="0,0,0,8">
+                These files are not original game files and do not match any known downloadable mod.
+                Import them as Generic Gamedata Mods to manage them, or leave them alone.
+                            </TextBlock>
+
+                            <ListBox Grid.Row="2"
                      x:Name="ScanResultsList"
                      ItemsSource="{Binding ScanResults}"
                      BorderThickness="0"
@@ -798,18 +846,18 @@
                         </Grid>
                     </Border>
 
-                    <!-- Select / Deselect / Re-run -->
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
-                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
-                        <Button Content="🔍  Run Scan" Style="{StaticResource PrimaryButton}"
-                Width="110" Click="RunScan_Click"/>
+                    <!-- Action buttons for unknown mods -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Select All"   Width="95"  Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
+                        <Button Content="Deselect All" Width="95"  Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
+                        <Button Content="📥  Import Selected" Style="{StaticResource PrimaryButton}"
+                Width="150" Click="ImportScanResults_Click"/>
                     </StackPanel>
 
-                    <!-- Import / Back -->
-                    <StackPanel Grid.Row="4" Orientation="Horizontal">
-                        <Button Content="📥  Import Selected" Style="{StaticResource PrimaryButton}"
-                Width="150" Margin="0,0,6,0" Click="ImportScanResults_Click"/>
+                    <!-- Run scan / Back -->
+                    <StackPanel Grid.Row="6" Orientation="Horizontal">
+                        <Button Content="🔍  Run Scan" Style="{StaticResource PrimaryButton}"
+                Width="110" Margin="0,0,6,0" Click="RunScan_Click"/>
                         <Button Content="← Back" Width="80" Click="GoToInstalledMods"/>
                     </StackPanel>
                 </Grid>
