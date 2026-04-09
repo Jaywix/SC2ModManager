@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 
 namespace SC2ModManager
 {
@@ -249,8 +250,12 @@ namespace SC2ModManager
 
             if (confirm != MessageBoxResult.Yes) return;
 
+            vm.DisableSelectedMaps(selected.Where(m => m.IsEnabled).ToList());
+            vm.SaveMapsToGamedata();
             foreach (var map in selected)
+            {
                 vm.UninstallMap(map);
+            }
 
             vm.CleanupPresetsAfterDeletion(selected.Select(m => m.FileName));
         }
@@ -268,6 +273,9 @@ namespace SC2ModManager
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
+
+            vm.DisableAllMaps();
+            vm.SaveMapsToGamedata();
 
             vm.UninstallAllMaps();
             vm.CleanupPresetsAfterDeletion(allMaps.Select(m => m.FileName));
@@ -312,6 +320,9 @@ namespace SC2ModManager
 
             if (confirm != MessageBoxResult.Yes) return;
 
+            vm.DisableSelectedGenericMods(selected.Where(m => m.IsEnabled).ToList());
+            vm.SaveGenericModsToGamedata();
+
             foreach (var mod in selected)
                 vm.UninstallGenericMod(mod);
 
@@ -331,6 +342,9 @@ namespace SC2ModManager
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
+
+            vm.DisableAllGenericMods();
+            vm.SaveGenericModsToGamedata();
 
             vm.UninstallAllGenericMods();
             vm.CleanupPresetsAfterDeletion(allMods.Select(m => m.FileName));

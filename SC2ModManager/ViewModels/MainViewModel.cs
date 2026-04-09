@@ -579,8 +579,11 @@ namespace SC2ModManager.ViewModels
 
         public void UninstallAllMaps()
         {
+            DisableAllMaps();
             foreach (var map in EnabledMaps.Concat(DisabledMaps).ToList())
+            {
                 storageService.DeleteMap(map);
+            }
 
             EnabledMaps.Clear();
             DisabledMaps.Clear();
@@ -666,6 +669,10 @@ namespace SC2ModManager.ViewModels
 
         public void UninstallGenericMod(GenericGamedataMod mod)
         {
+            List<GenericGamedataMod> deleted = [];
+            deleted.Add(mod);
+            DisableSelectedGenericMods(deleted);
+
             storageService.DeleteGenericMod(mod);
             EnabledGenericMods.Remove(mod);
             DisabledGenericMods.Remove(mod);
@@ -673,6 +680,8 @@ namespace SC2ModManager.ViewModels
 
         public void UninstallAllGenericMods()
         {
+            DisableAllGenericMods();
+
             foreach (var mod in EnabledGenericMods.Concat(DisabledGenericMods).ToList())
                 storageService.DeleteGenericMod(mod);
 
