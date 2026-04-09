@@ -47,6 +47,7 @@ namespace SC2ModManager
             InstalledModsView.Visibility = Visibility.Collapsed;
             InstalledMapsView.Visibility = Visibility.Collapsed;
             InstalledGenericModsView.Visibility = Visibility.Collapsed;
+            ScanGamedataView.Visibility = Visibility.Collapsed;
             DownloadModsView.Visibility = Visibility.Collapsed;
             DownloadMapsView.Visibility = Visibility.Collapsed;
             DownloadGenericModsView.Visibility = Visibility.Collapsed;
@@ -63,6 +64,7 @@ namespace SC2ModManager
                 case "InstalledMods": InstalledModsView.Visibility = Visibility.Visible; break;
                 case "InstalledMaps": InstalledMapsView.Visibility = Visibility.Visible; break;
                 case "InstalledGenericMods": InstalledGenericModsView.Visibility = Visibility.Visible; break;
+                case "ScanGamedata": ScanGamedataView.Visibility = Visibility.Visible; break;
                 case "DownloadMods": DownloadModsView.Visibility = Visibility.Visible; break;
                 case "DownloadMaps": DownloadMapsView.Visibility = Visibility.Visible; break;
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
@@ -77,6 +79,11 @@ namespace SC2ModManager
 
         private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
+        private void GoToScanGamedata(object sender, RoutedEventArgs e)
+        {
+            vm.ScanGamedataForUnknownMods();
+            ShowView("ScanGamedata");
+        }
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
         private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
 
@@ -207,13 +214,13 @@ namespace SC2ModManager
 
         private void EnableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DisabledMapsList.SelectedItems.Cast<Map>().ToList();
+            var selected = DisabledMapsList.SelectedItems.OfType<Map>().ToList();
             vm.EnableSelectedMaps(selected);
         }
 
         private void DisableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledMapsList.SelectedItems.Cast<Map>().ToList();
+            var selected = EnabledMapsList.SelectedItems.OfType<Map>().ToList();
             vm.DisableSelectedMaps(selected);
         }
 
@@ -327,6 +334,50 @@ namespace SC2ModManager
 
             vm.UninstallAllGenericMods();
             vm.CleanupPresetsAfterDeletion(allMods.Select(m => m.FileName));
+        }
+
+
+        // ================= SCAN GAMEDATA =================
+
+        private void RunScan_Click(object sender, RoutedEventArgs e)
+            => vm.ScanGamedataForUnknownMods();
+
+        private void SelectAllScanResults_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in vm.ScanResults)
+                item.IsSelected = true;
+        }
+
+        private void DeselectAllScanResults_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in vm.ScanResults)
+                item.IsSelected = false;
+        }
+
+        private async void ImportScanResults_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = vm.ScanResults.Where(r => r.IsSelected).ToList();
+
+            if (!selected.Any())
+            {
+                MessageBox.Show("No files selected.", "Nothing to Import",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Import {selected.Count} file(s) as Generic Gamedata Mods?\n\n" +
+                "These will appear in Installed → Generic Gamedata Mods as Disabled.\n\n" +
+                "Warning: If you later delete them from the mod manager, they cannot be automatically restored.",
+                "Confirm Import",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            await vm.ImportSelectedScanResultsAsync(selected);
+
+            vm.ScanGamedataForUnknownMods();
         }
 
         // ================= DOWNLOAD: MAPS =================

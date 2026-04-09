@@ -571,6 +571,8 @@
                             <Button Content="🎨  Visual Mods"           Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToInstalledGenericMods"/>
                             <Separator Style="{StaticResource HRule}"/>
+                            <Button Content="🔍  Scan Gamedata for Unrecognized Mods" Margin="0,0,0,6" Click="GoToScanGamedata"/>
+                            <Separator Style="{StaticResource HRule}"/>
                             <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
                         </StackPanel>
                     </Border>
@@ -735,6 +737,80 @@
                         <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
                         <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
                         <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- ===== SCAN GAMEDATA ===== -->
+                <Grid x:Name="ScanGamedataView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Scan Gamedata" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Warning banner -->
+                    <Border Grid.Row="1" Background="#1A2200" BorderBrush="#AA8800"
+            BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="⚠  Before you import" Foreground="#FFCC00"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="12" LineHeight="18">
+                <Run>Any files you import here will be treated as </Run>
+                <Run FontWeight="Bold" Foreground="White">Generic Gamedata Mods</Run>
+                <Run> and can be enabled or disabled from Installed → Generic Gamedata Mods.</Run>
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="12"
+                       Margin="0,6,0,0" LineHeight="18">
+                <Run FontWeight="Bold" Foreground="#FF8888">Important: </Run>
+                <Run>If you delete these mods from the mod manager, they cannot be restored — even if a copy exists in the original game backup. Only import files you have a copy of elsewhere, or that you don't mind losing.</Run>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Results list -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="Unrecognized files found in gamedata"
+                       Style="{StaticResource ColumnHeader}" Margin="0,0,0,8"/>
+
+                            <ListBox Grid.Row="1"
+                     x:Name="ScanResultsList"
+                     ItemsSource="{Binding ScanResults}"
+                     BorderThickness="0"
+                     Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding FileName}"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Margin="2,3"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Select / Deselect / Re-run -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
+                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
+                        <Button Content="🔍  Run Scan" Style="{StaticResource PrimaryButton}"
+                Width="110" Click="RunScan_Click"/>
+                    </StackPanel>
+
+                    <!-- Import / Back -->
+                    <StackPanel Grid.Row="4" Orientation="Horizontal">
+                        <Button Content="📥  Import Selected" Style="{StaticResource PrimaryButton}"
+                Width="150" Margin="0,0,6,0" Click="ImportScanResults_Click"/>
+                        <Button Content="← Back" Width="80" Click="GoToInstalledMods"/>
                     </StackPanel>
                 </Grid>
 

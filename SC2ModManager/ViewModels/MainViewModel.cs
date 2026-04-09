@@ -65,6 +65,10 @@ namespace SC2ModManager.ViewModels
             set { currentView = value; OnPropertyChanged(nameof(CurrentView)); }
         }
 
+        // ================= SCAN RESULTS =================
+        public ObservableCollection<ScanResultItem> ScanResults { get; set; } = new();
+
+
         // ================= INSTALLED MOD LISTS =================
 
         public ObservableCollection<Map> EnabledMaps { get; set; } = new();
@@ -409,6 +413,84 @@ namespace SC2ModManager.ViewModels
                 .FirstOrDefault(p => p.Name == selectionName);
 
             return preset?.Files ?? new List<string>();
+        }
+
+        // ================= INSTALLED: SCAN =================
+        public void ScanGamedataForUnknownMods()
+        {
+            if(string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+            
+            string gamedataPath = Path.Combine(GamePath, "gamedata");
+
+            if(!Directory.Exists(gamedataPath))
+            {
+                MessageBox.Show("Gamedata folder not found in game path.");
+                return;
+            }
+
+            HashSet<string> knownMods = storageService.GetAllKnownModFileNames();
+
+            var originalFiles = presetService.LoadOriginalFilesList().Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var inGamedata = Directory.GetFiles(gamedataPath, "*.scd", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var unknown = inGamedata.Where(f => !knownMods.Contains(f) && !originalFiles.Contains(f)).OrderBy(f => f).ToList();
+
+
+            ScanResults = new ObservableCollection<ScanResultItem>(unknown.Select(f => new ScanResultItem { FileName = f, IsSelected = true } ));
+            OnPropertyChanged(nameof(ScanResults));
+        }
+
+        public async Task ImportSelectedScanResultsAsync(IEnumerable<ScanResultItem> items)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+            var toImport = items.Where(i => i.IsSelected).ToList();
+
+            if (!toImport.Any())
+            {
+                MessageBox.Show("No files selected.");
+                return;
+            }
+
+            int successCount = 0;
+            var errors = new List<string>();
+
+            foreach (var item in toImport)
+            {
+                try
+                {
+                    string sourcePath = Directory.GetFiles(
+                        gameDataPath, item.FileName, SearchOption.AllDirectories)
+                        .FirstOrDefault();
+
+                    if (sourcePath == null)
+                        throw new Exception("File not found in gamedata.");
+
+                    await storageService.ImportGenericModAsync(sourcePath);
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{item.FileName}: {ex.Message}");
+                }
+            }
+
+            LoadInstalledGenericMods();
+
+            if (errors.Any())
+                MessageBox.Show($"Some files could not be imported:\n{string.Join("\n", errors)}");
+            else
+                MessageBox.Show($"{successCount} file(s) imported successfully as Generic Gamedata Mods.\n\nYou can enable or disable them from Installed → Generic Gamedata Mods.");
         }
 
         // ================= INSTALLED: MAPS =================

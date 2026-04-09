@@ -400,5 +400,38 @@ namespace SC2ModManager.Services
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<List<GenericGamedataMod>>(json, options) ?? new List<GenericGamedataMod>();
         }
+
+
+
+
+
+        // ================= SCANNING METHODS =================
+
+        /// <summary>
+        ///     I don't know if this is the best way, but this will get all of the maps that are inside the enabled and disabled folders
+        /// </summary>
+        public HashSet<string> GetAllKnownModFileNames()
+        {
+            var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Maps
+            foreach(var file in Directory.GetFiles(mapsEnabledPath, "*.scd"))
+                known.Add(Path.GetFileName(file));
+
+            foreach(var file in Directory.GetFiles(mapsDisabledPath, "*.scd"))
+                known.Add(Path.GetFileName(file));
+
+            // Generic mods
+            foreach(var file in Directory.GetFiles(genericModsEnabledPath, "*scd"))
+                known.Add(Path.GetFileName(file));
+
+            foreach(var file in Directory.GetFiles(genericModsDisabledPath, "*scd"))
+                known.Add(Path.GetFileName(file));
+
+
+
+
+            return known;
+        }
     }
 }
