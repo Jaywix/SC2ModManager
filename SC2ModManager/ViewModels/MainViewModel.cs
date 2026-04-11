@@ -1092,7 +1092,7 @@ namespace SC2ModManager.ViewModels
 
                 string updaterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SC2MMUpdater.exe");
                 string zipPath = Path.Combine(Path.GetTempPath(), "SC2ModManagerUpdate.zip");
-                string installPath = AppDomain.CurrentDomain.BaseDirectory;
+                string installPath = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string exeName = "SC2ModManager.exe";
 
                 if (!File.Exists(updaterPath))
@@ -1103,6 +1103,10 @@ namespace SC2ModManager.ViewModels
 
                 await DownloadFileWithProgress(updateDownloadUrl, zipPath);
                 MessageBox.Show("Download complete. Installing update...");
+                File.WriteAllText(
+                    Path.Combine(installPath, "updater_debug.txt"),
+                    $"zipPath: {zipPath}\ninstallPath: {installPath}\nexeName: {exeName}\nFull args: \"{zipPath}\" \"{installPath}\" \"{exeName}\""
+                );
 
                 Process.Start(new ProcessStartInfo
                 {
