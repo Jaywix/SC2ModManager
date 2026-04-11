@@ -18,6 +18,37 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Models
 {
+    public static class MapTagConstants
+    {
+        public const string TwoPlayer = "2 Players";
+        public const string ThreePlayer = "3 Players";
+        public const string FourPlayer = "4 Players";
+        public const string FivePlayer = "5 Players";
+        public const string SixPlayer = "6 Players";
+        public const string SevenPlayer = "7 Players";
+        public const string EightPlayer = "8 Players";
+
+        public const string Team = "Team";
+        public const string FFA = "FFA";
+
+        public const string MapPack = "Map Pack";
+
+        public const string Water = "Water";
+
+        public const string Large = "Large";
+        public const string Medium = "Medium";
+        public const string Small = "Small";
+        public static readonly List<string> AllTags = new List<string>
+        {
+            TwoPlayer, ThreePlayer, FourPlayer, FivePlayer, SixPlayer, SevenPlayer, EightPlayer,
+            Team, FFA,
+            MapPack,
+            Water,
+            Large, Medium, Small
+        };
+    }
+
+
     public class Map : INotifyPropertyChanged
     {
         [JsonPropertyName("id")]
@@ -60,6 +91,33 @@ namespace SC2ModManager.Models
 
         [JsonPropertyName("mapPictureFileName")]
         public string MapPictureFileName { get; set; }
+
+        [JsonPropertyName("tags")]
+        public List<string> Tags { get; set; }
+
+
+
+        [JsonIgnore]
+        public string MapPictureUrl =>
+        string.IsNullOrEmpty(MapPictureFileName)
+            ? null
+            : Globals.MapImagesBaseUrl + MapPictureFileName;
+
+
+        private bool isChecked;
+        [JsonIgnore]
+        public bool IsChecked
+        {
+            get => isChecked;
+            set
+            {
+                if (isChecked != value)
+                {
+                    isChecked = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
 
         private bool isEnabled;
@@ -110,6 +168,7 @@ namespace SC2ModManager.Models
             this.MapName = "Unknown";
             this.Description = "No description available.";
             this.MapPictureFileName = string.Empty;
+            this.Tags = new List<string>();
             this.IsEnabled = false;
             this.IsDownloaded = true;
 
@@ -145,6 +204,7 @@ namespace SC2ModManager.Models
             this.MapName = "Unknown";
             this.Description = "No description available.";
             this.MapPictureFileName = string.Empty;
+            this.Tags = new List<string>();
             this.IsEnabled = false;
             this.IsDownloaded = true;
 

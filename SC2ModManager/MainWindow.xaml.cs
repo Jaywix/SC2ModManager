@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
 namespace SC2ModManager
@@ -70,23 +71,22 @@ namespace SC2ModManager
                 case "DownloadMaps": DownloadMapsView.Visibility = Visibility.Visible; break;
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
-
             }
         }
 
         private void GoHome(object sender, RoutedEventArgs e) => ShowView("Home");
         private void GoToMods(object sender, RoutedEventArgs e) => ShowView("Mods");
         private void GoToSettings(object sender, RoutedEventArgs e) => ShowView("Settings");
-
         private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
-        private void GoToScanGamedata(object sender, RoutedEventArgs e)
-        {
-            vm.ScanGamedataForUnknownMods();
-            ShowView("ScanGamedata");
-        }
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
         private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
+
+        private void GoToScanGamedata(object sender, RoutedEventArgs e)
+        {
+            _ = vm.ScanGamedataForUnknownMods();
+            ShowView("ScanGamedata");
+        }
 
         private void GoToPresets(object sender, RoutedEventArgs e)
         {
@@ -130,6 +130,7 @@ namespace SC2ModManager
         private async void Update_Click(object sender, RoutedEventArgs e) => await vm.RunUpdater();
 
         // ================= SETTINGS =================
+
         private void BrowseGamePath_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
@@ -139,7 +140,6 @@ namespace SC2ModManager
             };
 
             if (dialog.ShowDialog() != true) return;
-
             GamePathInput.Text = System.IO.Path.GetDirectoryName(dialog.FileName);
         }
 
@@ -156,11 +156,7 @@ namespace SC2ModManager
 
             try
             {
-                var parentDir = Directory.GetParent(path)?.FullName;
-                if (parentDir == null)
-                    return;
-
-                vm.SetGamePath(parentDir);
+                vm.SetGamePath(path);
                 GamePathInput.Text = string.Empty;
                 MessageBox.Show("Game path updated successfully.", "Saved",
                     MessageBoxButton.OK, MessageBoxImage.Information);
@@ -180,27 +176,16 @@ namespace SC2ModManager
 
         // ================= PRESETS =================
 
-        private void SavePreset_Click(object sender, RoutedEventArgs e)
-            => vm.SaveCurrentStateAsPreset();
-
-        private void ApplyPreset_Click(object sender, RoutedEventArgs e)
-            => vm.ApplySelectedPreset();
-
-        private void DeletePreset_Click(object sender, RoutedEventArgs e)
-            => vm.DeleteSelectedPreset();
+        private void SavePreset_Click(object sender, RoutedEventArgs e) => vm.SaveCurrentStateAsPreset();
+        private void ApplyPreset_Click(object sender, RoutedEventArgs e) => vm.ApplySelectedPreset();
+        private void DeletePreset_Click(object sender, RoutedEventArgs e) => vm.DeleteSelectedPreset();
 
         private void ViewPresetFiles_Click(object sender, RoutedEventArgs e)
         {
-            if (vm.SelectedPreset == null)
-            {
-                MessageBox.Show("No preset selected.");
-                return;
-            }
+            if (vm.SelectedPreset == null) { MessageBox.Show("No preset selected."); return; }
 
             var files = vm.SelectedPreset.Files;
-            string msg = files.Count == 0
-                ? "No files in this preset."
-                : string.Join("\n", files);
+            string msg = files.Count == 0 ? "No files in this preset." : string.Join("\n", files);
 
             MessageBox.Show(msg, $"Files in '{vm.SelectedPreset.Name}'",
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -208,25 +193,44 @@ namespace SC2ModManager
 
         // ================= COMPARE =================
 
-        private void RunComparison_Click(object sender, RoutedEventArgs e)
-            => vm.RunComparison();
+        private void RunComparison_Click(object sender, RoutedEventArgs e) => vm.RunComparison();
 
         // ================= INSTALLED: MAPS =================
 
+        // Clicking the row highlights it (detail panel updates via SelectedItem binding).
+        // Clicking the checkbox checks it (used for enable/disable/delete operations).
+        // e.Handled = true stops the checkbox click from also toggling ListBoxItem.IsSelected.
+        private void MapCheckBox_Click(object sender, RoutedEventArgs e) => e.Handled = true;
+
         private void EnableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DisabledMapsList.SelectedItems.OfType<Map>().ToList();
+            var selected = vm.DisabledMaps.Where(m => m.IsChecked).ToList();
             vm.EnableSelectedMaps(selected);
+            foreach (var m in selected) m.IsChecked = false;
+            vm.RefreshInstalledMapFilters();
         }
 
         private void DisableSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledMapsList.SelectedItems.OfType<Map>().ToList();
+            var selected = vm.EnabledMaps.Where(m => m.IsChecked).ToList();
             vm.DisableSelectedMaps(selected);
+            foreach (var m in selected) m.IsChecked = false;
+            vm.RefreshInstalledMapFilters();
         }
 
-        private void EnableAllMaps_Click(object sender, RoutedEventArgs e) => vm.EnableAllMaps();
-        private void DisableAllMaps_Click(object sender, RoutedEventArgs e) => vm.DisableAllMaps();
+        private void EnableAllMaps_Click(object sender, RoutedEventArgs e)
+        {
+            vm.EnableAllMaps();
+            foreach (var m in vm.EnabledMaps) m.IsChecked = false;
+            vm.RefreshInstalledMapFilters();
+        }
+
+        private void DisableAllMaps_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DisableAllMaps();
+            foreach (var m in vm.DisabledMaps) m.IsChecked = false;
+            vm.RefreshInstalledMapFilters();
+        }
 
         private void SaveMaps_Click(object sender, RoutedEventArgs e)
         {
@@ -236,62 +240,55 @@ namespace SC2ModManager
 
         private void DeleteSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledMapsList.SelectedItems.Cast<Map>()
-                .Concat(DisabledMapsList.SelectedItems.Cast<Map>())
-                .ToList();
+            var selected = vm.EnabledMaps.Concat(vm.DisabledMaps)
+                .Where(m => m.IsChecked).ToList();
 
             if (!selected.Any()) { MessageBox.Show("No maps selected."); return; }
 
             var confirm = MessageBox.Show(
                 $"Delete {selected.Count} map(s) from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             vm.DisableSelectedMaps(selected.Where(m => m.IsEnabled).ToList());
             vm.SaveMapsToGamedata();
             foreach (var map in selected)
-            {
                 vm.UninstallMap(map);
-            }
 
             vm.CleanupPresetsAfterDeletion(selected.Select(m => m.FileName));
+            vm.RefreshInstalledMapFilters();
         }
 
         private void DeleteAllMaps_Click(object sender, RoutedEventArgs e)
         {
             var allMaps = vm.EnabledMaps.Concat(vm.DisabledMaps).ToList();
-
             if (!allMaps.Any()) { MessageBox.Show("No maps installed."); return; }
 
             var confirm = MessageBox.Show(
                 "Delete ALL installed maps from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             vm.DisableAllMaps();
             vm.SaveMapsToGamedata();
-
             vm.UninstallAllMaps();
             vm.CleanupPresetsAfterDeletion(allMaps.Select(m => m.FileName));
+            vm.RefreshInstalledMapFilters();
         }
 
         // ================= INSTALLED: GENERIC MODS =================
 
         private void EnableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DisabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>().ToList();
+            var selected = DisabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
             vm.EnableSelectedGenericMods(selected);
         }
 
         private void DisableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>().ToList();
+            var selected = EnabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
             vm.DisableSelectedGenericMods(selected);
         }
 
@@ -306,23 +303,20 @@ namespace SC2ModManager
 
         private void DeleteSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>()
-                .Concat(DisabledGenericModsList.SelectedItems.Cast<GenericGamedataMod>())
+            var selected = EnabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>()
+                .Concat(DisabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>())
                 .ToList();
 
             if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
 
             var confirm = MessageBox.Show(
                 $"Delete {selected.Count} mod(s) from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             vm.DisableSelectedGenericMods(selected.Where(m => m.IsEnabled).ToList());
             vm.SaveGenericModsToGamedata();
-
             foreach (var mod in selected)
                 vm.UninstallGenericMod(mod);
 
@@ -332,40 +326,33 @@ namespace SC2ModManager
         private void DeleteAllGenericMods_Click(object sender, RoutedEventArgs e)
         {
             var allMods = vm.EnabledGenericMods.Concat(vm.DisabledGenericMods).ToList();
-
             if (!allMods.Any()) { MessageBox.Show("No mods installed."); return; }
 
             var confirm = MessageBox.Show(
                 "Delete ALL installed generic mods from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             vm.DisableAllGenericMods();
             vm.SaveGenericModsToGamedata();
-
             vm.UninstallAllGenericMods();
             vm.CleanupPresetsAfterDeletion(allMods.Select(m => m.FileName));
         }
 
-
         // ================= SCAN GAMEDATA =================
 
         private void RunScan_Click(object sender, RoutedEventArgs e)
-            => vm.ScanGamedataForUnknownMods();
+            => _ = vm.ScanGamedataForUnknownMods();
 
         private void SelectAllScanResults_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in vm.ScanResults)
-                item.IsSelected = true;
+            foreach (var item in vm.ScanResults) item.IsSelected = true;
         }
 
         private void DeselectAllScanResults_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in vm.ScanResults)
-                item.IsSelected = false;
+            foreach (var item in vm.ScanResults) item.IsSelected = false;
         }
 
         private async void ImportScanResults_Click(object sender, RoutedEventArgs e)
@@ -383,27 +370,22 @@ namespace SC2ModManager
                 $"Import {selected.Count} file(s) as Generic Gamedata Mods?\n\n" +
                 "These will appear in Installed → Generic Gamedata Mods as Disabled.\n\n" +
                 "Warning: If you later delete them from the mod manager, they cannot be automatically restored.",
-                "Confirm Import",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             await vm.ImportSelectedScanResultsAsync(selected);
-
-            vm.ScanGamedataForUnknownMods();
+            _ = vm.ScanGamedataForUnknownMods();
         }
 
         private void SelectAllMatchResults_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in vm.ScanMatchResults)
-                item.IsSelected = true;
+            foreach (var item in vm.ScanMatchResults) item.IsSelected = true;
         }
 
         private void DeselectAllMatchResults_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in vm.ScanMatchResults)
-                item.IsSelected = false;
+            foreach (var item in vm.ScanMatchResults) item.IsSelected = false;
         }
 
         private async void ImportMatchedMods_Click(object sender, RoutedEventArgs e)
@@ -420,14 +402,12 @@ namespace SC2ModManager
             var confirm = MessageBox.Show(
                 $"Import {selected.Count} mod(s) with full metadata?\n\n" +
                 "These will appear in Installed as Disabled and can be managed normally.",
-                "Confirm Import",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;
 
             await vm.ImportMetadataForMatchedMods(selected);
-            await vm.ScanGamedataForUnknownMods();
+            _ = vm.ScanGamedataForUnknownMods();
         }
 
         private void DeleteMatchedMods_Click(object sender, RoutedEventArgs e)
@@ -444,9 +424,7 @@ namespace SC2ModManager
             var confirm = MessageBox.Show(
                 $"Delete {selected.Count} file(s) from gamedata?\n\n" +
                 "You can re-download them anytime from the Download screen.",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
@@ -457,17 +435,22 @@ namespace SC2ModManager
         // ================= DOWNLOAD: MAPS =================
 
         private void SelectAllDownloadMaps_Click(object sender, RoutedEventArgs e)
-            => DownloadMapsList.SelectAll();
+        {
+            foreach (var m in vm.FilteredDownloadableMaps) m.IsChecked = true;
+        }
 
         private void DeselectAllDownloadMaps_Click(object sender, RoutedEventArgs e)
-            => DownloadMapsList.UnselectAll();
+        {
+            foreach (var m in vm.FilteredDownloadableMaps) m.IsChecked = false;
+        }
 
         private async void DownloadSelectedMaps_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DownloadMapsList.SelectedItems.Cast<Map>().ToList();
+            var selected = vm.FilteredDownloadableMaps.Where(m => m.IsChecked).ToList();
             if (!selected.Any()) { MessageBox.Show("No maps selected."); return; }
 
             await vm.DownloadSelectedMapsAsync(selected);
+            foreach (var m in selected) m.IsChecked = false;
         }
 
         // ================= DOWNLOAD: GENERIC MODS =================
@@ -480,11 +463,139 @@ namespace SC2ModManager
 
         private async void DownloadSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DownloadGenericModsList.SelectedItems.Cast<GenericGamedataMod>().ToList();
+            var selected = DownloadGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
             if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
 
             await vm.DownloadSelectedGenericModsAsync(selected);
         }
+
+        // ================= MAP FILTERS =================
+
+        private void InstalledMapFilter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (vm == null) return;
+            vm.RefreshInstalledMapFilters();
+        }
+
+        private void DownloadMapFilter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (vm == null) return;
+            vm.RefreshDownloadMapFilters();
+        }
+
+        private void ClearInstalledMapFilter_Click(object sender, RoutedEventArgs e)
+        {
+            vm.InstalledMapsFilter.ClearAll();
+            vm.RefreshInstalledMapFilters();
+        }
+
+        private void ClearDownloadMapFilter_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DownloadMapsFilter.ClearAll();
+            vm.RefreshDownloadMapFilters();
+        }
+
+        private void InstalledFiltersToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = InstalledFiltersPanel.Visibility == Visibility.Visible;
+            InstalledFiltersPanel.Visibility = isVisible ? Visibility.Collapsed : Visibility.Visible;
+            InstalledFiltersToggle.Content = isVisible ? "▼  Show Filters" : "▲  Hide Filters";
+        }
+
+        private void DownloadFiltersToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = DownloadFiltersPanel.Visibility == Visibility.Visible;
+            DownloadFiltersPanel.Visibility = isVisible ? Visibility.Collapsed : Visibility.Visible;
+            DownloadFiltersToggle.Content = isVisible ? "▼  Show Filters" : "▲  Hide Filters";
+        }
+
+        //private PlayerCountOperator GetInstalledPlayerOperator()
+        //{
+        //    if (OpAny.IsChecked == true) return PlayerCountOperator.Any;
+
+        //    var panel = OpAny.Parent as StackPanel;
+        //    if (panel == null) return PlayerCountOperator.Any;
+
+        //    foreach (var child in panel.Children.OfType<RadioButton>())
+        //    {
+        //        if (child.IsChecked != true) continue;
+        //        return child.Content?.ToString() switch
+        //        {
+        //            "=" => PlayerCountOperator.Equal,
+        //            ">" => PlayerCountOperator.GreaterThan,
+        //            "<" => PlayerCountOperator.LessThan,
+        //            ">=" => PlayerCountOperator.GreaterThanOrEqual,
+        //            "<=" => PlayerCountOperator.LessThanOrEqual,
+        //            _ => PlayerCountOperator.Any
+        //        };
+        //    }
+        //    return PlayerCountOperator.Any;
+        //}
+
+        //private PlayerCountOperator GetDownloadPlayerOperator()
+        //{
+        //    if (DownloadOpAny.IsChecked == true) return PlayerCountOperator.Any;
+
+        //    var panel = DownloadOpAny.Parent as StackPanel;
+        //    if (panel == null) return PlayerCountOperator.Any;
+
+        //    foreach (var child in panel.Children.OfType<RadioButton>())
+        //    {
+        //        if (child.IsChecked != true) continue;
+        //        return child.Content?.ToString() switch
+        //        {
+        //            "=" => PlayerCountOperator.Equal,
+        //            ">" => PlayerCountOperator.GreaterThan,
+        //            "<" => PlayerCountOperator.LessThan,
+        //            ">=" => PlayerCountOperator.GreaterThanOrEqual,
+        //            "<=" => PlayerCountOperator.LessThanOrEqual,
+        //            _ => PlayerCountOperator.Any
+        //        };
+        //    }
+        //    return PlayerCountOperator.Any;
+        //}
+
+        //// ================= PLAYER COUNT STEPPERS =================
+
+        //private void InstalledPlayerCountDown_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (vm.InstalledMapsFilter.PlayerCountValue > 2)
+        //    {
+        //        vm.InstalledMapsFilter.PlayerCountValue--;
+        //        InstalledPlayerCountText.Text = vm.InstalledMapsFilter.PlayerCountValue.ToString();
+        //        vm.RefreshInstalledMapFilters();
+        //    }
+        //}
+
+        //private void InstalledPlayerCountUp_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (vm.InstalledMapsFilter.PlayerCountValue < 8)
+        //    {
+        //        vm.InstalledMapsFilter.PlayerCountValue++;
+        //        InstalledPlayerCountText.Text = vm.InstalledMapsFilter.PlayerCountValue.ToString();
+        //        vm.RefreshInstalledMapFilters();
+        //    }
+        //}
+
+        //private void DownloadPlayerCountDown_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (vm.DownloadMapsFilter.PlayerCountValue > 2)
+        //    {
+        //        vm.DownloadMapsFilter.PlayerCountValue--;
+        //        DownloadPlayerCountText.Text = vm.DownloadMapsFilter.PlayerCountValue.ToString();
+        //        vm.RefreshDownloadMapFilters();
+        //    }
+        //}
+
+        //private void DownloadPlayerCountUp_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (vm.DownloadMapsFilter.PlayerCountValue < 8)
+        //    {
+        //        vm.DownloadMapsFilter.PlayerCountValue++;
+        //        DownloadPlayerCountText.Text = vm.DownloadMapsFilter.PlayerCountValue.ToString();
+        //        vm.RefreshDownloadMapFilters();
+        //    }
+        //}
 
         // ================= MANUAL IMPORT =================
 
@@ -493,14 +604,12 @@ namespace SC2ModManager
             e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
                 ? DragDropEffects.Copy
                 : DragDropEffects.None;
-
             e.Handled = true;
         }
 
         private async void ManualImport_Drop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             await vm.ImportModFilesAsync(files);
             MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");

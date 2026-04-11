@@ -77,10 +77,37 @@ namespace SC2ModManager.ViewModels
         public ObservableCollection<GenericGamedataMod> EnabledGenericMods { get; set; } = new();
         public ObservableCollection<GenericGamedataMod> DisabledGenericMods { get; set; } = new();
 
+        // ================= INSTALLED FILTERED MAP VIEWS =================
+        public ObservableCollection<Map> FilteredEnabledMaps { get; set; } = new();
+        public ObservableCollection<Map> FilteredDisabledMaps { get; set; } = new();
+        public ObservableCollection<Map> FilteredDownloadableMaps { get; set; } = new();
+
         // ================= DOWNLOADABLE MOD LISTS =================
 
         public ObservableCollection<Map> DownloadableMaps { get; set; } = new();
         public ObservableCollection<GenericGamedataMod> DownloadableGenericMods { get; set; } = new();
+
+
+        // ================= MAP FILTERS =================
+
+        public MapFilterViewModel InstalledMapsFilter { get; set; } = new();
+        public MapFilterViewModel DownloadMapsFilter { get; set; } = new();
+
+        // ================= SELECTED MAP =================
+
+        private Map selectedInstalledMap;
+        public Map SelectedInstalledMap
+        {
+            get => selectedInstalledMap;
+            set { selectedInstalledMap = value; OnPropertyChanged(nameof(SelectedInstalledMap)); }
+        }
+
+        private Map selectedDownloadMap;
+        public Map SelectedDownloadMap
+        {
+            get => selectedDownloadMap;
+            set { selectedDownloadMap = value; OnPropertyChanged(nameof(SelectedDownloadMap)); }
+        }
 
         // ================= PRESETS =================
 
@@ -647,6 +674,8 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(EnabledMaps));
             OnPropertyChanged(nameof(DisabledMaps));
+
+            RefreshInstalledMapFilters();
         }
 
         public void EnableSelectedMaps(IEnumerable<Map> maps)
@@ -823,41 +852,62 @@ namespace SC2ModManager.ViewModels
 
         public async Task LoadDownloadableMapsAsync()
         {
-            var all = await storageService.GetDownloadableMapsAsync();
-            var installed = storageService.GetInstalledMaps();
-            var fileNames = installed.Select(m => m.FileName).ToHashSet();
+            try
+            {
+                var all = await storageService.GetDownloadableMapsAsync();
+                var installed = storageService.GetInstalledMaps();
+                var fileNames = installed.Select(m => m.FileName).ToHashSet();
 
-            foreach (var map in all)
-                map.IsDownloaded = fileNames.Contains(map.FileName);
+                foreach (var map in all)
+                    map.IsDownloaded = fileNames.Contains(map.FileName);
 
-            DownloadableMaps = new ObservableCollection<Map>(all);
-            OnPropertyChanged(nameof(DownloadableMaps));
+                DownloadableMaps = new ObservableCollection<Map>(all);
+                OnPropertyChanged(nameof(DownloadableMaps));
+
+                RefreshDownloadMapFilters();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load downloadable maps: {ex.Message}");
+            }
         }
 
         public async Task DownloadSelectedMapsAsync(IEnumerable<Map> maps)
         {
             int successCount = 0;
             var errors = new List<string>();
-            
+
             List<Map> installed = this.storageService.GetInstalledMaps();
+            var newlyDownloaded = new List<Map>();
 
             foreach (var map in maps)
             {
                 try
                 {
                     if (installed.Any(m => m.FileName.Equals(map.FileName, StringComparison.OrdinalIgnoreCase)))
-                    {
                         throw new Exception($"A mod with the filename '{map.FileName}' is already installed. Please uninstall it before downloading.");
-                    }
 
                     await storageService.DownloadMapAsync(map);
                     map.IsDownloaded = true;
+                    map.IsEnabled = false;
+                    newlyDownloaded.Add(map);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
                     errors.Add($"{map.FileName}: {ex.Message}");
                 }
+            }
+
+            if (newlyDownloaded.Any())
+            {
+                var existingState = storageService.LoadMapsState();
+                var existingByFile = existingState.ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var map in newlyDownloaded)
+                    existingByFile[map.FileName] = map;
+
+                storageService.SaveMapsState(existingByFile.Values);
             }
 
             if (errors.Any())
@@ -911,6 +961,31 @@ namespace SC2ModManager.ViewModels
                 MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
             else
                 MessageBox.Show($"{successCount} mod(s) downloaded successfully.");
+        }
+
+        // ================= MAP FILTERING =================
+
+        public IEnumerable<Map> GetFilteredEnabledMaps()
+            => EnabledMaps.Where(m => InstalledMapsFilter.Passes(m));
+
+        public IEnumerable<Map> GetFilteredDisabledMaps()
+            => DisabledMaps.Where(m => InstalledMapsFilter.Passes(m));
+
+        public IEnumerable<Map> GetFilteredDownloadableMaps()
+            => DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m));
+
+        public void RefreshInstalledMapFilters()
+        {
+            FilteredEnabledMaps = new ObservableCollection<Map>(EnabledMaps.Where(m => InstalledMapsFilter.Passes(m)));
+            FilteredDisabledMaps = new ObservableCollection<Map>(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m)));
+            OnPropertyChanged(nameof(FilteredEnabledMaps));
+            OnPropertyChanged(nameof(FilteredDisabledMaps));
+        }
+
+        public void RefreshDownloadMapFilters()
+        {
+            FilteredDownloadableMaps = new ObservableCollection<Map>(DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m)));
+            OnPropertyChanged(nameof(FilteredDownloadableMaps));
         }
 
         // ================= MANUAL IMPORT =================

@@ -9,7 +9,10 @@
 
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-
+        <local:NullToVisibilityConverter        x:Key="NullToVisibilityConverter"/>
+        <local:NullToInverseVisibilityConverter x:Key="NullToInverseVisibilityConverter"/>
+        
+        
         <!-- ===== COLORS ===== -->
         <Color x:Key="AccentColor">#1E90FF</Color>
         <Color x:Key="AccentDarkColor">#1270CC</Color>
@@ -248,6 +251,11 @@
             <Setter Property="FontFamily"      Value="Segoe UI"/>
             <Setter Property="FontSize"        Value="13"/>
             <Setter Property="Height"          Value="30"/>
+            <Style.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="White"/>
+                </Style>
+            </Style.Resources>
         </Style>
 
         <!-- ProgressBar style -->
@@ -290,6 +298,14 @@
             <Setter Property="Background"       Value="#33FFFFFF"/>
             <Setter Property="Margin"           Value="0,8"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+        
+        <!-- RadioButton style -->
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
     </Window.Resources>
@@ -580,83 +596,272 @@
 
                 <!-- ===== INSTALLED: CUSTOM MAPS ===== -->
                 <Grid x:Name="InstalledMapsView" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="260"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Installed Maps" Style="{StaticResource SectionHeader}"/>
+                    <!-- LEFT: Lists + buttons -->
+                    <Grid Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="1" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Text="Installed Maps" Style="{StaticResource SectionHeader}"/>
 
-                        <!-- Enabled -->
-                        <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
-                                <ListBox Grid.Row="1"
-                         x:Name="EnabledMapsList"
-                         ItemsSource="{Binding EnabledMaps}"
-                         SelectionMode="Multiple"
-                         BorderThickness="0"
-                         Background="Transparent">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <CheckBox Content="{Binding FileName}"
-                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
+                        <!-- Filter bar -->
+                        <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <Button Content="▼  Show Filters" x:Name="InstalledFiltersToggle"
+                HorizontalAlignment="Left" Width="130"
+                Click="InstalledFiltersToggle_Click"/>
+
+                                <StackPanel x:Name="InstalledFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">
+
+                                    <!-- Player Count -->
+                                    <TextBlock Text="Player Count" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="2 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[0].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="3 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[1].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="4 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[2].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="5 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[3].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="6 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[4].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="7 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[5].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="8 Players" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[6].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Gameplay -->
+                                    <TextBlock Text="Gameplay" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="Team" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[7].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="FFA" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[8].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="Water" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[10].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Map Size -->
+                                    <TextBlock Text="Map Size" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="Large" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[11].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="Medium" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[12].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                        <CheckBox Content="Small" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[13].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Map Pack -->
+                                    <TextBlock Text="Other" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,6">
+                                        <CheckBox Content="Map Pack" Margin="0,0,10,4"
+                          IsChecked="{Binding InstalledMapsFilter.TagFilters[9].IsSelected, Mode=TwoWay}"
+                          Checked="InstalledMapFilter_Changed" Unchecked="InstalledMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <Button Content="Clear Filters" Width="100" HorizontalAlignment="Left"
+                    Click="ClearInstalledMapFilter_Click"/>
+                                </StackPanel>
+                            </StackPanel>
                         </Border>
 
-                        <!-- Disabled -->
-                        <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
-                                <ListBox Grid.Row="1"
-                         x:Name="DisabledMapsList"
-                         ItemsSource="{Binding DisabledMaps}"
-                         SelectionMode="Multiple"
-                         BorderThickness="0"
-                         Background="Transparent">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <CheckBox Content="{Binding FileName}"
-                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
-                        </Border>
+                        <!-- Enabled / Disabled split -->
+                        <Grid Grid.Row="2" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    <ListBox Grid.Row="1"
+                             x:Name="EnabledMapsList"
+                             ItemsSource="{Binding FilteredEnabledMaps}"
+                             SelectedItem="{Binding SelectedInstalledMap}"
+                             SelectionMode="Single"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                        VerticalAlignment="Center" Margin="0,0,6,0"
+                                                        Click="MapCheckBox_Click"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    <ListBox Grid.Row="1"
+                             x:Name="DisabledMapsList"
+                             ItemsSource="{Binding FilteredDisabledMaps}"
+                             SelectedItem="{Binding SelectedInstalledMap}"
+                             SelectionMode="Single"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                        VerticalAlignment="Center" Margin="0,0,6,0"
+                                                        Click="MapCheckBox_Click"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedMaps_Click"/>
+                            <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedMaps_Click"/>
+                            <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllMaps_Click"/>
+                            <Button Content="Disable All"          Width="95"  Click="DisableAllMaps_Click"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4" Orientation="Horizontal">
+                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
+                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
+                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
+                            <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
+                        </StackPanel>
                     </Grid>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
-                        <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedMaps_Click"/>
-                        <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedMaps_Click"/>
-                        <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllMaps_Click"/>
-                        <Button Content="Disable All"          Width="95"  Click="DisableAllMaps_Click"/>
-                    </StackPanel>
+                    <!-- RIGHT: Map detail panel -->
+                    <Border Grid.Column="1" Style="{StaticResource ContentPanel}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- No map selected -->
+                                <TextBlock Text="Select a map to view details"
+                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,20,0,0"
+                           Visibility="{Binding SelectedInstalledMap, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
-                    <StackPanel Grid.Row="3" Orientation="Horizontal">
-                        <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
-                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
-                        <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
-                        <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
-                    </StackPanel>
+                                <!-- Map selected -->
+                                <StackPanel Visibility="{Binding SelectedInstalledMap, Converter={StaticResource NullToVisibilityConverter}}">
+
+                                    <!-- Map image -->
+                                    <Border Height="140" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding SelectedInstalledMap.MapPictureUrl}"
+                                   Stretch="Uniform"
+                                   Visibility="{Binding SelectedInstalledMap.MapPictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            <TextBlock Text="No Image Available"
+                                       Foreground="#444444" FontSize="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding SelectedInstalledMap.MapPictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Map name -->
+                                    <TextBlock Text="{Binding SelectedInstalledMap.MapName}"
+                               FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+
+                                    <!-- Stats -->
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"      Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledMap.Author}"      FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledMap.PlayerCount}" FontSize="11"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"      Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledMap.MapTeamStyle}" FontSize="11"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"       Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledMap.Size}"         FontSize="11"/>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedInstalledMap.Version}"      FontSize="11"/>
+
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedInstalledMap.LastUpdated}"  FontSize="11"/>
+                                    </Grid>
+
+                                    <Separator Style="{StaticResource HRule}"/>
+
+                                    <!-- Description -->
+                                    <TextBlock Text="{Binding SelectedInstalledMap.Description}"
+                               FontSize="11" Foreground="#CCCCCC"
+                               TextWrapping="Wrap" Margin="0,6,0,8"/>
+
+                                    <!-- Tags -->
+                                    <ItemsControl ItemsSource="{Binding SelectedInstalledMap.Tags}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#1A2535" BorderBrush="#1E90FF"
+                                        BorderThickness="1" CornerRadius="3"
+                                        Padding="6,2" Margin="0,0,4,4">
+                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </Grid>
 
                 <!-- ===== INSTALLED: GENERIC GAMEDATA MODS ===== -->
@@ -881,43 +1086,226 @@
 
                 <!-- ===== DOWNLOAD: CUSTOM MAPS ===== -->
                 <Grid x:Name="DownloadMapsView" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="260"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Download Custom Maps" Style="{StaticResource SectionHeader}"/>
+                    <!-- LEFT: List + buttons -->
+                    <Grid Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
-                        <ListBox x:Name="DownloadMapsList"
-                                 ItemsSource="{Binding DownloadableMaps}"
-                                 SelectionMode="Multiple"
-                                 BorderThickness="0"
-                                 Background="Transparent">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="2">
-                                        <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
-                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
-                                                   FontSize="11" VerticalAlignment="Center"
-                                                   Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <TextBlock Grid.Row="0" Text="Download Custom Maps" Style="{StaticResource SectionHeader}"/>
+
+                        <!-- Filter bar -->
+                        <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <Button Content="▼  Show Filters" x:Name="DownloadFiltersToggle"
+HorizontalAlignment="Left" Width="130"
+Click="DownloadFiltersToggle_Click"/>
+
+                                <StackPanel x:Name="DownloadFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">
+
+                                    <!-- Player Count -->
+                                    <TextBlock Text="Player Count" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="2 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[0].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="3 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[1].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="4 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[2].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="5 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[3].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="6 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[4].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="7 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[5].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="8 Players" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[6].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Gameplay -->
+                                    <TextBlock Text="Gameplay" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="Team" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[7].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="FFA" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[8].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="Water" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[10].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Map Size -->
+                                    <TextBlock Text="Map Size" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <CheckBox Content="Large" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[11].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="Medium" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[12].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                        <CheckBox Content="Small" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[13].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <!-- Map Pack -->
+                                    <TextBlock Text="Other" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,6">
+                                        <CheckBox Content="Map Pack" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsFilter.TagFilters[9].IsSelected, Mode=TwoWay}"
+          Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
+                                    </WrapPanel>
+
+                                    <Button Content="Clear Filters" Width="100" HorizontalAlignment="Left"
+    Click="ClearDownloadMapFilter_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Available Maps" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="DownloadMapsList"
+                         ItemsSource="{Binding FilteredDownloadableMaps}"
+                         SelectedItem="{Binding SelectedDownloadMap}"
+                         SelectionMode="Single"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="2">
+                                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" Margin="0,0,6,0"
+                                                  Click="MapCheckBox_Click"/>
+                                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
+                                           FontSize="11" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadMaps_Click"/>
+                            <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadMaps_Click"/>
+                            <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedMaps_Click"/>
+                        </StackPanel>
+
+                        <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                    </Grid>
+
+                    <!-- RIGHT: Map detail panel -->
+                    <Border Grid.Column="1" Style="{StaticResource ContentPanel}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Select a map to view details"
+                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,20,0,0"
+                           Visibility="{Binding SelectedDownloadMap, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+
+                                <StackPanel Visibility="{Binding SelectedDownloadMap, Converter={StaticResource NullToVisibilityConverter}}">
+
+                                    <Border Height="140" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding SelectedDownloadMap.MapPictureUrl}"
+                                   Stretch="Uniform"
+                                   Visibility="{Binding SelectedDownloadMap.MapPictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            <TextBlock Text="No Image Available"
+                                       Foreground="#444444" FontSize="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding SelectedDownloadMap.MapPictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <TextBlock Text="{Binding SelectedDownloadMap.MapName}"
+                               FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"   Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadMap.Author}"       FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadMap.PlayerCount}"  FontSize="11"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadMap.MapTeamStyle}" FontSize="11"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"     Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadMap.Size}"         FontSize="11"/>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedDownloadMap.Version}"      FontSize="11"/>
+
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedDownloadMap.LastUpdated}"  FontSize="11"/>
+                                    </Grid>
+
+                                    <Separator Style="{StaticResource HRule}"/>
+
+                                    <TextBlock Text="{Binding SelectedDownloadMap.Description}"
+                               FontSize="11" Foreground="#CCCCCC"
+                               TextWrapping="Wrap" Margin="0,6,0,8"/>
+
+                                    <ItemsControl ItemsSource="{Binding SelectedDownloadMap.Tags}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#1A2535" BorderBrush="#1E90FF"
+                                        BorderThickness="1" CornerRadius="3"
+                                        Padding="6,2" Margin="0,0,4,4">
+                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Border>
-
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadMaps_Click"/>
-                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadMaps_Click"/>
-                        <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedMaps_Click"/>
-                    </StackPanel>
-
-                    <Button Grid.Row="3" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
                 </Grid>
 
                 <!-- ===== DOWNLOAD: GENERIC GAMEDATA MODS ===== -->
@@ -940,8 +1328,9 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="2">
-                                        <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"
-                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                          VerticalAlignment="Center" Margin="0,0,6,0"
+                                          Click="MapCheckBox_Click"/>
                                         <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
                                         <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
                                                    FontSize="11" VerticalAlignment="Center"

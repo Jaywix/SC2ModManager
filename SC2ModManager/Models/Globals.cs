@@ -35,6 +35,7 @@ namespace SC2ModManager.Models
 
         public static string MapsListUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/maps.json";
         public static string GenericModsListUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/genericMods.json";
+        public static string MapImagesBaseUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/main/Images/";
 
 
 
