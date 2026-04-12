@@ -748,8 +748,7 @@ namespace SC2ModManager.ViewModels
             }
 
             string mapsEnabledPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName, "Mods", "Maps", "Enabled"
+                Globals.GetDataPath(), "Mods", "Maps", "Enabled"
             );
             string gameDataPath = Path.Combine(GamePath, "gamedata");
 
@@ -845,8 +844,7 @@ namespace SC2ModManager.ViewModels
             }
 
             string modsEnabledPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName, "Mods", "GenericMods", "Enabled"
+                Globals.GetDataPath(), "Mods", "GenericMods", "Enabled"
             );
             string gameDataPath = Path.Combine(GamePath, "gamedata");
 
@@ -1139,10 +1137,10 @@ namespace SC2ModManager.ViewModels
 
                 await DownloadFileWithProgress(updateDownloadUrl, zipPath);
                 MessageBox.Show("Download complete. Installing update...");
-                File.WriteAllText(
-                    Path.Combine(installPath, "updater_debug.txt"),
-                    $"zipPath: {zipPath}\ninstallPath: {installPath}\nexeName: {exeName}\nFull args: \"{zipPath}\" \"{installPath}\" \"{exeName}\""
-                );
+                //File.WriteAllText(
+                //    Path.Combine(installPath, "updater_debug.txt"),
+                //    $"zipPath: {zipPath}\ninstallPath: {installPath}\nexeName: {exeName}\nFull args: \"{zipPath}\" \"{installPath}\" \"{exeName}\""
+                //);
 
                 Process.Start(new ProcessStartInfo
                 {

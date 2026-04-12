@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:SC2ModManager"
         Title="SC2 Mod Manager"
-        Height="600"
-        Width="1000"
-        WindowStartupLocation="CenterScreen">
+        Height="1000"
+        Width="1800"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
 
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -542,14 +543,32 @@
 
                             <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                 <TextBlock Text="Left Preset" Style="{StaticResource ColumnHeader}"/>
-                                <ComboBox ItemsSource="{Binding ComparePresetNames}"
-                                          SelectedItem="{Binding CompareLeftSelection}"/>
+                                <ListBox ItemsSource="{Binding ComparePresetNames}"
+                     SelectedItem="{Binding CompareLeftSelection}"
+                     Height="120"
+                     BorderThickness="0"
+                     Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Padding="2"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                 <TextBlock Text="Right Preset" Style="{StaticResource ColumnHeader}"/>
-                                <ComboBox ItemsSource="{Binding ComparePresetNames}"
-                                          SelectedItem="{Binding CompareRightSelection}"/>
+                                <ListBox ItemsSource="{Binding ComparePresetNames}"
+                     SelectedItem="{Binding CompareRightSelection}"
+                     Height="120"
+                     BorderThickness="0"
+                     Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Padding="2"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
                             </StackPanel>
                         </Grid>
                     </Border>
