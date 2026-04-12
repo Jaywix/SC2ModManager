@@ -169,6 +169,8 @@ namespace SC2ModManager
             }
         }
 
+        private void Uninstall_Click(object sender, RoutedEventArgs e) => vm.Uninstall();
+
         // ================= BACKUPS =================
 
         private async void RestoreOriginalGameData_Click(object sender, RoutedEventArgs e)

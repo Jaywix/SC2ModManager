@@ -41,10 +41,8 @@ namespace SC2ModManager.Services
         {
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager/1.0");
 
-            string appData = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName
-            );
+            string appData = Globals.GetDataPath();
+
 
             string modsRoot = Path.Combine(appData, "Mods");
             string mapsRoot = Path.Combine(modsRoot, "Maps");

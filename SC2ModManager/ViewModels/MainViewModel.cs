@@ -259,6 +259,16 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            var confirm = MessageBox.Show(
+                    "This will delete everything currently in your gamedata folder and replace it with the original game files downloaded from GitHub.\n\n" +
+                    "Any mods you have enabled will be removed from gamedata (your installed mod files in the mod manager will not be deleted).\n\n" +
+                    "Are you sure you want to continue?",
+                    "Restore Original Game Files",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
             try
             {
                 await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
@@ -465,7 +475,7 @@ namespace SC2ModManager.ViewModels
                 .Select(f => Path.GetFileName(f))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            List<string> inGamedata = Directory.GetFiles(gameDataPath, "*.scd", SearchOption.AllDirectories)
+            List<string> inGamedata = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
                 .Select(f => Path.GetFileName(f))
                 .ToList();
 
@@ -531,6 +541,32 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(ScanResults));
             OnPropertyChanged(nameof(ScanMatchResults));
+        }
+
+        public void DeleteUnknownFiles(IEnumerable<ScanResultItem> items)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+            int deletedCount = 0;
+
+            foreach (var item in items.Where(i => i.IsSelected))
+            {
+                string path = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+
+                if (path != null)
+                {
+                    File.Delete(path);
+                    deletedCount++;
+                }
+            }
+
+            MessageBox.Show($"{deletedCount} file(s) deleted from gamedata.");
         }
 
         public async Task ImportMetadataForMatchedMods(IEnumerable<ScanResultItem> items)
@@ -1147,6 +1183,31 @@ namespace SC2ModManager.ViewModels
 
                 if (canReport)
                     DownloadProgress = (double)totalRead / totalBytes * 100;
+            }
+        }
+
+        // ================= SETTINGS =================
+        public void Uninstall()
+        {
+            var confirm = MessageBox.Show(
+                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nAre you sure you want to uninstall?",
+                "Confirm Uninstall",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            var installService = new InstallService();
+            string installPath = Globals.GetInstallPath();
+
+            if (!string.IsNullOrEmpty(installPath))
+            {
+                installService.Uninstall(installPath);
+                Application.Current.Shutdown();
+            }
+            else
+            {
+                MessageBox.Show("Install path not found. Please delete the application folder manually.");
             }
         }
 

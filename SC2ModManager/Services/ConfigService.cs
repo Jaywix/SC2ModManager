@@ -19,38 +19,25 @@ namespace SC2ModManager.Services
     /// </summary>
     public class ConfigService
     {
-        private readonly string configPath;
-
-
+        private string ConfigPath => Path.Combine(Globals.GetDataPath(), "config.json");
 
         public ConfigService()
         {
-            string appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName
-            );
-
-            Directory.CreateDirectory(appDataPath);
-
-            this.configPath = Path.Combine(appDataPath, "config.json");
+            Directory.CreateDirectory(Globals.GetDataPath());
         }
 
-
-        // ========= Public Methods =========
         public AppConfig Load()
         {
             try
             {
-                if (!File.Exists(configPath))
+                if (!File.Exists(ConfigPath))
                     return new AppConfig();
 
-                string json = File.ReadAllText(configPath);
-
+                string json = File.ReadAllText(ConfigPath);
                 return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
             }
             catch
             {
-                // If config is corrupted, return default
                 return new AppConfig();
             }
         }
@@ -59,12 +46,9 @@ namespace SC2ModManager.Services
         {
             try
             {
-                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                File.WriteAllText(configPath, json);
+                Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath));
+                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(ConfigPath, json);
             }
             catch (Exception ex)
             {
@@ -72,23 +56,18 @@ namespace SC2ModManager.Services
             }
         }
 
-        public bool ConfigExists()
-        {
-            return File.Exists(configPath);
-        }
+        public bool ConfigExists() => File.Exists(ConfigPath);
 
         public string DetectGamePath()
         {
             string path = TryGetFromSteam();
-            if (!string.IsNullOrEmpty(path))
-                return path;
-
+            if (!string.IsNullOrEmpty(path)) return path;
             return TryCommonPaths();
         }
 
         public void UpdateGamePath(AppConfig config, string newPath)
         {
-            if (newPath is null || newPath == string.Empty || !Directory.Exists(newPath))
+            if (string.IsNullOrEmpty(newPath) || !Directory.Exists(newPath))
                 throw new DirectoryNotFoundException("The specified game path does not exist.");
             if (!IsValidGamePath(newPath))
                 throw new InvalidDataException("The specified path does not appear to be a valid Supreme Commander 2 installation.");
@@ -97,26 +76,13 @@ namespace SC2ModManager.Services
             Save(config);
         }
 
-
-
-
-        // ========= Private Methods =========
         private string TryGetFromSteam()
         {
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
-
             string steamPath = key?.GetValue("SteamPath")?.ToString();
+            if (string.IsNullOrEmpty(steamPath)) return null;
 
-            if (string.IsNullOrEmpty(steamPath))
-                return null;
-
-            string gamePath = Path.Combine(
-                steamPath,
-                "steamapps",
-                "common",
-                "Supreme Commander 2"
-            );
-
+            string gamePath = Path.Combine(steamPath, "steamapps", "common", "Supreme Commander 2");
             return Directory.Exists(gamePath) ? gamePath : null;
         }
 
@@ -131,25 +97,16 @@ namespace SC2ModManager.Services
             };
 
             foreach (var path in paths)
-            {
-                if (Directory.Exists(path))
-                    return path;
-            }
+                if (Directory.Exists(path)) return path;
 
             return null;
         }
 
         private bool IsValidGamePath(string path)
         {
-            var binPath = Path.Combine(path, "bin");
-            var exePath = Path.Combine(binPath, "SupremeCommander2.exe");
-            var gamedataPath = Path.Combine(path, "gamedata");
-
-            return Directory.Exists(binPath) &&
-                   File.Exists(exePath) &&
-                   Directory.Exists(gamedataPath);
+            return Directory.Exists(Path.Combine(path, "bin")) &&
+                   File.Exists(Path.Combine(path, "bin", "SupremeCommander2.exe")) &&
+                   Directory.Exists(Path.Combine(path, "gamedata"));
         }
-
-
     }
 }

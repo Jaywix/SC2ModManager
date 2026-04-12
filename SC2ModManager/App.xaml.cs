@@ -23,18 +23,26 @@ namespace SC2ModManager
         {
             base.OnStartup(e);
 
-            var configService = new ConfigService();
-            var config = configService.Load();
-
-            if (config == null || string.IsNullOrEmpty(config.GamePath))
+            if (!Models.Globals.IsSetupComplete())
             {
                 var setup = new SetupWindow();
                 setup.Show();
             }
             else
             {
-                var main = new MainWindow();
-                main.Show();
+                var configService = new ConfigService();
+                var config = configService.Load();
+
+                if (string.IsNullOrEmpty(config.GamePath))
+                {
+                    var setup = new SetupWindow();
+                    setup.Show();
+                }
+                else
+                {
+                    var main = new MainWindow();
+                    main.Show();
+                }
             }
         }
     }

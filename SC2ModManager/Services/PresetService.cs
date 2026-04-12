@@ -28,10 +28,8 @@ namespace SC2ModManager.Services
 
         public PresetService()
         {
-            string appData = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                Globals.LauncherName
-            );
+            string appData = Globals.GetDataPath();
+
 
             presetsPath = Path.Combine(appData, "Presets");
             originalFilesListPath = Path.Combine(presetsPath, "_original_files.json");

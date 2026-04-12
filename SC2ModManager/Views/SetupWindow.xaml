@@ -1,59 +1,222 @@
 ﻿<Window x:Class="SC2ModManager.SetupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Setup" Height="300" Width="500"
+        Title="SC2 Mod Manager — Setup"
+        Height="560" Width="560"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
 
-    <Grid Margin="20">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Height"      Value="34"/>
+            <Setter Property="Padding"     Value="16,0"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="Cursor"      Value="Hand"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily"  Value="Segoe UI"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#0D1117">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="60"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <TextBlock Text="Initial Setup"
-               FontSize="20"
-               FontWeight="Bold"
-               HorizontalAlignment="Center"
-               Margin="0,0,0,20"/>
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1A2535" Padding="20,0">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock x:Name="WizardTitle"
+                           Text="Welcome"
+                           Foreground="White"
+                           FontSize="18"
+                           FontWeight="SemiBold"/>
+                <TextBlock x:Name="WizardSubtitle"
+                           Text="Step 1 of 4"
+                           Foreground="#888888"
+                           FontSize="11"/>
+            </StackPanel>
+        </Border>
 
-        <!-- Instructions -->
-        <TextBlock Grid.Row="1"
-               Text="Select your game installation folder."
-               Margin="0,0,0,10"/>
+        <!-- Page container -->
+        <Grid Grid.Row="1" Margin="24">
 
-        <!-- Folder selection -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBox x:Name="GamePathTextBox"
-                 Width="300"
-                 IsReadOnly="True"
-                 Margin="0,0,10,0"/>
-            <Button Content="Browse..." Width="100" Click="Browse_Click"/>
-        </StackPanel>
+            <!-- PAGE 1: Welcome + Terms -->
+            <StackPanel x:Name="Page1" Visibility="Visible">
+                <TextBlock Text="Welcome to the SC2 Mod Manager"
+                           Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
+                <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,16">
+                    This wizard will guide you through setting up SC2 Mod Manager on your PC.
+                    Please read and accept the terms of use before continuing.
+                </TextBlock>
 
-        <!-- Progress -->
-        <StackPanel Grid.Row="3" Margin="0,20,0,0">
-            <ProgressBar x:Name="SetupProgressBar"
-                     Height="20"
-                     Minimum="0"
-                     Maximum="100"/>
+                <Border Background="#111820" BorderBrush="#333" BorderThickness="1"
+                        CornerRadius="4" Padding="12" Height="180">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBlock Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap" LineHeight="18">
+                            <Run FontWeight="Bold" Foreground="White">Terms of Use — SC2 Mod Manager</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>1. This software is provided free of charge and as-is, without warranty of any kind.</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>2. SC2 Mod Manager modifies files in your Supreme Commander 2 installation directory. By using this software you accept that the authors are not responsible for any damage to your game installation, save files, or computer.</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>3. Always keep a backup of your original gamedata folder. The restore feature downloads original files from GitHub and requires an internet connection.</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>4. Mods downloaded through this manager are created by third parties. The authors of SC2 Mod Manager do not own, endorse, or take responsibility for third-party mod content.</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>5. This software may check for updates by connecting to GitHub. No personal data is collected or transmitted.</Run>
+                            <LineBreak/><LineBreak/>
+                            <Run>6. You may uninstall this software at any time using the uninstall option in Settings.</Run>
+                        </TextBlock>
+                    </ScrollViewer>
+                </Border>
 
-            <TextBlock x:Name="StatusText"
-                   Text="Waiting..."
-                   Margin="0,5,0,0"/>
-        </StackPanel>
+                <CheckBox x:Name="AcceptTermsCheckBox"
+                          Content="I have read and accept the Terms of Use"
+                          Foreground="White" FontSize="13"
+                          Margin="0,14,0,0"/>
+            </StackPanel>
 
-        <!-- Finish -->
-        <Button Grid.Row="4"
-            Content="Finish Setup"
-            Height="35"
-            Width="150"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            Click="Finish_Click"/>
+            <!-- PAGE 2: Game Path -->
+            <StackPanel x:Name="Page2" Visibility="Collapsed">
+                <TextBlock Text="Locate Supreme Commander 2"
+                           Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
+                <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
+                    Select your Supreme Commander 2 installation folder.
+                    This is the folder that contains the <Run FontWeight="Bold">gamedata</Run> subfolder and the <Run FontWeight="Bold">bin\SupremeCommander2.exe</Run> file.
+                </TextBlock>
+
+                <TextBlock Text="Game Installation Folder" Foreground="#888888" FontSize="11" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBox x:Name="GamePathBox"
+                             Width="380" Height="32"
+                             Background="#1A2535" Foreground="White"
+                             BorderBrush="#1E90FF" BorderThickness="1"
+                             Padding="8,4" FontSize="13"
+                             VerticalContentAlignment="Center"/>
+                    <Button Content="Browse" Width="90" Margin="8,0,0,0"
+                            Background="#1A2535" Foreground="White"
+                            BorderBrush="#1E90FF" BorderThickness="1"
+                            Click="BrowseGamePath_Click"/>
+                </StackPanel>
+
+                <Border x:Name="GamePathValidBorder"
+                        Visibility="Collapsed"
+                        Background="#0D2200" BorderBrush="#44AA00"
+                        BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,4,0,0">
+                    <TextBlock x:Name="GamePathValidText"
+                               Foreground="#88EE44" FontSize="12" TextWrapping="Wrap"/>
+                </Border>
+
+                <Border x:Name="GamePathInvalidBorder"
+                        Visibility="Collapsed"
+                        Background="#2A0D00" BorderBrush="#AA4400"
+                        BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,4,0,0">
+                    <TextBlock x:Name="GamePathInvalidText"
+                               Foreground="#EE6644" FontSize="12" TextWrapping="Wrap"/>
+                </Border>
+            </StackPanel>
+
+            <!-- PAGE 3: Install Location -->
+            <StackPanel x:Name="Page3" Visibility="Collapsed">
+                <TextBlock Text="Choose Install Location"
+                           Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
+                <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
+                    Choose where SC2 Mod Manager should store its files. All mod data, configuration,
+                    and application files will be kept in this folder.
+                </TextBlock>
+
+                <TextBlock Text="Install Folder" Foreground="#888888" FontSize="11" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBox x:Name="InstallPathBox"
+                             Width="380" Height="32"
+                             Background="#1A2535" Foreground="White"
+                             BorderBrush="#1E90FF" BorderThickness="1"
+                             Padding="8,4" FontSize="13"
+                             VerticalContentAlignment="Center"/>
+                    <Button Content="Browse" Width="90" Margin="8,0,0,0"
+                            Background="#1A2535" Foreground="White"
+                            BorderBrush="#1E90FF" BorderThickness="1"
+                            Click="BrowseInstallPath_Click"/>
+                </StackPanel>
+
+                <CheckBox x:Name="DesktopShortcutCheckBox"
+                          Content="Create a desktop shortcut"
+                          IsChecked="True"
+                          Foreground="White" FontSize="13"
+                          Margin="0,10,0,0"/>
+
+                <Border Background="#111820" BorderBrush="#333" BorderThickness="1"
+        CornerRadius="4" Padding="12" Height="150">
+                    <TextBlock Foreground="#888888" FontSize="11" TextWrapping="Wrap">
+                        <Run FontWeight="Bold" Foreground="#AAAAAA">Note: </Run>
+                        <Run>The application files will be copied from their current location to the folder you choose. You can delete the original downloaded files afterwards.</Run>
+                    </TextBlock>
+                </Border>
+            </StackPanel>
+
+            <!-- PAGE 4: Installing -->
+            <StackPanel x:Name="Page4" Visibility="Collapsed">
+                <TextBlock Text="Installing..."
+                           Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
+                <TextBlock x:Name="InstallStatusText"
+                           Foreground="#CCCCCC" FontSize="13"
+                           TextWrapping="Wrap" Margin="0,0,0,20"
+                           Text="Copying files to install location..."/>
+
+                <ProgressBar x:Name="InstallProgressBar"
+                             Minimum="0" Maximum="100" Height="18"
+                             Background="#1A2535" Foreground="#1E90FF"
+                             BorderBrush="#1E90FF" Margin="0,0,0,8"/>
+
+                <TextBlock x:Name="InstallFileText"
+                           Foreground="#666666" FontSize="11"
+                           TextWrapping="Wrap"/>
+
+                <Border x:Name="InstallCompleteBorder"
+                        Visibility="Collapsed"
+                        Background="#0D2200" BorderBrush="#44AA00"
+                        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="✔  Installation complete!"
+                                   Foreground="#88EE44" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Foreground="#88EE44" FontSize="12" Margin="0,6,0,0"
+                                   TextWrapping="Wrap"
+                                   Text="SC2 Mod Manager has been installed. Click Finish to launch."/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+        </Grid>
+
+        <!-- Footer navigation -->
+        <Border Grid.Row="2" Background="#1A2535" Padding="20,0">
+            <Grid>
+                <Button x:Name="BackButton"
+                        Content="← Back"
+                        HorizontalAlignment="Left"
+                        Background="#1A2535" Foreground="White"
+                        BorderBrush="#444" BorderThickness="1"
+                        Visibility="Collapsed"
+                        Click="Back_Click"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel"
+                            Margin="0,0,10,0"
+                            Background="#1A2535" Foreground="#888"
+                            BorderBrush="#333" BorderThickness="1"
+                            Click="Cancel_Click"/>
+                    <Button x:Name="NextButton"
+                            Content="Next →"
+                            Background="#1E90FF" Foreground="White"
+                            BorderBrush="#1270CC" BorderThickness="1"
+                            FontWeight="SemiBold"
+                            Click="Next_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
     </Grid>
 </Window>
