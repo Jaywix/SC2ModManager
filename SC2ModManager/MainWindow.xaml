@@ -1084,7 +1084,9 @@
                         <Button Content="Select All"   Width="95"  Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
                         <Button Content="Deselect All" Width="95"  Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
                         <Button Content="📥  Import Selected" Style="{StaticResource PrimaryButton}"
-                Width="150" Click="ImportScanResults_Click"/>
+            Width="150" Margin="0,0,6,0" Click="ImportScanResults_Click"/>
+                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"
+            Width="150" Click="DeleteUnknownFiles_Click"/>
                     </StackPanel>
 
                     <!-- Run scan / Back -->

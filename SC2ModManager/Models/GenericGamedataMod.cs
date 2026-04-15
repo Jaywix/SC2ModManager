@@ -60,6 +60,21 @@ namespace SC2ModManager.Models
             }
         }
 
+        private bool isChecked;
+        [JsonIgnore]
+        public bool IsChecked
+        {
+            get => isChecked;
+            set
+            {
+                if (isChecked != value)
+                {
+                    isChecked = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         private bool isDownloaded;
         [JsonIgnore]
         public bool IsDownloaded

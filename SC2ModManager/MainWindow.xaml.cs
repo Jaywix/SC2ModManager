@@ -434,6 +434,29 @@ namespace SC2ModManager
             _ = vm.ScanGamedataForUnknownMods();
         }
 
+        private void DeleteUnknownFiles_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = vm.ScanResults.Where(r => r.IsSelected).ToList();
+
+            if (!selected.Any())
+            {
+                MessageBox.Show("No files selected.", "Nothing to Delete",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Permanently delete {selected.Count} file(s) from gamedata?",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            vm.DeleteUnknownFiles(selected);
+            _ = vm.ScanGamedataForUnknownMods();
+        }
+
         // ================= DOWNLOAD: MAPS =================
 
         private void SelectAllDownloadMaps_Click(object sender, RoutedEventArgs e)
@@ -458,17 +481,22 @@ namespace SC2ModManager
         // ================= DOWNLOAD: GENERIC MODS =================
 
         private void SelectAllDownloadGenericMods_Click(object sender, RoutedEventArgs e)
-            => DownloadGenericModsList.SelectAll();
+        {
+            foreach (var m in vm.DownloadableGenericMods) m.IsChecked = true;
+        }
 
         private void DeselectAllDownloadGenericMods_Click(object sender, RoutedEventArgs e)
-            => DownloadGenericModsList.UnselectAll();
+        {
+            foreach (var m in vm.DownloadableGenericMods) m.IsChecked = false;
+        }
 
         private async void DownloadSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DownloadGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
+            var selected = vm.DownloadableGenericMods.Where(m => m.IsChecked).ToList();
             if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
 
             await vm.DownloadSelectedGenericModsAsync(selected);
+            foreach (var m in selected) m.IsChecked = false;
         }
 
         // ================= MAP FILTERS =================
@@ -613,14 +641,16 @@ namespace SC2ModManager
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            await vm.ImportModFilesAsync(files);
-            MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
+            bool anySuccess = await vm.ImportModFilesAsync(files);
+            if (anySuccess)
+                MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
         }
 
         private async void ManualImportBrowse_Click(object sender, RoutedEventArgs e)
         {
-            await vm.ImportModFromFilePickerAsync();
-            MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
+            bool anySuccess = await vm.ImportModFromFilePickerAsync();
+            if (anySuccess)
+                MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
         }
     }
 }

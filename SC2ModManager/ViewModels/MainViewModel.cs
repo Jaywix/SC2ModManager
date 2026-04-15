@@ -276,6 +276,13 @@ namespace SC2ModManager.ViewModels
                 // Snapshot the original files list after a clean restore
                 presetService.SaveOriginalFilesList(GamePath + "\\gamedata");
 
+                // Mark all maps and generic mods as disabled since gamedata was wiped
+                DisableAllMaps();
+                storageService.SaveMapsState(EnabledMaps.Concat(DisabledMaps));
+
+                DisableAllGenericMods();
+                storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
+
                 MessageBox.Show("Original gamedata restored successfully.");
             }
             catch (Exception ex)
@@ -396,6 +403,39 @@ namespace SC2ModManager.ViewModels
             try
             {
                 presetService.ApplyPreset(SelectedPreset, Path.Combine(GamePath, "gamedata"));
+
+                var presetFileNames = SelectedPreset.Files
+                    .Select(f => Path.GetFileName(f))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // Reload installed mods fresh from disk
+                LoadInstalledMaps();
+                LoadInstalledGenericMods();
+
+                // Disable maps that are NOT in the preset
+                var mapsToDisable = EnabledMaps
+                    .Where(m => !presetFileNames.Contains(m.FileName)).ToList();
+                DisableSelectedMaps(mapsToDisable);
+
+                // Enable maps that ARE in the preset
+                var mapsToEnable = DisabledMaps
+                    .Where(m => presetFileNames.Contains(m.FileName)).ToList();
+                EnableSelectedMaps(mapsToEnable);
+
+                SaveMapsToGamedata();
+
+                // Disable generic mods that are NOT in the preset
+                var modsToDisable = EnabledGenericMods
+                    .Where(m => !presetFileNames.Contains(m.FileName)).ToList();
+                DisableSelectedGenericMods(modsToDisable);
+
+                // Enable generic mods that ARE in the preset
+                var modsToEnable = DisabledGenericMods
+                    .Where(m => presetFileNames.Contains(m.FileName)).ToList();
+                EnableSelectedGenericMods(modsToEnable);
+
+                SaveGenericModsToGamedata();
+
                 MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
             }
             catch (Exception ex)
@@ -862,13 +902,12 @@ namespace SC2ModManager.ViewModels
 
         public void UninstallGenericMod(GenericGamedataMod mod)
         {
-            List<GenericGamedataMod> deleted = [];
-            deleted.Add(mod);
-            DisableSelectedGenericMods(deleted);
-
             storageService.DeleteGenericMod(mod);
             EnabledGenericMods.Remove(mod);
             DisabledGenericMods.Remove(mod);
+
+            OnPropertyChanged(nameof(EnabledGenericMods));
+            OnPropertyChanged(nameof(DisabledGenericMods));
         }
 
         public void UninstallAllGenericMods()
@@ -1024,7 +1063,7 @@ namespace SC2ModManager.ViewModels
 
         // ================= MANUAL IMPORT =================
 
-        public async Task ImportModFromFilePickerAsync()
+        public async Task<bool> ImportModFromFilePickerAsync()
         {
             var dialog = new OpenFileDialog
             {
@@ -1033,14 +1072,15 @@ namespace SC2ModManager.ViewModels
                 Multiselect = true
             };
 
-            if (dialog.ShowDialog() != true) return;
+            if (dialog.ShowDialog() != true) return false;
 
-            await ImportModFilesAsync(dialog.FileNames);
+            return await ImportModFilesAsync(dialog.FileNames);
         }
 
-        public async Task ImportModFilesAsync(IEnumerable<string> files)
+        public async Task<bool> ImportModFilesAsync(IEnumerable<string> files)
         {
             List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
+            int successCount = 0;
 
             foreach (var file in files)
             {
@@ -1056,13 +1096,10 @@ namespace SC2ModManager.ViewModels
 
                         foreach (var scd in Directory.GetFiles(tempDir, "*.scd", SearchOption.AllDirectories))
                         {
-                            if (installed.Any(m => m.FileName.Equals(Path.GetFileName(scd), StringComparison.OrdinalIgnoreCase)))
-                            {
-                                // Do nothing for now - Maybe add something that says that it failed in the future, but for now it will just say success even if it fails
-                            }
-                            else
+                            if (!installed.Any(m => m.FileName.Equals(Path.GetFileName(scd), StringComparison.OrdinalIgnoreCase)))
                             {
                                 await storageService.ImportGenericModAsync(scd);
+                                successCount++;
                             }
                         }
                         Directory.Delete(tempDir, true);
@@ -1070,13 +1107,13 @@ namespace SC2ModManager.ViewModels
                     else if (file.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
                     {
                         if (installed.Any(m => m.FileName.Equals(Path.GetFileName(file), StringComparison.OrdinalIgnoreCase)))
-                        {
-                            throw new Exception($"A mod with the filename '{Path.GetFileName(file)}' is already installed. Please uninstall it before downloading.");
-                        }
+                            throw new Exception($"A mod with the filename '{Path.GetFileName(file)}' is already installed.");
 
                         await storageService.ImportGenericModAsync(file);
+                        successCount++;
                     }
-                    else {
+                    else
+                    {
                         MessageBox.Show($"Unsupported file type: {Path.GetFileName(file)}");
                     }
                 }
@@ -1087,6 +1124,7 @@ namespace SC2ModManager.ViewModels
             }
 
             LoadInstalledGenericMods();
+            return successCount > 0;
         }
 
         // ================= UPDATER =================
