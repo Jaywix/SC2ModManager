@@ -79,8 +79,73 @@
                           Margin="0,14,0,0"/>
             </StackPanel>
 
-            <!-- PAGE 2: Game Path -->
+            <!-- PAGE 2: Theme Selection -->
             <StackPanel x:Name="Page2" Visibility="Collapsed">
+                <TextBlock Text="Choose Your Theme"
+               Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
+                <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
+        Select a faction theme for your mod manager. You can change this later in Settings.
+                </TextBlock>
+
+                <UniformGrid Columns="2" Margin="0,0,0,0">
+
+                    <!-- Standard -->
+                    <Border x:Name="ThemeStandardCard" Margin="0,0,8,8" CornerRadius="6" Padding="14"
+                Background="#1A2535" BorderThickness="2" BorderBrush="#444444"
+                Cursor="Hand" MouseLeftButtonUp="ThemeCard_Standard_Click">
+                        <StackPanel>
+                            <TextBlock Text="⚡  Jaywix's Standard"
+                           Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="The original UEF-inspired dark blue theme."
+                           Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
+                            <Border Height="6" CornerRadius="3" Background="#1E90FF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- UEF -->
+                    <Border x:Name="ThemeUEFCard" Margin="8,0,0,8" CornerRadius="6" Padding="14"
+                Background="#1A2535" BorderThickness="2" BorderBrush="#444444"
+                Cursor="Hand" MouseLeftButtonUp="ThemeCard_UEF_Click">
+                        <StackPanel>
+                            <TextBlock Text="🔵  UEF"
+                           Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="United Earth Federation. Steel blue military aesthetic."
+                           Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
+                            <Border Height="6" CornerRadius="3" Background="#1E90FF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Cybran -->
+                    <Border x:Name="ThemeCybranCard" Margin="0,0,8,0" CornerRadius="6" Padding="14"
+                Background="#1F0A08" BorderThickness="2" BorderBrush="#444444"
+                Cursor="Hand" MouseLeftButtonUp="ThemeCard_Cybran_Click">
+                        <StackPanel>
+                            <TextBlock Text="🔴  Cybran Nation"
+                           Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Industrial crimson red. Dark and aggressive."
+                           Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
+                            <Border Height="6" CornerRadius="3" Background="#CC2200" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Aeon -->
+                    <Border x:Name="ThemeAeonCard" Margin="8,0,0,0" CornerRadius="6" Padding="14"
+                Background="#0A1A18" BorderThickness="2" BorderBrush="#444444"
+                Cursor="Hand" MouseLeftButtonUp="ThemeCard_Aeon_Click">
+                        <StackPanel>
+                            <TextBlock Text="🟢  Aeon Illuminate"
+                           Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Spiritual teal and gold. Clean and otherworldly."
+                           Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
+                            <Border Height="6" CornerRadius="3" Background="#00BFA5" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                </UniformGrid>
+            </StackPanel>
+
+            <!-- PAGE 3: Game Path -->
+            <StackPanel x:Name="Page3" Visibility="Collapsed">
                 <TextBlock Text="Locate Supreme Commander 2"
                            Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
                 <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
@@ -119,8 +184,8 @@
                 </Border>
             </StackPanel>
 
-            <!-- PAGE 3: Install Location -->
-            <StackPanel x:Name="Page3" Visibility="Collapsed">
+            <!-- PAGE 4: Install Location -->
+            <StackPanel x:Name="Page4" Visibility="Collapsed">
                 <TextBlock Text="Choose Install Location"
                            Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
                 <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
@@ -157,8 +222,8 @@
                 </Border>
             </StackPanel>
 
-            <!-- PAGE 4: Installing -->
-            <StackPanel x:Name="Page4" Visibility="Collapsed">
+            <!-- PAGE 5: Installing -->
+            <StackPanel x:Name="Page5" Visibility="Collapsed">
                 <TextBlock Text="Installing..."
                            Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
                 <TextBlock x:Name="InstallStatusText"

@@ -27,6 +27,11 @@ namespace SC2ModManager.Models
         public string GamePath { get; set; } = string.Empty;
 
         /// <summary>
+        ///     This defines the applications color theme
+        /// </summary>
+        public string Theme { get; set; } = "standard";
+
+        /// <summary>
         ///     This is a json representation of all the maps installed. This json must be of the same format as the Map model 
         ///     and the github repository's maps.json file. This is used to keep track of which maps are enabled and to display map information in the UI.
         /// </summary>

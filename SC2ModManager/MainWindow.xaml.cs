@@ -9,6 +9,7 @@
 */
 using Microsoft.Win32;
 using SC2ModManager.Models;
+using SC2ModManager.Services;
 using SC2ModManager.ViewModels;
 using System;
 using System.IO;
@@ -24,6 +25,9 @@ namespace SC2ModManager
     {
         private MainViewModel vm;
 
+        private readonly ThemeService themeService = new(new ConfigService());
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -34,6 +38,60 @@ namespace SC2ModManager
             VersionText.Text = $"v{version?.Major}.{version?.Minor}.{version?.Build}";
 
             ShowView("Home");
+            ApplyCurrentTheme();
+        }
+
+        // ================= THEMES ===============
+        public void ApplyCurrentTheme()
+        {
+            string theme = themeService.GetCurrentTheme();
+            themeService.ApplyThemeResources(theme);
+
+            // Swap background images
+            string mainImg = theme switch
+            {
+                AppTheme.Cybran => "/Assets/cybran.png",
+                AppTheme.Aeon => "/Assets/aeon.png",
+                AppTheme.UEF => "/Assets/uef.png",
+                _ => "/Assets/uef.png"
+            };
+
+            string sidebarImg = theme switch
+            {
+                AppTheme.Cybran => "/Assets/cybran_acu.png",
+                AppTheme.Aeon => "/Assets/aeon_acu.png",
+                AppTheme.UEF => "/Assets/uef_acu.png",
+                _ => "/Assets/spoiler_profile.png"
+            };
+
+            MainBackgroundBrush.ImageSource = new System.Windows.Media.Imaging.BitmapImage(
+                new System.Uri(mainImg, System.UriKind.Relative));
+            SidebarBackgroundBrush.ImageSource = new System.Windows.Media.Imaging.BitmapImage(
+                new System.Uri(sidebarImg, System.UriKind.Relative));
+        }
+
+        private void ThemeStandard_Click(object sender, RoutedEventArgs e)
+        {
+            vm.ChangeTheme(AppTheme.Standard);
+            ApplyCurrentTheme();
+        }
+
+        private void ThemeUEF_Click(object sender, RoutedEventArgs e)
+        {
+            vm.ChangeTheme(AppTheme.UEF);
+            ApplyCurrentTheme();
+        }
+
+        private void ThemeCybran_Click(object sender, RoutedEventArgs e)
+        {
+            vm.ChangeTheme(AppTheme.Cybran);
+            ApplyCurrentTheme();
+        }
+
+        private void ThemeAeon_Click(object sender, RoutedEventArgs e)
+        {
+            vm.ChangeTheme(AppTheme.Aeon);
+            ApplyCurrentTheme();
         }
 
         // ================= NAVIGATION =================

@@ -91,4 +91,14 @@ namespace SC2ModManager.Models
             return Path.Combine(install, "Data");
         }
     }
+
+
+
+    public static class AppTheme
+    {
+        public const string Standard = "standard";
+        public const string UEF = "uef";
+        public const string Cybran = "cybran";
+        public const string Aeon = "aeon";
+    }
 }

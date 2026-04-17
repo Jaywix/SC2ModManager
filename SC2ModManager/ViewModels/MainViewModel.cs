@@ -56,6 +56,18 @@ namespace SC2ModManager.ViewModels
         // I could maybe change this in the future
         private GameService gameService;
 
+
+        // ================= THEME =================
+
+        private readonly ThemeService themeService = new(new ConfigService());
+
+        public void ChangeTheme(string theme)
+        {
+            themeService.ApplyTheme(theme);
+        }
+
+        public string GetCurrentTheme() => themeService.GetCurrentTheme();
+
         // ================= NAVIGATION =================
 
         private MainView currentView;

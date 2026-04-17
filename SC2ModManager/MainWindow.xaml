@@ -318,13 +318,13 @@
         </Grid.ColumnDefinitions>
 
         <Grid.Background>
-            <ImageBrush ImageSource="/Assets/uef.png" Stretch="UniformToFill"/>
+            <ImageBrush x:Name="MainBackgroundBrush" ImageSource="/Assets/uef.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <!-- ===== SIDEBAR ===== -->
         <Border Grid.Column="0">
             <Border.Background>
-                <ImageBrush ImageSource="/Assets/spoiler_profile.png" Stretch="UniformToFill"/>
+                <ImageBrush x:Name="SidebarBackgroundBrush" ImageSource="/Assets/spoiler_profile.png" Stretch="UniformToFill"/>
             </Border.Background>
 
             <!-- Dark overlay so text is readable -->
@@ -552,6 +552,22 @@
                             <TextBlock Text="Current path:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,4"/>
                             <TextBlock Text="{Binding GamePath}" Foreground="White"
                        FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
+                            <TextBlock Text="Theme" Foreground="{StaticResource AccentBrush}"
+           FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                            <TextBlock Text="Choose your faction theme. Changes apply immediately."
+           Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                            <WrapPanel>
+                                <Button Content="⚡  Jaywix Standard" Width="160" Margin="0,0,8,8"
+            Click="ThemeStandard_Click"/>
+                                <Button Content="🔵  UEF"             Width="160" Margin="0,0,8,8"
+            Click="ThemeUEF_Click"/>
+                                <Button Content="🔴  Cybran"          Width="160" Margin="0,0,8,8"
+            Click="ThemeCybran_Click"/>
+                                <Button Content="🟢  Aeon Illuminate" Width="160" Margin="0,0,8,8"
+            Click="ThemeAeon_Click"/>
+                            </WrapPanel>
                             <Separator Style="{StaticResource HRule}"/>
                             <TextBlock Text="Change Game Path" Foreground="#AAAAAA"
                        FontSize="11" Margin="0,0,0,6"/>

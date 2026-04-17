@@ -22,7 +22,8 @@ namespace SC2ModManager
     public partial class SetupWindow : Window
     {
         private int currentPage = 1;
-        private const int totalPages = 4;
+        private const int totalPages = 5;
+        private string selectedTheme = AppTheme.Standard;
 
         private string validatedGamePath = null;
         private string validatedInstallPath = null;
@@ -54,10 +55,9 @@ namespace SC2ModManager
         {
             if (!CanAdvance()) return;
 
-            if (currentPage == 3)
+            if (currentPage == 4)
             {
-                // Start install on page 4
-                currentPage = 4;
+                currentPage = 5;
                 UpdateWizardState();
                 _ = RunInstallAsync();
                 return;
@@ -89,50 +89,83 @@ namespace SC2ModManager
             return currentPage switch
             {
                 1 => AcceptTermsCheckBox.IsChecked == true,
-                2 => validatedGamePath != null,
-                3 => !string.IsNullOrWhiteSpace(InstallPathBox.Text),
-                4 => true,
+                2 => true, // theme — always ok, defaults to standard
+                3 => validatedGamePath != null,
+                4 => !string.IsNullOrWhiteSpace(InstallPathBox.Text),
+                5 => true,
                 _ => false
             };
         }
 
         private void UpdateWizardState()
         {
-            // Show/hide pages
             Page1.Visibility = currentPage == 1 ? Visibility.Visible : Visibility.Collapsed;
             Page2.Visibility = currentPage == 2 ? Visibility.Visible : Visibility.Collapsed;
             Page3.Visibility = currentPage == 3 ? Visibility.Visible : Visibility.Collapsed;
             Page4.Visibility = currentPage == 4 ? Visibility.Visible : Visibility.Collapsed;
+            Page5.Visibility = currentPage == 5 ? Visibility.Visible : Visibility.Collapsed;
 
-            // Header
             WizardTitle.Text = currentPage switch
             {
                 1 => "Welcome",
-                2 => "Locate Game",
-                3 => "Install Location",
-                4 => "Installing",
+                2 => "Choose Theme",
+                3 => "Locate Game",
+                4 => "Install Location",
+                5 => "Installing",
                 _ => ""
             };
             WizardSubtitle.Text = $"Step {currentPage} of {totalPages}";
 
-            // Back button
-            BackButton.Visibility = currentPage > 1 && currentPage < 4
+            BackButton.Visibility = currentPage > 1 && currentPage < 5
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-            // Next button text
             NextButton.Content = currentPage switch
             {
-                3 => "Install",
-                4 => "Finish",
+                4 => "Install",
+                5 => "Finish",
                 _ => "Next →"
             };
 
-            // Disable Next if page 1 terms not accepted yet
-            NextButton.IsEnabled = currentPage != 4 || InstallCompleteBorder.Visibility == Visibility.Visible;
+            NextButton.IsEnabled = currentPage != 5 || InstallCompleteBorder.Visibility == Visibility.Visible;
         }
 
-        // ================= PAGE 2: GAME PATH =================
+        // ================= PAGE 2: THEME SELECTION =================
+
+        private void SelectThemeCard(string theme)
+        {
+            selectedTheme = theme;
+
+            ThemeStandardCard.BorderBrush = theme == AppTheme.Standard
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
+
+            ThemeUEFCard.BorderBrush = theme == AppTheme.UEF
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
+
+            ThemeCybranCard.BorderBrush = theme == AppTheme.Cybran
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCC, 0x22, 0x00))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
+
+            ThemeAeonCard.BorderBrush = theme == AppTheme.Aeon
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
+        }
+
+        private void ThemeCard_Standard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+            => SelectThemeCard(AppTheme.Standard);
+
+        private void ThemeCard_UEF_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+            => SelectThemeCard(AppTheme.UEF);
+
+        private void ThemeCard_Cybran_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+            => SelectThemeCard(AppTheme.Cybran);
+
+        private void ThemeCard_Aeon_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+            => SelectThemeCard(AppTheme.Aeon);
+
+        // ================= PAGE 3: GAME PATH =================
 
         private void BrowseGamePath_Click(object sender, RoutedEventArgs e)
         {
@@ -166,7 +199,7 @@ namespace SC2ModManager
             }
         }
 
-        // ================= PAGE 3: INSTALL PATH =================
+        // ================= PAGE 4: INSTALL PATH =================
 
         private void BrowseInstallPath_Click(object sender, RoutedEventArgs e)
         {
@@ -175,7 +208,7 @@ namespace SC2ModManager
                 InstallPathBox.Text = dialog.FolderName;
         }
 
-        // ================= PAGE 4: INSTALL =================
+        // ================= PAGE 5: INSTALL =================
 
         private async Task RunInstallAsync()
         {
@@ -195,8 +228,12 @@ namespace SC2ModManager
             {
                 await installService.InstallToFolderAsync(installFolder, progress);
 
-                // Save game path to config in the new location
-                var config = new AppConfig { GamePath = validatedGamePath };
+                // Save game path to config in the new location and the theme as well
+                var config = new AppConfig
+                {
+                    GamePath = validatedGamePath,
+                    Theme = selectedTheme
+                };
                 configService.Save(config);
 
                 // Snapshot the original gamedata files so the scan knows what belongs there
