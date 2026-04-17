@@ -129,6 +129,18 @@ namespace SC2ModManager
         private void LaunchGame_Click(object sender, RoutedEventArgs e) => vm.LaunchGame();
         private async void Update_Click(object sender, RoutedEventArgs e) => await vm.RunUpdater();
 
+        private void NewsLink_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string url && !string.IsNullOrEmpty(url))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+        }
+
         // ================= SETTINGS =================
 
         private void BrowseGamePath_Click(object sender, RoutedEventArgs e)

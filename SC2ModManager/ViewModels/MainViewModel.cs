@@ -65,6 +65,10 @@ namespace SC2ModManager.ViewModels
             set { currentView = value; OnPropertyChanged(nameof(CurrentView)); }
         }
 
+        // ================= NEWS =================
+        private readonly NewsService newsService = new();
+        public ObservableCollection<NewsItem> NewsItems { get; set; } = new();
+
         // ================= SCAN RESULTS =================
         public ObservableCollection<ScanResultItem> ScanResults { get; set; } = new();
         public ObservableCollection<ScanResultItem> ScanMatchResults { get; set; } = new();
@@ -198,6 +202,7 @@ namespace SC2ModManager.ViewModels
 
             InitializeGamePath();
             _ = CheckForUpdatesAsync();
+            _ = LoadNewsAsync();
         }
 
         // ================= GAME =================
@@ -247,6 +252,19 @@ namespace SC2ModManager.ViewModels
             config.GamePath = path;
             configService.Save(config);
             GamePath = path;
+        }
+
+        // ================= NEWS =================
+
+        public async Task LoadNewsAsync()
+        {
+            try
+            {
+                var items = await newsService.GetNewsAsync();
+                NewsItems = new ObservableCollection<NewsItem>(items);
+                OnPropertyChanged(nameof(NewsItems));
+            }
+            catch { }
         }
 
         // ================= BACKUPS =================

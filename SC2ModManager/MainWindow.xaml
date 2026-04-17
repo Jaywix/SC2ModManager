@@ -12,8 +12,8 @@
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <local:NullToVisibilityConverter        x:Key="NullToVisibilityConverter"/>
         <local:NullToInverseVisibilityConverter x:Key="NullToInverseVisibilityConverter"/>
-        
-        
+        <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+
         <!-- ===== COLORS ===== -->
         <Color x:Key="AccentColor">#1E90FF</Color>
         <Color x:Key="AccentDarkColor">#1270CC</Color>
@@ -374,29 +374,172 @@
         <Border Grid.Column="1" Background="#CC0A0F18">
             <Grid Margin="20,16,20,16">
 
-                <!-- ===== HOME ===== -->
-                <StackPanel x:Name="HomeView">
-                    <TextBlock Text="Home" Style="{StaticResource SectionHeader}"/>
 
-                    <Border Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
+                <!-- ===== HOME ===== -->
+                <Grid x:Name="HomeView">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Home" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Launch -->
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Game" Foreground="{StaticResource AccentBrush}"
-                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <Button Content="▶  Launch Game" Style="{StaticResource PrimaryButton}"
-                                    Height="40" Click="LaunchGame_Click"/>
+                    Height="40" Click="LaunchGame_Click"/>
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource ContentPanel}"
-                            Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <!-- Update (only shown if available) -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,12"
+            Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Update Available" Foreground="{StaticResource AccentBrush}"
-                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
                             <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
                         </StackPanel>
                     </Border>
-                </StackPanel>
+
+                    <!-- News feed -->
+                    <Border Grid.Row="3" Style="{StaticResource ContentPanel}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="News &amp; Announcements"
+                       Foreground="{StaticResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12"/>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding NewsItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,12" CornerRadius="6" Padding="16">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#CC0D1117"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Type}" Value="tournament">
+                                                                <Setter Property="BorderBrush" Value="#FFAA00"/>
+                                                                <Setter Property="Background" Value="#1A1400"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Type}" Value="update">
+                                                                <Setter Property="BorderBrush" Value="#1E90FF"/>
+                                                                <Setter Property="Background" Value="#0D1A2A"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Type}" Value="discord">
+                                                                <Setter Property="BorderBrush" Value="#7289DA"/>
+                                                                <Setter Property="Background" Value="#0D0F1A"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+
+                                                <StackPanel>
+                                                    <Grid Margin="0,0,0,8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Border Grid.Column="0" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#33FFFFFF"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Type}" Value="tournament">
+                                                                            <Setter Property="Background" Value="#55FFAA00"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Type}" Value="update">
+                                                                            <Setter Property="Background" Value="#331E90FF"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Type}" Value="discord">
+                                                                            <Setter Property="Background" Value="#337289DA"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="GENERAL"/>
+                                                                        <Setter Property="Foreground" Value="#AAAAAA"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Type}" Value="tournament">
+                                                                                <Setter Property="Text" Value="🏆 TOURNAMENT"/>
+                                                                                <Setter Property="Foreground" Value="#FFAA00"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding Type}" Value="update">
+                                                                                <Setter Property="Text" Value="⬆ UPDATE"/>
+                                                                                <Setter Property="Foreground" Value="#1E90FF"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding Type}" Value="discord">
+                                                                                <Setter Property="Text" Value="💬 DISCORD"/>
+                                                                                <Setter Property="Foreground" Value="#7289DA"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+
+                                                        <TextBlock Grid.Column="1" Text="{Binding Title}"
+                                                   FontSize="15" FontWeight="SemiBold"
+                                                   Foreground="White" VerticalAlignment="Center"
+                                                   TextWrapping="Wrap"/>
+
+                                                        <TextBlock Grid.Column="2" Text="{Binding Date}"
+                                                   FontSize="11" Foreground="#666666"
+                                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                    </Grid>
+
+                                                    <!--Background="black"-->
+                                                    <Border CornerRadius="4" 
+                                                            Margin="0,0,0,10"
+                                                            MaxHeight="600">
+                                                        <Image Source="{Binding ImageUrl}"
+                                                           Stretch="Uniform"
+                                                           VerticalAlignment="Center"/>                     
+                                                    </Border>
+
+
+                                                    <TextBlock Text="{Binding Body}" FontSize="13" Foreground="#CCCCCC"
+                                               TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10"/>
+
+                                                    <Button HorizontalAlignment="Left"
+                                            Content="{Binding LinkText}"
+                                            Visibility="{Binding LinkUrl, Converter={StaticResource StringToVisibilityConverter}}"
+                                            Tag="{Binding LinkUrl}"
+                                            Click="NewsLink_Click">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
+                                                                <Setter Property="Height" Value="30"/>
+                                                                <Setter Property="FontSize" Value="12"/>
+                                                                <Setter Property="Padding" Value="12,4"/>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
 
                 <!-- ===== SETTINGS ===== -->
                 <StackPanel x:Name="SettingsView" Visibility="Collapsed">
