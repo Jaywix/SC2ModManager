@@ -40,9 +40,14 @@ namespace SC2ModManager.Services
 
             string downloadUrl = null;
 
-            if (assets.GetArrayLength() > 0)
+            foreach (var asset in assets.EnumerateArray())
             {
-                downloadUrl = assets[0].GetProperty("browser_download_url").GetString();
+                string name = asset.GetProperty("name").GetString();
+                if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    downloadUrl = asset.GetProperty("browser_download_url").GetString();
+                    break;
+                }
             }
 
             return (new Version(tag.TrimStart('v')), downloadUrl);

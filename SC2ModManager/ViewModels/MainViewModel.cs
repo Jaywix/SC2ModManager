@@ -1216,9 +1216,24 @@ namespace SC2ModManager.ViewModels
 
         public async Task DownloadFileWithProgress(string url, string outputPath)
         {
-            using HttpClient client = new HttpClient();
+            using HttpClient client = new HttpClient(new HttpClientHandler
+            {
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 10
+            });
+
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager");
+
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
+
+            // DEBUG
+            //string contentType = response.Content.Headers.ContentType?.MediaType ?? "unknown";
+            //long contentLength = response.Content.Headers.ContentLength ?? -1;
+            //File.WriteAllText(
+            //    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "download_debug.txt"),
+            //    $"URL: {url}\nContent-Type: {contentType}\nContent-Length: {contentLength}"
+            //);
 
             var totalBytes = response.Content.Headers.ContentLength ?? -1L;
             var canReport = totalBytes != -1;
@@ -1238,6 +1253,12 @@ namespace SC2ModManager.ViewModels
                 if (canReport)
                     DownloadProgress = (double)totalRead / totalBytes * 100;
             }
+
+            await fileStream.FlushAsync();
+
+            // Verify we got the full file
+            if (canReport && totalRead != totalBytes)
+                throw new Exception($"Download incomplete. Expected {totalBytes} bytes but got {totalRead}.");
         }
 
         // ================= SETTINGS =================
