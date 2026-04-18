@@ -1286,15 +1286,41 @@ namespace SC2ModManager.ViewModels
                 //    $"zipPath: {zipPath}\ninstallPath: {installPath}\nexeName: {exeName}\nFull args: \"{zipPath}\" \"{installPath}\" \"{exeName}\""
                 //);
 
-                Process.Start(new ProcessStartInfo
+                try
                 {
-                    FileName = updaterPath,
-                    Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
-                    UseShellExecute = true,
-                    WorkingDirectory = installPath
-                });
+                    string zoneFile = updaterPath + ":Zone.Identifier";
+                    if (File.Exists(zoneFile))
+                        File.Delete(zoneFile);
 
-                Application.Current.Shutdown();
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = updaterPath,
+                        Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
+                        UseShellExecute = true,
+                        WorkingDirectory = installPath
+                    });
+                }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // ERROR_CANCELLED
+                {
+                    MessageBox.Show(
+                        $"The update was cancelled. If Windows is blocking the updater, please run SC2MMUpdater.exe manually first:\n\n" +
+                        $"1. Open this folder: {Path.GetDirectoryName(updaterPath)}\n" +
+                        $"2. Double-click SC2MMUpdater.exe\n" +
+                        $"3. Click \"More info\"\n" +
+                        $"4. Click \"Run Anyway\"\n" +
+                        $"5. Close the window\n\n" +
+                        $"Then try updating again.",
+                        "Update Cancelled",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+
+                    // Clean up the downloaded zip since we aren't updating
+                    if (File.Exists(zipPath))
+                        File.Delete(zipPath);
+                }
+
+                //Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
