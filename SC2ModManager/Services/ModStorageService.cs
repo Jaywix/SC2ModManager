@@ -420,10 +420,10 @@ namespace SC2ModManager.Services
                 known.Add(Path.GetFileName(file));
 
             // Generic mods
-            foreach(var file in Directory.GetFiles(genericModsEnabledPath, "*scd"))
+            foreach(var file in Directory.GetFiles(genericModsEnabledPath, "*.scd"))
                 known.Add(Path.GetFileName(file));
 
-            foreach(var file in Directory.GetFiles(genericModsDisabledPath, "*scd"))
+            foreach(var file in Directory.GetFiles(genericModsDisabledPath, "*.scd"))
                 known.Add(Path.GetFileName(file));
 
 

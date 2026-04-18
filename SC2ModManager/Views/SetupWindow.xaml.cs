@@ -299,7 +299,7 @@ namespace SC2ModManager
             NextButton.Click -= Next_Click;
             NextButton.Click += (s, ev) =>
             {
-                if (currentPage == 4 && InstallCompleteBorder.Visibility == Visibility.Visible)
+                if (currentPage == 5 && InstallCompleteBorder.Visibility == Visibility.Visible)
                     Finish();
                 else
                     Next_Click(s, ev);

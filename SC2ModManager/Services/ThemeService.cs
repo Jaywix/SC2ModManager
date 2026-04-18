@@ -1,6 +1,7 @@
 ﻿using SC2ModManager.Models;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace SC2ModManager.Services
 {
@@ -36,8 +37,10 @@ namespace SC2ModManager.Services
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x0D, 0x11, 0x17);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0A, 0x0F, 0x18);
-                    res["ThemeMainBgImage"] = "/Assets/uef.png";
-                    res["ThemeSidebarImage"] = "/Assets/uef_acu.png";
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x1E, 0x90, 0xFF));
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x1E, 0x90, 0xFF));
+                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/uef.png");
+                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/uefacu.png");
                     break;
 
                 case AppTheme.Cybran:
@@ -48,8 +51,10 @@ namespace SC2ModManager.Services
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x3D, 0x0F, 0x0A);
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x10, 0x06, 0x05);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0C, 0x04, 0x03);
-                    res["ThemeMainBgImage"] = "/Assets/cybran.png";
-                    res["ThemeSidebarImage"] = "/Assets/cybran_acu.png";
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0xCC, 0x22, 0x00));
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0xCC, 0x22, 0x00));
+                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/cybran.png");
+                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/cybranacu.png");
                     break;
 
                 case AppTheme.Aeon:
@@ -60,8 +65,10 @@ namespace SC2ModManager.Services
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x0F, 0x2A, 0x26);
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x08, 0x12, 0x10);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x05, 0x0E, 0x0C);
-                    res["ThemeMainBgImage"] = "/Assets/aeon.png";
-                    res["ThemeSidebarImage"] = "/Assets/aeon_acu.png";
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x00, 0xBF, 0xA5));
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x00, 0xBF, 0xA5));
+                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/aeon.png");
+                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/aeonacu.png");
                     break;
 
                 default: // Standard
@@ -71,18 +78,46 @@ namespace SC2ModManager.Services
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x0D, 0x11, 0x17);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0A, 0x0F, 0x18);
-                    res["ThemeMainBgImage"] = "/Assets/uef.png";
-                    res["ThemeSidebarImage"] = "/Assets/spoiler_profile.png";
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x1E, 0x90, 0xFF));
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x1E, 0x90, 0xFF));
+                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/uef.png");
+                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/spoiler_profile.png");
                     break;
             }
 
-            // Rebuild brushes from updated colors
-            res["AccentBrush"] = new SolidColorBrush((Color)res["ThemeAccentColor"]);
-            res["AccentDarkBrush"] = new SolidColorBrush((Color)res["ThemeAccentDarkColor"]);
-            res["ButtonBaseBrush"] = new SolidColorBrush((Color)res["ThemeButtonBaseColor"]);
-            res["ButtonHoverBrush"] = new SolidColorBrush((Color)res["ThemeButtonHoverColor"]);
-            res["PanelBackgroundBrush"] = new SolidColorBrush((Color)res["ThemePanelBgColor"]);
-            res["SidebarOverlayBrush"] = new SolidColorBrush((Color)res["ThemeSidebarBgColor"]);
+            // Update the Color keys so StaticResource references in styles also update
+            var accent = (Color)res["ThemeAccentColor"];
+            var accentDark = (Color)res["ThemeAccentDarkColor"];
+            var btnBase = (Color)res["ThemeButtonBaseColor"];
+            var btnHover = (Color)res["ThemeButtonHoverColor"];
+            var panelBg = (Color)res["ThemePanelBgColor"];
+            var sidebarBg = (Color)res["ThemeSidebarBgColor"];
+
+            res["AccentColor"] = accent;
+            res["AccentDarkColor"] = accentDark;
+            res["ButtonBaseColor"] = btnBase;
+            res["ButtonHoverColor"] = btnHover;
+            res["ButtonPressedColor"] = accentDark;
+
+            // Rebuild brushes
+            res["AccentBrush"] = new SolidColorBrush(accent);
+            res["AccentDarkBrush"] = new SolidColorBrush(accentDark);
+            res["ButtonBaseBrush"] = new SolidColorBrush(btnBase);
+            res["ButtonHoverBrush"] = new SolidColorBrush(btnHover);
+            res["ButtonPressedBrush"] = new SolidColorBrush(accentDark);
+            res["PanelBackgroundBrush"] = new SolidColorBrush(panelBg);
+            res["SidebarOverlayBrush"] = new SolidColorBrush(sidebarBg);
+        }
+
+        private BitmapImage MakeBitmapImage(string assetPath)
+        {
+            var img = new BitmapImage();
+            img.BeginInit();
+            img.UriSource = new Uri($"pack://application:,,,{assetPath}", UriKind.Absolute);
+            img.CacheOption = BitmapCacheOption.OnLoad;
+            img.EndInit();
+            img.Freeze();
+            return img;
         }
 
         public string GetCurrentTheme()

@@ -117,7 +117,7 @@ namespace SC2ModManager.Models
                 }
             };
 
-            this.OnPropertyChanged(nameof(ID));
+            //this.OnPropertyChanged(nameof(ID));
         }
 
 
@@ -146,7 +146,7 @@ namespace SC2ModManager.Models
                 }
             };
 
-            this.OnPropertyChanged(nameof(ID));
+            //this.OnPropertyChanged(nameof(ID));
         }
 
 

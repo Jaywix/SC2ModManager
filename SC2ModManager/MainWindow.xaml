@@ -15,7 +15,7 @@
         <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
 
         <!-- ===== COLORS ===== -->
-        <Color x:Key="AccentColor">#1E90FF</Color>
+        <!--<Color x:Key="AccentColor">#1E90FF</Color>
         <Color x:Key="AccentDarkColor">#1270CC</Color>
         <Color x:Key="ButtonBaseColor">#1A2535</Color>
         <Color x:Key="ButtonHoverColor">#1E3550</Color>
@@ -29,13 +29,13 @@
         <SolidColorBrush x:Key="ButtonPressedBrush"    Color="{StaticResource ButtonPressedColor}"/>
         <SolidColorBrush x:Key="DisabledButtonBrush"   Color="{StaticResource DisabledButtonColor}"/>
         <SolidColorBrush x:Key="PanelBackgroundBrush"  Color="#CC0D1117"/>
-        <SolidColorBrush x:Key="SidebarOverlayBrush"   Color="#CC0A0F18"/>
+        <SolidColorBrush x:Key="SidebarOverlayBrush"   Color="#CC0A0F18"/>-->
 
         <!-- ===== BUTTON STYLE ===== -->
         <Style x:Key="ModernButton" TargetType="Button">
             <Setter Property="Foreground"        Value="White"/>
-            <Setter Property="Background"        Value="{StaticResource ButtonBaseBrush}"/>
-            <Setter Property="BorderBrush"       Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Background"  Value="{DynamicResource ButtonBaseBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness"   Value="1"/>
             <Setter Property="Padding"           Value="12,6"/>
             <Setter Property="FontSize"          Value="13"/>
@@ -58,15 +58,15 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background"   Value="{StaticResource ButtonHoverBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush"  Value="White"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background"  Value="{StaticResource ButtonPressedBrush}"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DisabledButtonBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
                                 <Setter Property="Foreground" Value="#666"/>
                             </Trigger>
@@ -78,8 +78,8 @@
 
         <!-- Accent-filled button for primary actions (Save, Download, Apply) -->
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background"   Value="{StaticResource AccentBrush}"/>
-            <Setter Property="BorderBrush"  Value="{StaticResource AccentDarkBrush}"/>
+            <Setter Property="Background"  Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentDarkBrush}"/>
             <Setter Property="FontWeight"   Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -96,13 +96,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentDarkBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentDarkBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background"  Value="#0D5FAA"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentDarkBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DisabledButtonBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
                                 <Setter Property="Foreground" Value="#666"/>
                             </Trigger>
@@ -137,7 +137,7 @@
                                 <Setter TargetName="border" Property="Background"  Value="#CC2200"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background"   Value="{StaticResource DisabledButtonBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DisabledButtonBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush"  Value="#444"/>
                                 <Setter Property="Foreground" Value="#666"/>
                             </Trigger>
@@ -168,11 +168,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentBrush}"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="White"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentDarkBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background"  Value="{StaticResource AccentDarkBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentDarkBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -186,7 +186,7 @@
         <!-- ListBox style -->
         <Style TargetType="ListBox">
             <Setter Property="Background"        Value="#CC0D1117"/>
-            <Setter Property="BorderBrush"       Value="#1E90FF"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness"   Value="1"/>
             <Setter Property="Foreground"        Value="White"/>
             <Setter Property="Padding"           Value="4"/>
@@ -206,10 +206,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="itemBorder" Property="Background" Value="#331E90FF"/>
+                                <Setter TargetName="itemBorder" Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="itemBorder" Property="Background" Value="#221E90FF"/>
+                                <Setter TargetName="itemBorder" Property="Background" Value="{DynamicResource ListBoxHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -232,9 +232,9 @@
 
         <!-- TextBox style -->
         <Style TargetType="TextBox">
-            <Setter Property="Background"      Value="#1A2535"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBaseBrush}"/>
             <Setter Property="Foreground"      Value="White"/>
-            <Setter Property="BorderBrush"     Value="#1E90FF"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding"         Value="6,4"/>
             <Setter Property="FontFamily"      Value="Segoe UI"/>
@@ -244,9 +244,9 @@
 
         <!-- ComboBox style -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background"      Value="#1A2535"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBaseBrush}"/>
             <Setter Property="Foreground"      Value="White"/>
-            <Setter Property="BorderBrush"     Value="#1E90FF"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding"         Value="6,4"/>
             <Setter Property="FontFamily"      Value="Segoe UI"/>
@@ -261,9 +261,9 @@
 
         <!-- ProgressBar style -->
         <Style TargetType="ProgressBar">
-            <Setter Property="Background"  Value="#1A2535"/>
-            <Setter Property="Foreground"  Value="{StaticResource AccentBrush}"/>
-            <Setter Property="BorderBrush" Value="#1E90FF"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBaseBrush}"/>
+            <Setter Property="Foreground"  Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="Height"      Value="14"/>
         </Style>
 
@@ -278,7 +278,7 @@
 
         <!-- Panel card background -->
         <Style x:Key="ContentPanel" TargetType="Border">
-            <Setter Property="Background"      Value="{StaticResource PanelBackgroundBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
             <Setter Property="BorderBrush"     Value="#33FFFFFF"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius"    Value="6"/>
@@ -287,7 +287,7 @@
 
         <!-- Column header -->
         <Style x:Key="ColumnHeader" TargetType="TextBlock">
-            <Setter Property="Foreground"   Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="FontSize"     Value="14"/>
             <Setter Property="FontWeight"   Value="SemiBold"/>
             <Setter Property="FontFamily"   Value="Segoe UI"/>
@@ -318,18 +318,18 @@
         </Grid.ColumnDefinitions>
 
         <Grid.Background>
-            <ImageBrush x:Name="MainBackgroundBrush" ImageSource="/Assets/uef.png" Stretch="UniformToFill"/>
+            <ImageBrush x:Name="MainBackgroundBrush" ImageSource="{DynamicResource ThemeMainBgImage}" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <!-- ===== SIDEBAR ===== -->
         <Border Grid.Column="0">
             <Border.Background>
-                <ImageBrush x:Name="SidebarBackgroundBrush" ImageSource="/Assets/spoiler_profile.png" Stretch="UniformToFill"/>
+                <ImageBrush x:Name="SidebarBackgroundBrush" ImageSource="{DynamicResource ThemeSidebarImage}" Stretch="UniformToFill"/>
             </Border.Background>
 
             <!-- Dark overlay so text is readable -->
             <Grid>
-                <Rectangle Fill="{StaticResource SidebarOverlayBrush}"/>
+                <Rectangle Fill="{DynamicResource SidebarOverlayBrush}"/>
 
                 <StackPanel Margin="0,16,0,0">
 
@@ -342,7 +342,7 @@
                                    FontFamily="Segoe UI"
                                    TextWrapping="Wrap"/>
                         <TextBlock Text="Mod Manager"
-                                   Foreground="{StaticResource AccentBrush}"
+                                   Foreground="{DynamicResource AccentBrush}"
                                    FontSize="18"
                                    FontWeight="Light"
                                    FontFamily="Segoe UI"/>
@@ -371,7 +371,7 @@
         </Border>
 
         <!-- ===== MAIN CONTENT ===== -->
-        <Border Grid.Column="1" Background="#CC0A0F18">
+        <Border Grid.Column="1" Background="{DynamicResource SidebarOverlayBrush}">
             <Grid Margin="20,16,20,16">
 
 
@@ -389,7 +389,7 @@
                     <!-- Launch -->
                     <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
                         <StackPanel>
-                            <TextBlock Text="Game" Foreground="{StaticResource AccentBrush}"
+                            <TextBlock Text="Game" Foreground="{DynamicResource AccentBrush}"
                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <Button Content="▶  Launch Game" Style="{StaticResource PrimaryButton}"
                     Height="40" Click="LaunchGame_Click"/>
@@ -400,7 +400,7 @@
                     <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,12"
             Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
-                            <TextBlock Text="Update Available" Foreground="{StaticResource AccentBrush}"
+                            <TextBlock Text="Update Available" Foreground="{DynamicResource AccentBrush}"
                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
                             <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
@@ -416,7 +416,7 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Text="News &amp; Announcements"
-                       Foreground="{StaticResource AccentBrush}"
+                       Foreground="{DynamicResource AccentBrush}"
                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12"/>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -431,16 +431,16 @@
                                                         <Setter Property="BorderBrush" Value="#33FFFFFF"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Type}" Value="tournament">
-                                                                <Setter Property="BorderBrush" Value="#FFAA00"/>
-                                                                <Setter Property="Background" Value="#1A1400"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                                <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Type}" Value="update">
-                                                                <Setter Property="BorderBrush" Value="#1E90FF"/>
-                                                                <Setter Property="Background" Value="#0D1A2A"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                                <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Type}" Value="discord">
-                                                                <Setter Property="BorderBrush" Value="#7289DA"/>
-                                                                <Setter Property="Background" Value="#0D0F1A"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                                <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -460,13 +460,13 @@
                                                                     <Setter Property="Background" Value="#33FFFFFF"/>
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding Type}" Value="tournament">
-                                                                            <Setter Property="Background" Value="#55FFAA00"/>
+                                                                            <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                                         </DataTrigger>
                                                                         <DataTrigger Binding="{Binding Type}" Value="update">
-                                                                            <Setter Property="Background" Value="#331E90FF"/>
+                                                                            <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                                         </DataTrigger>
                                                                         <DataTrigger Binding="{Binding Type}" Value="discord">
-                                                                            <Setter Property="Background" Value="#337289DA"/>
+                                                                            <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
@@ -479,15 +479,15 @@
                                                                         <Style.Triggers>
                                                                             <DataTrigger Binding="{Binding Type}" Value="tournament">
                                                                                 <Setter Property="Text" Value="🏆 TOURNAMENT"/>
-                                                                                <Setter Property="Foreground" Value="#FFAA00"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                                             </DataTrigger>
                                                                             <DataTrigger Binding="{Binding Type}" Value="update">
                                                                                 <Setter Property="Text" Value="⬆ UPDATE"/>
-                                                                                <Setter Property="Foreground" Value="#1E90FF"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                                             </DataTrigger>
                                                                             <DataTrigger Binding="{Binding Type}" Value="discord">
                                                                                 <Setter Property="Text" Value="💬 DISCORD"/>
-                                                                                <Setter Property="Foreground" Value="#7289DA"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>
@@ -547,26 +547,61 @@
                     <Border Style="{StaticResource ContentPanel}">
                         <StackPanel>
                             <TextBlock Text="Game Path"
-                       Foreground="{StaticResource AccentBrush}"
+                       Foreground="{DynamicResource AccentBrush}"
                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
                             <TextBlock Text="Current path:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,4"/>
                             <TextBlock Text="{Binding GamePath}" Foreground="White"
                        FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"/>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
-                            <TextBlock Text="Theme" Foreground="{StaticResource AccentBrush}"
+                            <TextBlock Text="Theme" Foreground="{DynamicResource AccentBrush}"
            FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <TextBlock Text="Choose your faction theme. Changes apply immediately."
            Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
 
                             <WrapPanel>
-                                <Button Content="⚡  Jaywix Standard" Width="160" Margin="0,0,8,8"
-            Click="ThemeStandard_Click"/>
-                                <Button Content="🔵  UEF"             Width="160" Margin="0,0,8,8"
-            Click="ThemeUEF_Click"/>
-                                <Button Content="🔴  Cybran"          Width="160" Margin="0,0,8,8"
-            Click="ThemeCybran_Click"/>
-                                <Button Content="🟢  Aeon Illuminate" Width="160" Margin="0,0,8,8"
-            Click="ThemeAeon_Click"/>
+                                <!-- Standard -->
+                                <Border x:Name="ThemeStandardBtn" Margin="0,0,8,8" CornerRadius="6" Padding="12,8"
+            Background="#1A2535" BorderThickness="2" BorderBrush="#1E90FF"
+            Cursor="Hand" MouseLeftButtonUp="ThemeStandard_Click_Border">
+                                    <StackPanel>
+                                        <TextBlock Text="⚡  Jaywix Standard" Foreground="White"
+                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <Border Height="5" CornerRadius="2" Background="#1E90FF"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- UEF -->
+                                <Border x:Name="ThemeUEFBtn" Margin="0,0,8,8" CornerRadius="6" Padding="12,8"
+            Background="#1A2535" BorderThickness="2" BorderBrush="#444444"
+            Cursor="Hand" MouseLeftButtonUp="ThemeUEF_Click_Border">
+                                    <StackPanel>
+                                        <TextBlock Text="UEF" Foreground="White"
+                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <Border Height="5" CornerRadius="2" Background="#1E90FF"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Cybran -->
+                                <Border x:Name="ThemeCybranBtn" Margin="0,0,8,8" CornerRadius="6" Padding="12,8"
+            Background="#1F0A08" BorderThickness="2" BorderBrush="#444444"
+            Cursor="Hand" MouseLeftButtonUp="ThemeCybran_Click_Border">
+                                    <StackPanel>
+                                        <TextBlock Text="Cybran" Foreground="White"
+                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <Border Height="5" CornerRadius="2" Background="#CC2200"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Aeon -->
+                                <Border x:Name="ThemeAeonBtn" Margin="0,0,8,8" CornerRadius="6" Padding="12,8"
+            Background="#0A1A18" BorderThickness="2" BorderBrush="#444444"
+            Cursor="Hand" MouseLeftButtonUp="ThemeAeon_Click_Border">
+                                    <StackPanel>
+                                        <TextBlock Text="Aeon Illuminate" Foreground="White"
+                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <Border Height="5" CornerRadius="2" Background="#00BFA5"/>
+                                    </StackPanel>
+                                </Border>
                             </WrapPanel>
                             <Separator Style="{StaticResource HRule}"/>
                             <TextBlock Text="Change Game Path" Foreground="#AAAAAA"
@@ -582,7 +617,7 @@
                         Width="100" Click="SetGamePath_Click"/>
                             </StackPanel>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
-                            <TextBlock Text="Uninstall" Foreground="{StaticResource AccentBrush}"
+                            <TextBlock Text="Uninstall" Foreground="{DynamicResource AccentBrush}"
                                FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
                                                 <TextBlock Text="Permanently removes all SC2 Mod Manager files and data."
                                Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"/>
@@ -638,7 +673,7 @@
                     <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Save Current Gamedata State as Preset"
-                                       Foreground="{StaticResource AccentBrush}"
+                                       Foreground="{DynamicResource AccentBrush}"
                                        FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBox Width="220" Margin="0,0,8,0"
@@ -785,7 +820,7 @@
                 <Grid x:Name="InstalledMapsView" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="320"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- LEFT: Lists + buttons -->
@@ -970,7 +1005,7 @@
                                 <StackPanel Visibility="{Binding SelectedInstalledMap, Converter={StaticResource NullToVisibilityConverter}}">
 
                                     <!-- Map image -->
-                                    <Border Height="140" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedInstalledMap.MapPictureUrl}"
                                    Stretch="Uniform"
@@ -1037,10 +1072,10 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="#1A2535" BorderBrush="#1E90FF"
+                                                <Border Background="{DynamicResource ButtonBaseBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                         BorderThickness="1" CornerRadius="3"
                                         Padding="6,2" Margin="0,0,4,4">
-                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{DynamicResource AccentBrush}"/>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -1277,7 +1312,7 @@
                 <Grid x:Name="DownloadMapsView" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="320"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- LEFT: List + buttons -->
@@ -1420,7 +1455,7 @@ Click="DownloadFiltersToggle_Click"/>
 
                                 <StackPanel Visibility="{Binding SelectedDownloadMap, Converter={StaticResource NullToVisibilityConverter}}">
 
-                                    <Border Height="140" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedDownloadMap.MapPictureUrl}"
                                    Stretch="Uniform"
@@ -1483,7 +1518,7 @@ Click="DownloadFiltersToggle_Click"/>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="#1A2535" BorderBrush="#1E90FF"
+                                                <Border Background="{DynamicResource ButtonBaseBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                         BorderThickness="1" CornerRadius="3"
                                         Padding="6,2" Margin="0,0,4,4">
                                                     <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
@@ -1551,7 +1586,7 @@ Click="DownloadFiltersToggle_Click"/>
 
                     <Border Grid.Row="1"
                             x:Name="DropZone"
-                            BorderBrush="#1E90FF"
+                            BorderBrush="{DynamicResource AccentBrush}"
                             BorderThickness="2"
                             Background="#110D1117"
                             CornerRadius="6"

@@ -10,14 +10,24 @@
 	  <ApplicationIcon>Assets\Supreme_Commander_2_2.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\SPOILER_profile.png" />
-    <None Remove="Assets\uef.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\spoiler_profile.png" />
+		<None Remove="Assets\uef.png" />
+		<None Remove="Assets\cybran.png" />
+		<None Remove="Assets\aeon.png" />
+		<None Remove="Assets\cybranacu.png" />
+		<None Remove="Assets\aeonacu.png" />
+		<None Remove="Assets\uefacu.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Assets\spoiler_profile.png" />
-    <Resource Include="Assets\uef.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="Assets\spoiler_profile.png" />
+		<Resource Include="Assets\uef.png" />
+		<Resource Include="Assets\cybran.png" />
+		<Resource Include="Assets\aeon.png" />
+		<Resource Include="Assets\cybranacu.png" />
+		<Resource Include="Assets\aeonacu.png" />
+		<Resource Include="Assets\uefacu.png" />
+	</ItemGroup>
 
 </Project>

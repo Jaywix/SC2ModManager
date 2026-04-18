@@ -46,52 +46,57 @@ namespace SC2ModManager
         {
             string theme = themeService.GetCurrentTheme();
             themeService.ApplyThemeResources(theme);
-
-            // Swap background images
-            string mainImg = theme switch
-            {
-                AppTheme.Cybran => "/Assets/cybran.png",
-                AppTheme.Aeon => "/Assets/aeon.png",
-                AppTheme.UEF => "/Assets/uef.png",
-                _ => "/Assets/uef.png"
-            };
-
-            string sidebarImg = theme switch
-            {
-                AppTheme.Cybran => "/Assets/cybran_acu.png",
-                AppTheme.Aeon => "/Assets/aeon_acu.png",
-                AppTheme.UEF => "/Assets/uef_acu.png",
-                _ => "/Assets/spoiler_profile.png"
-            };
-
-            MainBackgroundBrush.ImageSource = new System.Windows.Media.Imaging.BitmapImage(
-                new System.Uri(mainImg, System.UriKind.Relative));
-            SidebarBackgroundBrush.ImageSource = new System.Windows.Media.Imaging.BitmapImage(
-                new System.Uri(sidebarImg, System.UriKind.Relative));
+            UpdateThemeButtonHighlight(theme);
         }
 
-        private void ThemeStandard_Click(object sender, RoutedEventArgs e)
+        private void ThemeStandard_Click_Border(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             vm.ChangeTheme(AppTheme.Standard);
             ApplyCurrentTheme();
+            UpdateThemeButtonHighlight(AppTheme.Standard);
         }
 
-        private void ThemeUEF_Click(object sender, RoutedEventArgs e)
+        private void ThemeUEF_Click_Border(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             vm.ChangeTheme(AppTheme.UEF);
             ApplyCurrentTheme();
+            UpdateThemeButtonHighlight(AppTheme.UEF);
         }
 
-        private void ThemeCybran_Click(object sender, RoutedEventArgs e)
+        private void ThemeCybran_Click_Border(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             vm.ChangeTheme(AppTheme.Cybran);
             ApplyCurrentTheme();
+            UpdateThemeButtonHighlight(AppTheme.Cybran);
         }
 
-        private void ThemeAeon_Click(object sender, RoutedEventArgs e)
+        private void ThemeAeon_Click_Border(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             vm.ChangeTheme(AppTheme.Aeon);
             ApplyCurrentTheme();
+            UpdateThemeButtonHighlight(AppTheme.Aeon);
+        }
+
+        private void UpdateThemeButtonHighlight(string activeTheme)
+        {
+            var inactive = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
+
+            ThemeStandardBtn.BorderBrush = activeTheme == AppTheme.Standard
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF))
+                : inactive;
+
+            ThemeUEFBtn.BorderBrush = activeTheme == AppTheme.UEF
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF))
+                : inactive;
+
+            ThemeCybranBtn.BorderBrush = activeTheme == AppTheme.Cybran
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCC, 0x22, 0x00))
+                : inactive;
+
+            ThemeAeonBtn.BorderBrush = activeTheme == AppTheme.Aeon
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
+                : inactive;
         }
 
         // ================= NAVIGATION =================

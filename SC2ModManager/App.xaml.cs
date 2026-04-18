@@ -30,26 +30,8 @@ namespace SC2ModManager
             }
             else
             {
-                var configService = new ConfigService();
-                var config = configService.Load();
-
-                // Apply saved theme before any window opens
-                if (!string.IsNullOrEmpty(config.Theme))
-                {
-                    var themeService = new Services.ThemeService(configService);
-                    themeService.ApplyThemeResources(config.Theme);
-                }
-
-                if (!Models.Globals.IsSetupComplete())
-                {
-                    var setup = new SetupWindow();
-                    setup.Show();
-                }
-                else
-                {
-                    var main = new MainWindow();
-                    main.Show();
-                }
+                var main = new MainWindow();
+                main.Show();
             }
         }
     }
