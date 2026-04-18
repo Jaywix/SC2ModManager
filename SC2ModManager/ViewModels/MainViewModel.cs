@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 8, 2026
+ * Last updated: April 18, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -93,6 +93,10 @@ namespace SC2ModManager.ViewModels
         public ObservableCollection<GenericGamedataMod> EnabledGenericMods { get; set; } = new();
         public ObservableCollection<GenericGamedataMod> DisabledGenericMods { get; set; } = new();
 
+        public ObservableCollection<GenericGamedataMod> FilteredEnabledGenericMods { get; set; } = new();
+        public ObservableCollection<GenericGamedataMod> FilteredDisabledGenericMods { get; set; } = new();
+        public ObservableCollection<GenericGamedataMod> FilteredDownloadableGenericMods { get; set; } = new();
+
         // ================= INSTALLED FILTERED MAP VIEWS =================
         public ObservableCollection<Map> FilteredEnabledMaps { get; set; } = new();
         public ObservableCollection<Map> FilteredDisabledMaps { get; set; } = new();
@@ -108,6 +112,12 @@ namespace SC2ModManager.ViewModels
 
         public MapFilterViewModel InstalledMapsFilter { get; set; } = new();
         public MapFilterViewModel DownloadMapsFilter { get; set; } = new();
+
+        // ================= SORTING =================
+        public ModSortViewModel InstalledMapSort { get; set; } = new();
+        public ModSortViewModel DownloadMapSort { get; set; } = new();
+        public ModSortViewModel InstalledGenericModSort { get; set; } = new();
+        public ModSortViewModel DownloadGenericModSort { get; set; } = new();
 
         // ================= SELECTED MAP =================
 
@@ -393,13 +403,14 @@ namespace SC2ModManager.ViewModels
 
                 if (preset.Files.Count == 0)
                 {
-                    // Preset is now empty — delete it entirely
+                    // Preset is now empty so it should be deleted
+                    // TODO: Add logic here because all presets contain the original files, so this will never be called unless I clear gamedata
                     presetService.DeletePreset(preset.Name);
                     anyChanged = true;
                 }
                 else if (preset.Files.Count != before)
                 {
-                    // Preset was affected but still has files — resave it
+                    // Preset was affected but still has files, so just resave it. Maybe I should delete it instead of resaving? I don't know if it matters that much since the preset files are pretty small, but it would be cleaner to delete and recreate it instead of modifying it in place. I'll think about it.
                     presetService.ResavePreset(preset);
                     anyChanged = true;
                 }
@@ -438,7 +449,7 @@ namespace SC2ModManager.ViewModels
                     .Select(f => Path.GetFileName(f))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                // Reload installed mods fresh from disk
+                // Reload installed mods fresh from user pc
                 LoadInstalledMaps();
                 LoadInstalledGenericMods();
 
@@ -459,7 +470,7 @@ namespace SC2ModManager.ViewModels
                     .Where(m => !presetFileNames.Contains(m.FileName)).ToList();
                 DisableSelectedGenericMods(modsToDisable);
 
-                // Enable generic mods that ARE in the preset
+                // Enable generic mods that ARE in the preset. All this double logic is killing me, it will be a pain to add more mod types in the future. I should really refactor this at some point to be more data driven and less hardcoded, but for now this will work.
                 var modsToEnable = DisabledGenericMods
                     .Where(m => presetFileNames.Contains(m.FileName)).ToList();
                 EnableSelectedGenericMods(modsToEnable);
@@ -756,6 +767,43 @@ namespace SC2ModManager.ViewModels
                 MessageBox.Show($"{successCount} file(s) imported successfully as Generic Gamedata Mods.\n\nYou can enable or disable them from Installed → Generic Gamedata Mods.");
         }
 
+        // ================= SORTING AND FILTERING =================
+        private static DateTime ParseModDate(string dateStr)
+        {
+            if (string.IsNullOrEmpty(dateStr) || dateStr.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+                return DateTime.MinValue;
+
+            if (DateTime.TryParseExact(dateStr, "dd.MM.yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var d))
+                return d;
+
+            return DateTime.MinValue;
+        }
+
+        private IEnumerable<Map> ApplyMapSort(IEnumerable<Map> maps, ModSortViewModel sort)
+        {
+            return sort.Field == SortField.Name
+                ? (sort.Direction == SortDirection.Ascending
+                    ? maps.OrderBy(m => m.FileName, StringComparer.OrdinalIgnoreCase)
+                    : maps.OrderByDescending(m => m.FileName, StringComparer.OrdinalIgnoreCase))
+                : (sort.Direction == SortDirection.Ascending
+                    ? maps.OrderBy(m => ParseModDate(m.LastUpdated))
+                    : maps.OrderByDescending(m => ParseModDate(m.LastUpdated)));
+        }
+
+        private IEnumerable<GenericGamedataMod> ApplyGenericModSort(IEnumerable<GenericGamedataMod> mods, ModSortViewModel sort)
+        {
+            return sort.Field == SortField.Name
+                ? (sort.Direction == SortDirection.Ascending
+                    ? mods.OrderBy(m => m.FileName, StringComparer.OrdinalIgnoreCase)
+                    : mods.OrderByDescending(m => m.FileName, StringComparer.OrdinalIgnoreCase))
+                : (sort.Direction == SortDirection.Ascending
+                    ? mods.OrderBy(m => ParseModDate(m.LastUpdated))
+                    : mods.OrderByDescending(m => ParseModDate(m.LastUpdated)));
+        }
+
         // ================= INSTALLED: MAPS =================
 
         public void LoadInstalledMaps()
@@ -878,6 +926,8 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(EnabledGenericMods));
             OnPropertyChanged(nameof(DisabledGenericMods));
+
+            RefreshInstalledGenericModSort();
         }
 
         public void EnableSelectedGenericMods(IEnumerable<GenericGamedataMod> mods)
@@ -889,6 +939,7 @@ namespace SC2ModManager.ViewModels
                 DisabledGenericMods.Remove(mod);
                 EnabledGenericMods.Add(mod);
             }
+            RefreshInstalledGenericModSort();
         }
 
         public void DisableSelectedGenericMods(IEnumerable<GenericGamedataMod> mods)
@@ -900,7 +951,24 @@ namespace SC2ModManager.ViewModels
                 EnabledGenericMods.Remove(mod);
                 DisabledGenericMods.Add(mod);
             }
+            RefreshInstalledGenericModSort();
         }
+
+        public void RefreshInstalledGenericModSort()
+        {
+            FilteredEnabledGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(EnabledGenericMods, InstalledGenericModSort));
+            FilteredDisabledGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(DisabledGenericMods, InstalledGenericModSort));
+            OnPropertyChanged(nameof(FilteredEnabledGenericMods));
+            OnPropertyChanged(nameof(FilteredDisabledGenericMods));
+        }
+
+        public void RefreshDownloadGenericModSort()
+        {
+            FilteredDownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(DownloadableGenericMods, DownloadGenericModSort));
+            OnPropertyChanged(nameof(FilteredDownloadableGenericMods));
+        }
+
+
 
         public void EnableAllGenericMods() => EnableSelectedGenericMods(DisabledGenericMods.ToList());
         public void DisableAllGenericMods() => DisableSelectedGenericMods(EnabledGenericMods.ToList());
@@ -923,8 +991,14 @@ namespace SC2ModManager.ViewModels
 
             foreach (var mod in EnabledGenericMods)
             {
-                try { gamedataService.EnableGenericMod(mod, modsEnabledPath, gameDataPath); }
-                catch (Exception ex) { MessageBox.Show($"Could not enable {mod.FileName}: {ex.Message}"); }
+                try 
+                { 
+                    gamedataService.EnableGenericMod(mod, modsEnabledPath, gameDataPath); 
+                }
+                catch (Exception ex) 
+                { 
+                    MessageBox.Show($"Could not enable {mod.FileName}: {ex.Message}"); 
+                }
             }
 
             storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
@@ -1032,6 +1106,8 @@ namespace SC2ModManager.ViewModels
 
             DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
             OnPropertyChanged(nameof(DownloadableGenericMods));
+
+            RefreshDownloadGenericModSort();
         }
 
         public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
@@ -1079,15 +1155,15 @@ namespace SC2ModManager.ViewModels
 
         public void RefreshInstalledMapFilters()
         {
-            FilteredEnabledMaps = new ObservableCollection<Map>(EnabledMaps.Where(m => InstalledMapsFilter.Passes(m)));
-            FilteredDisabledMaps = new ObservableCollection<Map>(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m)));
+            FilteredEnabledMaps = new ObservableCollection<Map>(ApplyMapSort(EnabledMaps.Where(m => InstalledMapsFilter.Passes(m)), InstalledMapSort));
+            FilteredDisabledMaps = new ObservableCollection<Map>(ApplyMapSort(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m)), InstalledMapSort));
             OnPropertyChanged(nameof(FilteredEnabledMaps));
             OnPropertyChanged(nameof(FilteredDisabledMaps));
         }
 
         public void RefreshDownloadMapFilters()
         {
-            FilteredDownloadableMaps = new ObservableCollection<Map>(DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m)));
+            FilteredDownloadableMaps = new ObservableCollection<Map>(ApplyMapSort(DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m)), DownloadMapSort));
             OnPropertyChanged(nameof(FilteredDownloadableMaps));
         }
 

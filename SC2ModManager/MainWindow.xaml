@@ -828,6 +828,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -912,8 +913,17 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Sort bar -->
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6" VerticalAlignment="Center">
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="{Binding InstalledMapSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+            Click="InstalledMapSortName_Click"/>
+                            <Button Content="{Binding InstalledMapSort.DateButtonText}" Width="75"
+            Click="InstalledMapSortDate_Click"/>
+                        </StackPanel>
+                        
                         <!-- Enabled / Disabled split -->
-                        <Grid Grid.Row="2" Margin="0,0,0,8">
+                        <Grid Grid.Row="3" Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
@@ -976,14 +986,14 @@
                             </Border>
                         </Grid>
 
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,6">
                             <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedMaps_Click"/>
                             <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedMaps_Click"/>
                             <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllMaps_Click"/>
                             <Button Content="Disable All"          Width="95"  Click="DisableAllMaps_Click"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="4" Orientation="Horizontal">
+                        <StackPanel Grid.Row="5" Orientation="Horizontal">
                             <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
                             <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
                             <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
@@ -1090,6 +1100,7 @@
                 <Grid x:Name="InstalledGenericModsView" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -1097,7 +1108,16 @@
 
                     <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
-                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                    <!-- Sort bar -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="{Binding InstalledGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+            Click="InstalledGenericModSortName_Click"/>
+                        <Button Content="{Binding InstalledGenericModSort.DateButtonText}" Width="75"
+            Click="InstalledGenericModSortDate_Click"/>
+                    </StackPanel>
+                    
+                    <Grid Grid.Row="2" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -1113,7 +1133,7 @@
                                 <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
                                 <ListBox Grid.Row="1"
                          x:Name="EnabledGenericModsList"
-                         ItemsSource="{Binding EnabledGenericMods}"
+                         ItemsSource="{Binding FilteredEnabledGenericMods}"
                          SelectionMode="Multiple"
                          BorderThickness="0"
                          Background="Transparent">
@@ -1137,7 +1157,7 @@
                                 <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
                                 <ListBox Grid.Row="1"
                          x:Name="DisabledGenericModsList"
-                         ItemsSource="{Binding DisabledGenericMods}"
+                         ItemsSource="{Binding FilteredDisabledGenericMods}"
                          SelectionMode="Multiple"
                          BorderThickness="0"
                          Background="Transparent">
@@ -1152,14 +1172,14 @@
                         </Border>
                     </Grid>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
                         <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedGenericMods_Click"/>
                         <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedGenericMods_Click"/>
                         <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllGenericMods_Click"/>
                         <Button Content="Disable All"          Width="95"  Click="DisableAllGenericMods_Click"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                    <StackPanel Grid.Row="4" Orientation="Horizontal">
                         <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
                         <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
                         <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
@@ -1320,6 +1340,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -1404,13 +1425,23 @@ Click="DownloadFiltersToggle_Click"/>
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
+                        <!-- Sort bar -->
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="{Binding DownloadMapSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+            Click="DownloadMapSortName_Click"/>
+                            <Button Content="{Binding DownloadMapSort.DateButtonText}" Width="75"
+            Click="DownloadMapSortDate_Click"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="3" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" Text="Available Maps" Style="{StaticResource ColumnHeader}"/>
+                                
                                 <ListBox Grid.Row="1"
                          x:Name="DownloadMapsList"
                          ItemsSource="{Binding FilteredDownloadableMaps}"
@@ -1435,13 +1466,13 @@ Click="DownloadFiltersToggle_Click"/>
                             </Grid>
                         </Border>
 
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,8">
                             <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadMaps_Click"/>
                             <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadMaps_Click"/>
                             <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedMaps_Click"/>
                         </StackPanel>
 
-                        <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                        <Button Grid.Row="5" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
                     </Grid>
 
                     <!-- RIGHT: Map detail panel -->
@@ -1536,6 +1567,7 @@ Click="DownloadFiltersToggle_Click"/>
                 <Grid x:Name="DownloadGenericModsView" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -1543,9 +1575,18 @@ Click="DownloadFiltersToggle_Click"/>
 
                     <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
-                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                    <!-- Sort bar -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="{Binding DownloadGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+            Click="DownloadGenericModSortName_Click"/>
+                        <Button Content="{Binding DownloadGenericModSort.DateButtonText}" Width="75"
+            Click="DownloadGenericModSortDate_Click"/>
+                    </StackPanel>
+                    
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
                         <ListBox x:Name="DownloadGenericModsList"
-                                 ItemsSource="{Binding DownloadableGenericMods}"
+                                 ItemsSource="{Binding FilteredDownloadableGenericMods}"
                                  SelectionMode="Multiple"
                                  BorderThickness="0"
                                  Background="Transparent">
@@ -1565,13 +1606,13 @@ Click="DownloadFiltersToggle_Click"/>
                         </ListBox>
                     </Border>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
                         <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadGenericMods_Click"/>
                         <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadGenericMods_Click"/>
                         <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedGenericMods_Click"/>
                     </StackPanel>
 
-                    <Button Grid.Row="3" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                    <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
                 </Grid>
 
                 <!-- ===== MANUAL IMPORT ===== -->

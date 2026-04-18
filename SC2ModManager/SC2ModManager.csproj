@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-	<Version>1.3.0</Version>
+	<Version>1.5.0</Version>
 	  <ApplicationIcon>Assets\Supreme_Commander_2_2.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -15,9 +15,9 @@
 		<None Remove="Assets\uef.png" />
 		<None Remove="Assets\cybran.png" />
 		<None Remove="Assets\aeon.png" />
+		<None Remove="Assets\uefacu.png" />
 		<None Remove="Assets\cybranacu.png" />
 		<None Remove="Assets\aeonacu.png" />
-		<None Remove="Assets\uefacu.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -25,9 +25,9 @@
 		<Resource Include="Assets\uef.png" />
 		<Resource Include="Assets\cybran.png" />
 		<Resource Include="Assets\aeon.png" />
+		<Resource Include="Assets\uefacu.png" />
 		<Resource Include="Assets\cybranacu.png" />
 		<Resource Include="Assets\aeonacu.png" />
-		<Resource Include="Assets\uefacu.png" />
 	</ItemGroup>
 
 </Project>

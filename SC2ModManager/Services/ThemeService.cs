@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: April 1, 2026
+ * Last updated: April 18, 2026
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -30,8 +39,7 @@ namespace SC2ModManager.Services
             switch (theme)
             {
                 case AppTheme.UEF:
-                    // UEF
-                    res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF); // UEF Blue
+                    res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF);
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x12, 0x70, 0xCC);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x1A, 0x25, 0x35);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
@@ -43,9 +51,8 @@ namespace SC2ModManager.Services
                     res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/uefacu.png");
                     break;
 
-                case AppTheme.Cybran:
-                    // Cybran
-                    res["ThemeAccentColor"] = Color.FromRgb(0xCC, 0x22, 0x00); // Cybran Red
+                case AppTheme.Cybran:   // maybe a little dark, come back to visit, but for now it's fine
+                    res["ThemeAccentColor"] = Color.FromRgb(0xCC, 0x22, 0x00);
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x99, 0x11, 0x00);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x1F, 0x0A, 0x08);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x3D, 0x0F, 0x0A);
@@ -58,8 +65,7 @@ namespace SC2ModManager.Services
                     break;
 
                 case AppTheme.Aeon:
-                    // Aeon
-                    res["ThemeAccentColor"] = Color.FromRgb(0x00, 0xBF, 0xA5); // Aeon Teal
+                    res["ThemeAccentColor"] = Color.FromRgb(0x00, 0xBF, 0xA5);
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x00, 0x8C, 0x78);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x0A, 0x1A, 0x18);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x0F, 0x2A, 0x26);
@@ -71,7 +77,7 @@ namespace SC2ModManager.Services
                     res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/aeonacu.png");
                     break;
 
-                default: // Standard
+                default: // The goated theme #numberoneuefplayerxd
                     res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF);
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x12, 0x70, 0xCC);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x1A, 0x25, 0x35);

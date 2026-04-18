@@ -1,4 +1,13 @@
-﻿using SC2ModManager.Models;
+﻿/*
+ * SC2 Mod Manager
+ * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
+ * 
+ * Created on: April 1, 2026
+ * Last updated: April 18, 2026
+ * Author: Jacob Wixom
+ * 
+*/
+using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +18,10 @@ using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
 {
+    /// <summary>
+    ///     This service handles the news stuff on the home page. It just goes to the repository's news.json file and gets the latest 5 news items
+    ///     The pictures are also located in the repository in the NewsImages folder
+    /// </summary>
     public class NewsService
     {
         private readonly HttpClient httpClient = new HttpClient();
@@ -26,7 +39,7 @@ namespace SC2ModManager.Services
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var items = JsonSerializer.Deserialize<List<NewsItem>>(json, options) ?? new List<NewsItem>();
 
-                // Resolve image filenames to full URLs
+                // set image filenames to full urls
                 foreach (var item in items)
                 {
                     if (!string.IsNullOrEmpty(item.ImageUrl) && !item.ImageUrl.StartsWith("http"))

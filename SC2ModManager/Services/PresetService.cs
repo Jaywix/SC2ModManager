@@ -86,7 +86,7 @@ namespace SC2ModManager.Services
 
             foreach (var file in Directory.GetFiles(presetsPath, "*.json"))
             {
-                // Skip the internal original files list
+                // Skip the original files list
                 if (Path.GetFileName(file).StartsWith("_"))
                     continue;
 

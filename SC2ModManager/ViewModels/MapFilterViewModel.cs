@@ -80,7 +80,7 @@ namespace SC2ModManager.ViewModels
         // ================= FILTER LOGIC =================
 
         /// <summary>
-        /// Returns true if the map passes all active filters.
+        ///     Returns true if the map passes all active filters.
         /// </summary>
         public bool Passes(Map map)
         {

@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 8, 2026
+ * Last updated: April 18, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -572,6 +572,56 @@ namespace SC2ModManager
 
             await vm.DownloadSelectedGenericModsAsync(selected);
             foreach (var m in selected) m.IsChecked = false;
+        }
+
+        // ================= SORT =================
+
+        private void InstalledMapSortName_Click(object sender, RoutedEventArgs e)
+        {
+            vm.InstalledMapSort.SortByName();
+            vm.RefreshInstalledMapFilters();
+        }
+
+        private void InstalledMapSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            vm.InstalledMapSort.SortByDate();
+            vm.RefreshInstalledMapFilters();
+        }
+
+        private void DownloadMapSortName_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DownloadMapSort.SortByName();
+            vm.RefreshDownloadMapFilters();
+        }
+
+        private void DownloadMapSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DownloadMapSort.SortByDate();
+            vm.RefreshDownloadMapFilters();
+        }
+
+        private void InstalledGenericModSortName_Click(object sender, RoutedEventArgs e)
+        {
+            vm.InstalledGenericModSort.SortByName();
+            vm.RefreshInstalledGenericModSort();
+        }
+
+        private void InstalledGenericModSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            vm.InstalledGenericModSort.SortByDate();
+            vm.RefreshInstalledGenericModSort();
+        }
+
+        private void DownloadGenericModSortName_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DownloadGenericModSort.SortByName();
+            vm.RefreshDownloadGenericModSort();
+        }
+
+        private void DownloadGenericModSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            vm.DownloadGenericModSort.SortByDate();
+            vm.RefreshDownloadGenericModSort();
         }
 
         // ================= MAP FILTERS =================
