@@ -1,14 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-	<Version>1.5.0</Version>
-	  <ApplicationIcon>Assets\Supreme_Commander_2_2.ico</ApplicationIcon>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<Version>1.5.0</Version>
+		<ApplicationIcon>Assets\Supreme_Commander_2_2.ico</ApplicationIcon>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<PublishReadyToRun>true</PublishReadyToRun>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<None Remove="Assets\spoiler_profile.png" />
@@ -18,6 +24,7 @@
 		<None Remove="Assets\uefacu.png" />
 		<None Remove="Assets\cybranacu.png" />
 		<None Remove="Assets\aeonacu.png" />
+		<None Remove="Assets\Supreme_Commander_2_2.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -28,6 +35,7 @@
 		<Resource Include="Assets\uefacu.png" />
 		<Resource Include="Assets\cybranacu.png" />
 		<Resource Include="Assets\aeonacu.png" />
+		<Resource Include="Assets\Supreme_Commander_2_2.ico"/>
 	</ItemGroup>
 
 </Project>
