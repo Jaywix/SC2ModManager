@@ -20,21 +20,35 @@ namespace SC2MMUpdater
         {
             try
             {
-                foreach (var process in Process.GetProcessesByName("SC2ModManager"))
+                try
                 {
-                    if (!process.HasExited)
+                    foreach (var process in Process.GetProcessesByName("SC2ModManager"))
                     {
-                        process.CloseMainWindow();
-                        process.WaitForExit(3000);
-                        if (!process.HasExited)
+                        try
                         {
-                            process.Kill();
-                            process.WaitForExit();
+                            if (!process.HasExited)
+                            {
+                                process.CloseMainWindow();
+                                process.WaitForExit(3000);
+                                if (!process.HasExited)
+                                {
+                                    process.Kill();
+                                    process.WaitForExit();
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Process was already exited or inaccessible, skip it
                         }
                     }
                 }
+                catch
+                {
+                    // Could not enumerate processes, SC2ModManager is likely already closed
+                }
 
-                Thread.Sleep(2000); // let the OS release file locks
+                Thread.Sleep(3000); // let the OS release file locks
 
 
 
