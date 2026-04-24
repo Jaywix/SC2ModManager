@@ -44,6 +44,9 @@
             <Setter Property="Cursor"            Value="Hand"/>
             <Setter Property="Height"            Value="34"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -82,6 +85,9 @@
             <Setter Property="Background"  Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentDarkBrush}"/>
             <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -116,6 +122,9 @@
         <!-- Danger button for destructive actions (Delete) -->
         <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
             <Setter Property="BorderBrush" Value="#CC2200"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -155,6 +164,9 @@
             <Setter Property="FontSize"       Value="14"/>
             <Setter Property="Background"     Value="#22FFFFFF"/>
             <Setter Property="BorderBrush"    Value="#44FFFFFF"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -702,7 +714,7 @@
                                 <Button Content="📁  Browse" Width="100" Margin="0,0,6,0"
                         Click="BrowseGamePath_Click"/>
                                 <Button Content="✅  Set Path" Style="{StaticResource PrimaryButton}"
-                        Width="100" Click="SetGamePath_Click"/>
+                         Click="SetGamePath_Click"/>
                             </StackPanel>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
                             <TextBlock Text="Uninstall" Foreground="{DynamicResource AccentBrush}"
@@ -711,7 +723,7 @@
                                Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
                                                 <Button Content="🗑  Uninstall SC2 Mod Manager"
                             Style="{StaticResource DangerButton}"
-                            Width="220" HorizontalAlignment="Left"
+                             HorizontalAlignment="Left"
                             Click="Uninstall_Click"/>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
                             <TextBlock Text="File Locations"
@@ -720,7 +732,7 @@
                             <TextBlock Text="Quickly open common Supreme Commander 2 file locations."
            Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
                             <Button Content="📁  Open File Locations"
-        Width="200" HorizontalAlignment="Left"
+        HorizontalAlignment="Left"
         Click="GoToFileLocations"/>
                         </StackPanel>
                     </Border>
