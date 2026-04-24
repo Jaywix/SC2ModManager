@@ -79,7 +79,7 @@ namespace SC2ModManager.ViewModels
 
         // ================= NEWS =================
         private readonly NewsService newsService = new();
-        public ObservableCollection<NewsItem> NewsItems { get; set; } = new();
+        public ObservableCollection<NewsItemViewModel> NewsItems { get; set; } = new();
 
         // ================= SCAN RESULTS =================
         public ObservableCollection<ScanResultItem> ScanResults { get; set; } = new();
@@ -283,7 +283,8 @@ namespace SC2ModManager.ViewModels
             try
             {
                 var items = await newsService.GetNewsAsync();
-                NewsItems = new ObservableCollection<NewsItem>(items);
+                NewsItems = new ObservableCollection<NewsItemViewModel>(
+                    items.Select(i => new NewsItemViewModel(i)));
                 OnPropertyChanged(nameof(NewsItems));
             }
             catch { }

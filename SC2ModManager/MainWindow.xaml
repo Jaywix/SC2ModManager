@@ -468,10 +468,12 @@
                                                 </Border.Style>
 
                                                 <StackPanel>
+                                                    <!-- Header row — always visible, contains toggle -->
                                                     <Grid Margin="0,0,0,8">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="Auto"/>
                                                             <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
 
@@ -517,41 +519,43 @@
                                                         </Border>
 
                                                         <TextBlock Grid.Column="1" Text="{Binding Title}"
-                                                   FontSize="15" FontWeight="SemiBold"
-                                                   Foreground="White" VerticalAlignment="Center"
-                                                   TextWrapping="Wrap"/>
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="White" VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
 
                                                         <TextBlock Grid.Column="2" Text="{Binding Date}"
-                                                   FontSize="11" Foreground="#666666"
-                                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                               FontSize="11" Foreground="#666666"
+                               VerticalAlignment="Center" Margin="12,0,8,0"/>
+
+                                                        <Button Grid.Column="3" Content="{Binding ToggleIcon}"
+                            Click="NewsItemToggle_Click"
+                            Width="28" Height="24" FontSize="11"
+                            Padding="0" VerticalAlignment="Center"/>
                                                     </Grid>
 
-                                                    <!--Background="black"-->
-                                                    <Border CornerRadius="4" 
-                                                            Margin="0,0,0,10"
-                                                            MaxHeight="600">
-                                                        <Image Source="{Binding ImageUrl}"
-                                                           Stretch="Uniform"
-                                                           VerticalAlignment="Center"/>                     
-                                                    </Border>
+                                                    <!-- Body — collapsible -->
+                                                    <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                        <Border CornerRadius="4" Margin="0,0,0,10" MaxHeight="600">
+                                                            <Image Source="{Binding ImageUrl}" Stretch="Uniform" VerticalAlignment="Center"/>
+                                                        </Border>
 
+                                                        <TextBlock Text="{Binding Body}" FontSize="13" Foreground="#CCCCCC"
+                               TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10"/>
 
-                                                    <TextBlock Text="{Binding Body}" FontSize="13" Foreground="#CCCCCC"
-                                               TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10"/>
-
-                                                    <Button HorizontalAlignment="Left"
-                                            Content="{Binding LinkText}"
-                                            Visibility="{Binding LinkUrl, Converter={StaticResource StringToVisibilityConverter}}"
-                                            Tag="{Binding LinkUrl}"
-                                            Click="NewsLink_Click">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
-                                                                <Setter Property="Height" Value="30"/>
-                                                                <Setter Property="FontSize" Value="12"/>
-                                                                <Setter Property="Padding" Value="12,4"/>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
+                                                        <Button HorizontalAlignment="Left"
+                            Content="{Binding LinkText}"
+                            Visibility="{Binding LinkUrl, Converter={StaticResource StringToVisibilityConverter}}"
+                            Tag="{Binding LinkUrl}"
+                            Click="NewsLink_Click">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
+                                                                    <Setter Property="Height" Value="30"/>
+                                                                    <Setter Property="FontSize" Value="12"/>
+                                                                    <Setter Property="Padding" Value="12,4"/>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
