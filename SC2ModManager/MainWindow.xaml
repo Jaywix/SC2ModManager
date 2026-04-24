@@ -6,7 +6,8 @@
         Height="1000"
         Width="1800"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
+        WindowState="Maximized"
+        FontSize="14">
 
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -38,7 +39,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness"   Value="1"/>
             <Setter Property="Padding"           Value="12,6"/>
-            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="FontSize"          Value="14"/>
             <Setter Property="FontFamily"        Value="Segoe UI"/>
             <Setter Property="Cursor"            Value="Hand"/>
             <Setter Property="Height"            Value="34"/>
@@ -151,7 +152,7 @@
         <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
             <Setter Property="Margin"         Value="10,4"/>
             <Setter Property="Height"         Value="36"/>
-            <Setter Property="FontSize"       Value="13"/>
+            <Setter Property="FontSize"       Value="14"/>
             <Setter Property="Background"     Value="#22FFFFFF"/>
             <Setter Property="BorderBrush"    Value="#44FFFFFF"/>
             <Setter Property="Template">
@@ -221,7 +222,7 @@
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="FontSize"   Value="13"/>
         </Style>
 
         <!-- TextBlock style -->
@@ -238,7 +239,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding"         Value="6,4"/>
             <Setter Property="FontFamily"      Value="Segoe UI"/>
-            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontSize"        Value="14"/>
             <Setter Property="CaretBrush"      Value="White"/>
         </Style>
 
@@ -250,7 +251,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding"         Value="6,4"/>
             <Setter Property="FontFamily"      Value="Segoe UI"/>
-            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontSize"        Value="14"/>
             <Setter Property="Height"          Value="30"/>
             <Style.Resources>
                 <Style TargetType="TextBlock">
@@ -270,7 +271,7 @@
         <!-- Section header text -->
         <Style x:Key="SectionHeader" TargetType="TextBlock">
             <Setter Property="Foreground"  Value="White"/>
-            <Setter Property="FontSize"    Value="22"/>
+            <Setter Property="FontSize"    Value="24"/>
             <Setter Property="FontFamily"  Value="Segoe UI"/>
             <Setter Property="FontWeight"  Value="Light"/>
             <Setter Property="Margin"      Value="0,0,0,16"/>
@@ -288,9 +289,10 @@
         <!-- Column header -->
         <Style x:Key="ColumnHeader" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-            <Setter Property="FontSize"     Value="14"/>
+            <Setter Property="FontSize"     Value="15"/>
             <Setter Property="FontWeight"   Value="SemiBold"/>
             <Setter Property="FontFamily"   Value="Segoe UI"/>
+            <Setter Property="FontSize"     Value="14"/>
             <Setter Property="Margin"       Value="0,0,0,6"/>
         </Style>
 
@@ -305,7 +307,7 @@
         <Style TargetType="RadioButton">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="FontSize"   Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
@@ -337,13 +339,13 @@
                     <StackPanel Margin="14,0,14,16">
                         <TextBlock Text="Supreme Commander 2"
                                    Foreground="White"
-                                   FontSize="15"
+                                   FontSize="17"
                                    FontWeight="Bold"
                                    FontFamily="Segoe UI"
                                    TextWrapping="Wrap"/>
                         <TextBlock Text="Mod Manager"
                                    Foreground="{DynamicResource AccentBrush}"
-                                   FontSize="18"
+                                   FontSize="19"
                                    FontWeight="Light"
                                    FontFamily="Segoe UI"/>
 
@@ -351,12 +353,12 @@
 
                         <TextBlock Text="by OSS | | Jaywix"
                                    Foreground="#AAAAAA"
-                                   FontSize="11"
+                                   FontSize="13"
                                    FontFamily="Segoe UI"/>
 
                         <TextBlock x:Name="VersionText"
                                    Foreground="#666666"
-                                   FontSize="10"
+                                   FontSize="12"
                                    FontFamily="Segoe UI"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
@@ -392,7 +394,7 @@
                     <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Game" Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                             <Button Content="▶  Launch Game" Style="{StaticResource PrimaryButton}"
                     Height="40" Click="LaunchGame_Click"/>
                         </StackPanel>
@@ -403,7 +405,7 @@
             Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Update Available" Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                             <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
                             <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
                         </StackPanel>
@@ -420,8 +422,8 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="⚠  Unrecognized files detected in gamedata"
-                       Foreground="#FFAA00" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
-                                <TextBlock Foreground="#CCCCCC" FontSize="12" TextWrapping="Wrap"
+                       Foreground="#FFAA00" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,4"/>
+                                <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap"
                        Text="Files were found in your gamedata folder that aren't original game files. Click Review to manage them."/>
                             </StackPanel>
                             <Button Grid.Column="1" Content="Review →" Style="{StaticResource PrimaryButton}"
@@ -441,8 +443,8 @@
 
                                 <TextBlock Text="📥  Downloading Mods"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 Go to <Run FontWeight="Bold">Manage Mods → Download</Run> and choose a mod type (Maps or Generic Gamedata Mods).
                 Check the boxes next to the mods you want and click <Run FontWeight="Bold">Download</Run>.
                 Downloaded mods are stored by the mod manager and start out disabled.
@@ -450,8 +452,8 @@
 
                                 <TextBlock Text="✅  Enabling and Disabling Mods"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 Go to <Run FontWeight="Bold">Manage Mods → Installed</Run> and choose a mod type.
                 Check the boxes next to the mods you want to enable or disable, then click the corresponding button.
                 When you're done, click <Run FontWeight="Bold">Save</Run> to apply the changes to your game.
@@ -460,8 +462,8 @@
 
                                 <TextBlock Text="💾  Using Presets"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 Presets let you save and restore your current mod setup instantly.
                 Go to <Run FontWeight="Bold">Manage Mods → Backups → Presets</Run>, enter a name, and click <Run FontWeight="Bold">Save</Run>.
                 To restore a setup, select a preset and click <Run FontWeight="Bold">Apply</Run>.
@@ -469,8 +471,8 @@
 
                                 <TextBlock Text="🔄  Restoring Original Game Files"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 If something goes wrong with your game files, go to <Run FontWeight="Bold">Manage Mods → Backups → Restore Original Game Files</Run>.
                 This will download the original unmodified gamedata from GitHub and replace your current gamedata folder.
                 Your installed mods will not be deleted — they are stored separately by the mod manager.
@@ -478,8 +480,8 @@
 
                                 <TextBlock Text="🔍  Scanning for Unrecognized Files"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18">
                 If you added mod files directly to your gamedata folder without using the mod manager,
                 go to <Run FontWeight="Bold">Manage Mods → Installed → Scan Gamedata for Unrecognized Mods</Run>.
                 You can then import those files so the mod manager tracks them, or delete them if you don't want them.
@@ -499,7 +501,7 @@
 
                             <TextBlock Grid.Row="0" Text="News &amp; Announcements"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12"/>
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,12"/>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding NewsItems}">
@@ -555,7 +557,7 @@
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </Border.Style>
-                                                            <TextBlock FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                            <TextBlock FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
                                                                         <Setter Property="Text" Value="GENERAL"/>
@@ -580,17 +582,17 @@
                                                         </Border>
 
                                                         <TextBlock Grid.Column="1" Text="{Binding Title}"
-                               FontSize="15" FontWeight="SemiBold"
+                               FontSize="16" FontWeight="SemiBold"
                                Foreground="White" VerticalAlignment="Center"
                                TextWrapping="Wrap"/>
 
                                                         <TextBlock Grid.Column="2" Text="{Binding Date}"
-                               FontSize="11" Foreground="#666666"
+                               FontSize="12" Foreground="#666666"
                                VerticalAlignment="Center" Margin="12,0,8,0"/>
 
                                                         <Button Grid.Column="3" Content="{Binding ToggleIcon}"
                             Click="NewsItemToggle_Click"
-                            Width="28" Height="24" FontSize="11"
+                            Width="28" Height="24" FontSize="12"
                             Padding="0" VerticalAlignment="Center"/>
                                                     </Grid>
 
@@ -600,7 +602,7 @@
                                                             <Image Source="{Binding ImageUrl}" Stretch="Uniform" VerticalAlignment="Center"/>
                                                         </Border>
 
-                                                        <TextBlock Text="{Binding Body}" FontSize="13" Foreground="#CCCCCC"
+                                                        <TextBlock Text="{Binding Body}" FontSize="14" Foreground="#CCCCCC"
                                TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10"/>
 
                                                         <Button HorizontalAlignment="Left"
@@ -634,15 +636,15 @@
                         <StackPanel>
                             <TextBlock Text="Game Path"
                        Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                            <TextBlock Text="Current path:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,4"/>
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Text="Current path:" Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,4"/>
                             <TextBlock Text="{Binding GamePath}" Foreground="White"
-                       FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                       FontSize="13" TextWrapping="Wrap" Margin="0,0,0,12"/>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
                             <TextBlock Text="Theme" Foreground="{DynamicResource AccentBrush}"
-           FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+           FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                             <TextBlock Text="Choose your faction theme. Changes apply immediately."
-           Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
+           Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
 
                             <WrapPanel>
                                 <!-- Standard -->
@@ -651,7 +653,7 @@
             Cursor="Hand" MouseLeftButtonUp="ThemeStandard_Click_Border">
                                     <StackPanel>
                                         <TextBlock Text="⚡  Jaywix Standard" Foreground="White"
-                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                       FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                         <Border Height="5" CornerRadius="2" Background="#1E90FF"/>
                                     </StackPanel>
                                 </Border>
@@ -662,7 +664,7 @@
             Cursor="Hand" MouseLeftButtonUp="ThemeUEF_Click_Border">
                                     <StackPanel>
                                         <TextBlock Text="UEF" Foreground="White"
-                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                       FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                         <Border Height="5" CornerRadius="2" Background="#1E90FF"/>
                                     </StackPanel>
                                 </Border>
@@ -673,7 +675,7 @@
             Cursor="Hand" MouseLeftButtonUp="ThemeCybran_Click_Border">
                                     <StackPanel>
                                         <TextBlock Text="Cybran" Foreground="White"
-                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                       FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                         <Border Height="5" CornerRadius="2" Background="#CC2200"/>
                                     </StackPanel>
                                 </Border>
@@ -684,14 +686,14 @@
             Cursor="Hand" MouseLeftButtonUp="ThemeAeon_Click_Border">
                                     <StackPanel>
                                         <TextBlock Text="Aeon Illuminate" Foreground="White"
-                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                       FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                         <Border Height="5" CornerRadius="2" Background="#00BFA5"/>
                                     </StackPanel>
                                 </Border>
                             </WrapPanel>
                             <Separator Style="{StaticResource HRule}"/>
                             <TextBlock Text="Change Game Path" Foreground="#AAAAAA"
-                       FontSize="11" Margin="0,0,0,6"/>
+                       FontSize="12" Margin="0,0,0,6"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBox x:Name="GamePathInput"
                          Width="320" Margin="0,0,8,0"
@@ -704,9 +706,9 @@
                             </StackPanel>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
                             <TextBlock Text="Uninstall" Foreground="{DynamicResource AccentBrush}"
-                               FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                               FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
                                                 <TextBlock Text="Permanently removes all SC2 Mod Manager files and data."
-                               Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                               Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
                                                 <Button Content="🗑  Uninstall SC2 Mod Manager"
                             Style="{StaticResource DangerButton}"
                             Width="220" HorizontalAlignment="Left"
@@ -760,7 +762,7 @@
                         <StackPanel>
                             <TextBlock Text="Save Current Gamedata State as Preset"
                                        Foreground="{DynamicResource AccentBrush}"
-                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBox Width="220" Margin="0,0,8,0"
                                          Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
@@ -782,11 +784,11 @@
                                 <DataTemplate>
                                     <StackPanel Margin="2,4">
                                         <TextBlock Text="{Binding Name}"
-                                                   FontWeight="SemiBold" FontSize="13"/>
+                                                   FontWeight="SemiBold" FontSize="14"/>
                                         <TextBlock Text="{Binding CreatedAt, StringFormat='Saved: {0:MM/dd/yyyy HH:mm}'}"
-                                                   FontSize="11" Foreground="#AAAAAA"/>
+                                                   FontSize="12" Foreground="#AAAAAA"/>
                                         <TextBlock Text="{Binding Files.Count, StringFormat='{}{0} files'}"
-                                                   FontSize="11" Foreground="#AAAAAA"/>
+                                                   FontSize="12" Foreground="#AAAAAA"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -1001,7 +1003,7 @@
 
                         <!-- Sort bar -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6" VerticalAlignment="Center">
-                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding InstalledMapSort.NameButtonText}" Width="75" Margin="0,0,4,0"
             Click="InstalledMapSortName_Click"/>
                             <Button Content="{Binding InstalledMapSort.DateButtonText}" Width="75"
@@ -1093,7 +1095,7 @@
                             <StackPanel>
                                 <!-- No map selected -->
                                 <TextBlock Text="Select a map to view details"
-                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           Foreground="#666666" FontSize="13" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,20,0,0"
                            Visibility="{Binding SelectedInstalledMap, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
@@ -1107,7 +1109,7 @@
                                    Stretch="Uniform"
                                    Visibility="{Binding SelectedInstalledMap.MapPictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                             <TextBlock Text="No Image Available"
-                                       Foreground="#444444" FontSize="12"
+                                       Foreground="#444444" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Visibility="{Binding SelectedInstalledMap.MapPictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
                                         </Grid>
@@ -1133,30 +1135,30 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"      Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledMap.Author}"      FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"      Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledMap.Author}"      FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledMap.PlayerCount}" FontSize="11"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledMap.PlayerCount}" FontSize="12"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"      Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledMap.MapTeamStyle}" FontSize="11"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"      Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledMap.MapTeamStyle}" FontSize="12"/>
 
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"       Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledMap.Size}"         FontSize="11"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"       Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledMap.Size}"         FontSize="12"/>
 
-                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedInstalledMap.Version}"      FontSize="11"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedInstalledMap.Version}"      FontSize="12"/>
 
-                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedInstalledMap.LastUpdated}"  FontSize="11"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedInstalledMap.LastUpdated}"  FontSize="12"/>
                                     </Grid>
 
                                     <Separator Style="{StaticResource HRule}"/>
 
                                     <!-- Description -->
                                     <TextBlock Text="{Binding SelectedInstalledMap.Description}"
-                               FontSize="11" Foreground="#CCCCCC"
+                               FontSize="12" Foreground="#CCCCCC"
                                TextWrapping="Wrap" Margin="0,6,0,8"/>
 
                                     <!-- Tags -->
@@ -1171,7 +1173,7 @@
                                                 <Border Background="{DynamicResource ButtonBaseBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                         BorderThickness="1" CornerRadius="3"
                                         Padding="6,2" Margin="0,0,4,4">
-                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{DynamicResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource AccentBrush}"/>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -1202,7 +1204,7 @@
                         <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding InstalledGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
                     Click="InstalledGenericModSortName_Click"/>
                             <Button Content="{Binding InstalledGenericModSort.DateButtonText}" Width="75"
@@ -1292,7 +1294,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <TextBlock Text="Select a mod to view details"
-                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           Foreground="#666666" FontSize="13" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,20,0,0"
                            Visibility="{Binding SelectedInstalledGenericMod, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
@@ -1304,7 +1306,7 @@
                                    Stretch="Uniform"
                                    Visibility="{Binding SelectedInstalledGenericMod.PictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                             <TextBlock Text="No Image Available"
-                                       Foreground="#444444" FontSize="12"
+                                       Foreground="#444444" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Visibility="{Binding SelectedInstalledGenericMod.PictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
                                         </Grid>
@@ -1327,23 +1329,23 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.FileName}" FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.FileName}" FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Author}"   FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Author}"   FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Version}"  FontSize="11"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Version}"  FontSize="12"/>
 
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.LastUpdated}" FontSize="11"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.LastUpdated}" FontSize="12"/>
                                     </Grid>
 
                                     <Separator Style="{StaticResource HRule}"/>
 
                                     <TextBlock Text="{Binding SelectedInstalledGenericMod.Description}"
-                               FontSize="11" Foreground="#CCCCCC"
+                               FontSize="12" Foreground="#CCCCCC"
                                TextWrapping="Wrap" Margin="0,6,0,0"/>
                                 </StackPanel>
                             </StackPanel>
@@ -1370,8 +1372,8 @@
             BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="⚠  Before you import" Foreground="#FFCC00"
-                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="12" LineHeight="18">
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#DDDDDD" FontSize="13" LineHeight="18">
                 <Run>Unknown files will be imported as </Run>
                 <Run FontWeight="Bold" Foreground="White">Generic Gamedata Mods</Run>
                 <Run>. If deleted from the mod manager they cannot be restored automatically.</Run>
@@ -1391,7 +1393,7 @@
                             <TextBlock Grid.Row="0" Style="{StaticResource ColumnHeader}"
                        Text="Found in Downloadable List"/>
 
-                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="11"
+                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="12"
                        Margin="0,0,0,8">
                 These files match mods available for download. You can import them so the mod manager
                 tracks them with full metadata, or delete them and re-download cleanly later.
@@ -1435,7 +1437,7 @@
                             <TextBlock Grid.Row="0" Style="{StaticResource ColumnHeader}"
                        Text="Unrecognized Files"/>
 
-                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="11"
+                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#AAAAAA" FontSize="12"
                        Margin="0,0,0,8">
                 These files are not original game files and do not match any known downloadable mod.
                 Import them as Generic Gamedata Mods to manage them, or leave them alone.
@@ -1591,7 +1593,7 @@ Click="DownloadFiltersToggle_Click"/>
 
                         <!-- Sort bar -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding DownloadMapSort.NameButtonText}" Width="75" Margin="0,0,4,0"
             Click="DownloadMapSortName_Click"/>
                             <Button Content="{Binding DownloadMapSort.DateButtonText}" Width="75"
@@ -1621,7 +1623,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                   Click="MapCheckBox_Click"/>
                                                 <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
                                                 <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
-                                           FontSize="11" VerticalAlignment="Center"
+                                           FontSize="12" VerticalAlignment="Center"
                                            Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                             </StackPanel>
                                         </DataTemplate>
@@ -1644,7 +1646,7 @@ Click="DownloadFiltersToggle_Click"/>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <TextBlock Text="Select a map to view details"
-                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           Foreground="#666666" FontSize="13" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,20,0,0"
                            Visibility="{Binding SelectedDownloadMap, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
@@ -1656,7 +1658,7 @@ Click="DownloadFiltersToggle_Click"/>
                                    Stretch="Uniform"
                                    Visibility="{Binding SelectedDownloadMap.MapPictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                             <TextBlock Text="No Image Available"
-                                       Foreground="#444444" FontSize="12"
+                                       Foreground="#444444" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Visibility="{Binding SelectedDownloadMap.MapPictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
                                         </Grid>
@@ -1680,29 +1682,29 @@ Click="DownloadFiltersToggle_Click"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"   Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadMap.Author}"       FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Author:"   Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadMap.Author}"       FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadMap.PlayerCount}"  FontSize="11"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Players:"  Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadMap.PlayerCount}"  FontSize="12"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadMap.MapTeamStyle}" FontSize="11"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Style:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadMap.MapTeamStyle}" FontSize="12"/>
 
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"     Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadMap.Size}"         FontSize="11"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:"     Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadMap.Size}"         FontSize="12"/>
 
-                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedDownloadMap.Version}"      FontSize="11"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Version:"  Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedDownloadMap.Version}"      FontSize="12"/>
 
-                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedDownloadMap.LastUpdated}"  FontSize="11"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Updated:"  Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedDownloadMap.LastUpdated}"  FontSize="12"/>
                                     </Grid>
 
                                     <Separator Style="{StaticResource HRule}"/>
 
                                     <TextBlock Text="{Binding SelectedDownloadMap.Description}"
-                               FontSize="11" Foreground="#CCCCCC"
+                               FontSize="12" Foreground="#CCCCCC"
                                TextWrapping="Wrap" Margin="0,6,0,8"/>
 
                                     <ItemsControl ItemsSource="{Binding SelectedDownloadMap.Tags}">
@@ -1716,7 +1718,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                 <Border Background="{DynamicResource ButtonBaseBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                         BorderThickness="1" CornerRadius="3"
                                         Padding="6,2" Margin="0,0,4,4">
-                                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource AccentBrush}"/>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -1747,7 +1749,7 @@ Click="DownloadFiltersToggle_Click"/>
                         <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding DownloadGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
                     Click="DownloadGenericModSortName_Click"/>
                             <Button Content="{Binding DownloadGenericModSort.DateButtonText}" Width="75"
@@ -1776,7 +1778,7 @@ Click="DownloadFiltersToggle_Click"/>
                                           Click="GenericModCheckBox_Click"/>
                                                 <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
                                                 <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
-                                           FontSize="11" VerticalAlignment="Center"
+                                           FontSize="12" VerticalAlignment="Center"
                                            Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                             </StackPanel>
                                         </DataTemplate>
@@ -1799,7 +1801,7 @@ Click="DownloadFiltersToggle_Click"/>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <TextBlock Text="Select a mod to view details"
-                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           Foreground="#666666" FontSize="13" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,20,0,0"
                            Visibility="{Binding SelectedDownloadGenericMod, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
@@ -1811,7 +1813,7 @@ Click="DownloadFiltersToggle_Click"/>
                                    Stretch="Uniform"
                                    Visibility="{Binding SelectedDownloadGenericMod.PictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                             <TextBlock Text="No Image Available"
-                                       Foreground="#444444" FontSize="12"
+                                       Foreground="#444444" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Visibility="{Binding SelectedDownloadGenericMod.PictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
                                         </Grid>
@@ -1834,23 +1836,23 @@ Click="DownloadFiltersToggle_Click"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.FileName}"    FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.FileName}"    FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Author}"      FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Author}"      FontSize="12" TextWrapping="Wrap"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Version}"     FontSize="11"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Version}"     FontSize="12"/>
 
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.LastUpdated}" FontSize="11"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="12" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.LastUpdated}" FontSize="12"/>
                                     </Grid>
 
                                     <Separator Style="{StaticResource HRule}"/>
 
                                     <TextBlock Text="{Binding SelectedDownloadGenericMod.Description}"
-                               FontSize="11" Foreground="#CCCCCC"
+                               FontSize="12" Foreground="#CCCCCC"
                                TextWrapping="Wrap" Margin="0,6,0,0"/>
                                 </StackPanel>
                             </StackPanel>
@@ -1881,7 +1883,7 @@ Click="DownloadFiltersToggle_Click"/>
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="📂" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                             <TextBlock Text="Drag and drop .scd or .zip files here"
-                                       FontSize="15" Foreground="#AAAAAA" HorizontalAlignment="Center"/>
+                                       FontSize="16" Foreground="#AAAAAA" HorizontalAlignment="Center"/>
                             <TextBlock Text="or" Margin="0,10" HorizontalAlignment="Center" Foreground="#666666"/>
                             <Button Content="Browse for File" Style="{StaticResource PrimaryButton}"
                                     Width="150" Click="ManualImportBrowse_Click"/>

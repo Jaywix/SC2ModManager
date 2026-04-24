@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<Version>1.5.0</Version>
+		<Version>1.6.0</Version>
 		<ApplicationIcon>Assets\Supreme_Commander_2_2.ico</ApplicationIcon>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<SelfContained>true</SelfContained>
