@@ -663,6 +663,8 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            var newlyImported = new List<object>();
+
             string gameDataPath = Path.Combine(GamePath, "gamedata");
             int successCount = 0;
             var errors = new List<string>();
@@ -676,10 +678,16 @@ namespace SC2ModManager.ViewModels
                     if (sourcePath == null)
                         throw new Exception("File not found in gamedata.");
 
-                    if (item.MatchedMod is Map)
-                        await storageService.ImportMapAsync(sourcePath);
-                    else
-                        await storageService.ImportGenericModAsync(sourcePath);
+                    if (item.MatchedMod is Map m)
+                    {
+                        await storageService.ImportMapAsEnabledAsync(sourcePath);
+                        newlyImported.Add(m);
+                    }
+                    else if (item.MatchedMod is GenericGamedataMod gm)
+                    {
+                        await storageService.ImportGenericModAsEnabledAsync(sourcePath);
+                        newlyImported.Add(gm);
+                    }
 
                     successCount++;
                 }
@@ -687,6 +695,36 @@ namespace SC2ModManager.ViewModels
                 {
                     errors.Add($"{item.FileName}: {ex.Message}");
                 }
+            }
+
+            // Save map state
+            var importedMaps = newlyImported.OfType<Map>().ToList();
+            if (importedMaps.Any())
+            {
+                var existingMapState = storageService.LoadMapsState();
+                var existingMapsByFile = existingMapState.ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+                foreach (var map in importedMaps)
+                {
+                    map.IsEnabled = true;
+                    map.IsDownloaded = true;
+                    existingMapsByFile[map.FileName] = map;
+                }
+                storageService.SaveMapsState(existingMapsByFile.Values);
+            }
+
+            // Save generic mod state
+            var importedMods = newlyImported.OfType<GenericGamedataMod>().ToList();
+            if (importedMods.Any())
+            {
+                var existingModState = storageService.LoadGenericModsState();
+                var existingModsByFile = existingModState.ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+                foreach (var mod in importedMods)
+                {
+                    mod.IsEnabled = true;
+                    mod.IsDownloaded = true;
+                    existingModsByFile[mod.FileName] = mod;
+                }
+                storageService.SaveGenericModsState(existingModsByFile.Values);
             }
 
             LoadInstalledMaps();
@@ -755,7 +793,7 @@ namespace SC2ModManager.ViewModels
                     if (sourcePath == null)
                         throw new Exception("File not found in gamedata.");
 
-                    await storageService.ImportGenericModAsync(sourcePath);
+                    await storageService.ImportGenericModAsEnabledAsync(sourcePath);
                     successCount++;
                 }
                 catch (Exception ex)
@@ -763,6 +801,21 @@ namespace SC2ModManager.ViewModels
                     errors.Add($"{item.FileName}: {ex.Message}");
                 }
             }
+
+            var existingState = storageService.LoadGenericModsState();
+            var existingByFile = existingState.ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in toImport.Where(i => i.IsSelected))
+            {
+                var mod = new GenericGamedataMod(item.FileName)
+                {
+                    IsEnabled = true,
+                    IsDownloaded = true
+                };
+                existingByFile[mod.FileName] = mod;
+            }
+
+            storageService.SaveGenericModsState(existingByFile.Values);
 
             LoadInstalledGenericMods();
 

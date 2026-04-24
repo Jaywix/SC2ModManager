@@ -201,6 +201,20 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
+        ///     Copies a .scd file from an external path into Maps/Enabled (for scan imports).
+        /// </summary>
+        public async Task ImportMapAsEnabledAsync(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new Exception("Map file not found.");
+
+            string fileName = Path.GetFileName(filePath);
+            string dest = Path.Combine(mapsEnabledPath, fileName);
+
+            await Task.Run(() => File.Copy(filePath, dest, true));
+        }
+
+        /// <summary>
         ///     Extracts .scd files from a zip into the Disabled folder.
         /// </summary>
         public async Task ExtractAndImportMapsAsync(string zipPath)
@@ -368,6 +382,20 @@ namespace SC2ModManager.Services
 
             string fileName = Path.GetFileName(filePath);
             string dest = Path.Combine(genericModsDisabledPath, fileName);
+
+            await Task.Run(() => File.Copy(filePath, dest, true));
+        }
+
+        /// <summary>
+        ///     Copies a .scd file from an external path into GenericMods/Enabled (for scan imports).
+        /// </summary>
+        public async Task ImportGenericModAsEnabledAsync(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new Exception("File not found.");
+
+            string fileName = Path.GetFileName(filePath);
+            string dest = Path.Combine(genericModsEnabledPath, fileName);
 
             await Task.Run(() => File.Copy(filePath, dest, true));
         }
