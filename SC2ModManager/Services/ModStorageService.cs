@@ -40,6 +40,7 @@ namespace SC2ModManager.Services
         public ModStorageService()
         {
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager/1.0");
+            httpClient.Timeout = TimeSpan.FromMinutes(3);
 
             string appData = Globals.GetDataPath();
 
@@ -78,6 +79,18 @@ namespace SC2ModManager.Services
                     entry.ExtractToFile(destPath, overwrite: true);
                 }
             });
+        }
+
+        private async Task DownloadToFileAsync(string url, string outputPath)
+        {
+            using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            await stream.CopyToAsync(fileStream);
+            await fileStream.FlushAsync();
         }
 
 
@@ -151,16 +164,14 @@ namespace SC2ModManager.Services
             if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 string tempZip = Path.Combine(Path.GetTempPath(), $"{map.ID}_download.zip");
-                var data = await httpClient.GetByteArrayAsync(url);
-                await File.WriteAllBytesAsync(tempZip, data);
+                await DownloadToFileAsync(url, tempZip);
                 await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
                 File.Delete(tempZip);
             }
             else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
             {
-                var data = await httpClient.GetByteArrayAsync(url);
                 string path = Path.Combine(mapsDisabledPath, map.FileName);
-                await File.WriteAllBytesAsync(path, data);
+                await DownloadToFileAsync(url, path);
             }
             else
             {
@@ -325,16 +336,14 @@ namespace SC2ModManager.Services
             if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 string tempZip = Path.Combine(Path.GetTempPath(), $"{mod.ID}_download.zip");
-                var data = await httpClient.GetByteArrayAsync(url);
-                await File.WriteAllBytesAsync(tempZip, data);
+                await DownloadToFileAsync(url, tempZip);
                 await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
                 File.Delete(tempZip);
             }
             else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
             {
-                var data = await httpClient.GetByteArrayAsync(url);
                 string path = Path.Combine(genericModsDisabledPath, mod.FileName);
-                await File.WriteAllBytesAsync(path, data);
+                await DownloadToFileAsync(url, path);
             }
             else
             {
