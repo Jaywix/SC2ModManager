@@ -432,7 +432,7 @@
                     </Border>
 
                     <!-- How-to section -->
-                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
+                    <Border Grid.Row="4" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
                         <StackPanel>
                             <Button x:Name="HowToToggleButton"
                 Content="▼  How to Use"
@@ -492,7 +492,7 @@
                     </Border>
 
                     <!-- News feed -->
-                    <Border Grid.Row="4" Style="{StaticResource ContentPanel}">
+                    <Border Grid.Row="5" Style="{StaticResource ContentPanel}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
