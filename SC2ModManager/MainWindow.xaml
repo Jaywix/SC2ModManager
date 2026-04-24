@@ -1567,12 +1567,12 @@
 
                     <!-- Action buttons for matched mods -->
                     <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
-                        <Button Content="Select All"    Width="95"  Margin="0,0,6,0" Click="SelectAllMatchResults_Click"/>
-                        <Button Content="Deselect All"  Width="95"  Margin="0,0,6,0" Click="DeselectAllMatchResults_Click"/>
+                        <Button Content="Select All"   Margin="0,0,6,0" Click="SelectAllMatchResults_Click"/>
+                        <Button Content="Deselect All"  Margin="0,0,6,0" Click="DeselectAllMatchResults_Click"/>
                         <Button Content="📥  Import &amp; Track" Style="{StaticResource PrimaryButton}"
-                Width="140" Margin="0,0,6,0" Click="ImportMatchedMods_Click"/>
+                 Margin="0,0,6,0" Click="ImportMatchedMods_Click"/>
                         <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"
-                Width="140" Click="DeleteMatchedMods_Click"/>
+                 Click="DeleteMatchedMods_Click"/>
                     </StackPanel>
 
                     <!-- SECTION 2: Fully unknown -->
@@ -1611,19 +1611,19 @@
 
                     <!-- Action buttons for unknown mods -->
                     <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="Select All"   Width="95"  Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
-                        <Button Content="Deselect All" Width="95"  Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
+                        <Button Content="Select All"     Margin="0,0,6,0" Click="SelectAllScanResults_Click"/>
+                        <Button Content="Deselect All"   Margin="0,0,6,0" Click="DeselectAllScanResults_Click"/>
                         <Button Content="📥  Import Selected" Style="{StaticResource PrimaryButton}"
-            Width="150" Margin="0,0,6,0" Click="ImportScanResults_Click"/>
+             Margin="0,0,6,0" Click="ImportScanResults_Click"/>
                         <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"
-            Width="150" Click="DeleteUnknownFiles_Click"/>
+             Click="DeleteUnknownFiles_Click"/>
                     </StackPanel>
 
                     <!-- Run scan / Back -->
                     <StackPanel Grid.Row="6" Orientation="Horizontal">
                         <Button Content="🔍  Run Scan" Style="{StaticResource PrimaryButton}"
-                Width="110" Margin="0,0,6,0" Click="RunScan_Click"/>
-                        <Button Content="← Back" Width="80" Click="GoToInstalledMods"/>
+                 Margin="0,0,6,0" Click="RunScan_Click"/>
+                        <Button Content="← Back"  Click="GoToInstalledMods"/>
                     </StackPanel>
                 </Grid>
 
@@ -1639,7 +1639,7 @@
                             <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToDownloadGenericMods"/>
                             <Button Content="📂  Manual Import"         Margin="0,0,0,6" Click="GoToManualImport"/>
                             <Separator Style="{StaticResource HRule}"/>
-                            <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
+                            <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
