@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 18, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -205,7 +205,7 @@ namespace SC2ModManager
         {
             var dialog = new OpenFolderDialog { Title = "Choose Install Folder" };
             if (dialog.ShowDialog() == true)
-                InstallPathBox.Text = dialog.FolderName;
+                InstallPathBox.Text = Path.Combine(dialog.FolderName, Globals.LauncherName);
         }
 
         // ================= PAGE 5: INSTALL =================
@@ -213,6 +213,12 @@ namespace SC2ModManager
         private async Task RunInstallAsync()
         {
             string installFolder = InstallPathBox.Text.Trim();
+
+            // Always ensure SC2ModManager is appended
+            if (!installFolder.EndsWith(Globals.LauncherName, StringComparison.OrdinalIgnoreCase))
+                installFolder = Path.Combine(installFolder, Globals.LauncherName);
+
+            InstallPathBox.Text = installFolder;
             validatedInstallPath = installFolder;
 
             NextButton.IsEnabled = false;
@@ -228,7 +234,6 @@ namespace SC2ModManager
             {
                 await installService.InstallToFolderAsync(installFolder, progress);
 
-                // Save game path to config in the new location and the theme as well
                 var config = new AppConfig
                 {
                     GamePath = validatedGamePath,
@@ -236,18 +241,31 @@ namespace SC2ModManager
                 };
                 configService.Save(config);
 
-                // Snapshot the original gamedata files so the scan knows what belongs there
+                // Create startup presets based on what's currently in gamedata
                 try
                 {
                     var presetService = new PresetService();
-                    presetService.SaveOriginalFilesList(Path.Combine(validatedGamePath, "gamedata"));
-                }
-                catch(Exception e)
-                {
-                    // Don't do anything for now, maybe I'll implement something later
-                }
+                    string gameDataPath = Path.Combine(validatedGamePath, "gamedata");
 
-                // Desktop shortcut
+                    var allFiles = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
+                        .Select(f => Path.GetRelativePath(gameDataPath, f))
+                        .ToList();
+
+                    var originalFiles = allFiles
+                        .Where(f => ModStorageService.IsOriginalGameFile(f))
+                        .ToList();
+
+                    presetService.SavePresetFromFileList("Original Game Files", originalFiles);
+
+                    var unrecognizedFiles = allFiles
+                        .Where(f => !ModStorageService.IsOriginalGameFile(f))
+                        .ToList();
+
+                    if (unrecognizedFiles.Any())
+                        presetService.SavePresetFromFileList("Initial Gamedata State", allFiles);
+                }
+                catch { }
+
                 if (DesktopShortcutCheckBox.IsChecked == true)
                 {
                     string iconPath = Path.Combine(installFolder, "Assets", "Supreme_Commander_2_2.ico");

@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 8, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -62,6 +62,21 @@ namespace SC2ModManager.Services
             string safeName = MakeSafeFileName(name);
             string path = Path.Combine(presetsPath, $"{safeName}.json");
 
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(path, JsonSerializer.Serialize(preset, options));
+        }
+
+        public void SavePresetFromFileList(string name, List<string> files)
+        {
+            var preset = new ModPreset
+            {
+                Name = name,
+                CreatedAt = DateTime.Now,
+                Files = files
+            };
+
+            string safeName = MakeSafeFileName(name);
+            string path = Path.Combine(presetsPath, $"{safeName}.json");
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(path, JsonSerializer.Serialize(preset, options));
         }

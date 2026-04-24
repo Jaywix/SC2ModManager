@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 8, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -36,6 +36,13 @@ namespace SC2ModManager.Services
         private readonly string genericModsStatePath;
 
         private readonly HttpClient httpClient = new HttpClient();
+
+        private static readonly HashSet<string> OriginalGameFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "bp.scd", "bp.scd.enc", "effects.scd", "effects.scd.enc", "env.scd", "env.scd.enc", "fonts.scd", "fonts.scd.enc", "loc_cn.scd.enc", "loc_de.scd.enc", "loc_fr.scd.enc", "loc_it.scd.enc", "loc_ja.scd.enc", "loc_jp.scd.enc", "loc_kr.scd.enc", "loc_pl.scd.enc", "loc_ru.scd.enc", "loc_star.scd.enc", "loc_US.scd", "loc_us.scd.enc", "lua.bkup", "lua.scd", "lua.scd.enc", "maps.scd", "maps.scd.enc", "meshes.scd", "meshes.scd.enc", "projectiles.scd", "projectiles.scd.enc", "props.scd", "props.scd.enc", "textures.scd", "textures.scd.enc", "ui.scd", "ui.scd.enc", "uncompiled_lua.scd", "uncompiled_lua.scd.enc", "units.scd", "units.scd.enc", "z_diff1.scd", "z_diff1.scd.enc", "z_dlc1.scd", "z_dlc1.scd.enc", "z_dlc1_map_shared.scd", "z_dlc1_map_shared.scd.enc", "z_lua_dlc1.bkup", "z_lua_dlc1.scd", "z_lua_dlc1.scd.enc", "z_uncompiled_lua_dlc1.scd", "z_uncompiled_lua_dlc1.scd.enc", "loc_cz.scd.enc", "loc_es.scd.enc"
+        };
+
+        public static bool IsOriginalGameFile(string fileName) => OriginalGameFiles.Contains(Path.GetFileName(fileName));
 
         public ModStorageService()
         {

@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 18, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -39,6 +39,8 @@ namespace SC2ModManager
 
             ShowView("Home");
             ApplyCurrentTheme();
+
+            Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods();
         }
 
         // ================= THEMES ===============

@@ -378,10 +378,11 @@
                 <!-- ===== HOME ===== -->
                 <Grid x:Name="HomeView">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>  <!-- header -->
+                        <RowDefinition Height="Auto"/>  <!-- launch -->
+                        <RowDefinition Height="Auto"/>  <!-- update -->
+                        <RowDefinition Height="Auto"/>  <!-- unrecognized mods stuff -->
+                        <RowDefinition Height="*"/>     <!-- news -->
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="Home" Style="{StaticResource SectionHeader}"/>
@@ -407,8 +408,28 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Unrecognized files banner -->
+                    <Border Grid.Row="3" Background="#1A1000" BorderBrush="#AA6600"
+        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,12"
+        Visibility="{Binding HasUnrecognizedFiles, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="⚠  Unrecognized files detected in gamedata"
+                       Foreground="#FFAA00" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
+                                <TextBlock Foreground="#CCCCCC" FontSize="12" TextWrapping="Wrap"
+                       Text="Files were found in your gamedata folder that aren't original game files. Click Review to manage them."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Review →" Style="{StaticResource PrimaryButton}"
+                Width="90" Margin="12,0,0,0" Click="GoToScanGamedata"/>
+                        </Grid>
+                    </Border>
+
                     <!-- News feed -->
-                    <Border Grid.Row="3" Style="{StaticResource ContentPanel}">
+                    <Border Grid.Row="4" Style="{StaticResource ContentPanel}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>

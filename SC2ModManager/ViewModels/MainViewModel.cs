@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 18, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -534,6 +534,14 @@ namespace SC2ModManager.ViewModels
         }
 
         // ================= INSTALLED: SCAN =================
+
+        private bool hasUnrecognizedFiles;
+        public bool HasUnrecognizedFiles
+        {
+            get => hasUnrecognizedFiles;
+            set { hasUnrecognizedFiles = value; OnPropertyChanged(nameof(HasUnrecognizedFiles)); }
+        }
+
         public async Task ScanGamedataForUnknownMods()
         {
             if (string.IsNullOrEmpty(GamePath))
@@ -552,15 +560,9 @@ namespace SC2ModManager.ViewModels
 
             HashSet<string> knownMods = storageService.GetAllKnownModFileNames();
 
-            HashSet<string> originalFiles = presetService.LoadOriginalFilesList()
-                .Select(f => Path.GetFileName(f))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
             List<string> inGamedata = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
                 .Select(f => Path.GetFileName(f))
                 .ToList();
-
-
 
             List<Map> downloadableMaps = new List<Map>();
             List<GenericGamedataMod> downloadableGenericMods = new List<GenericGamedataMod>();
@@ -573,17 +575,17 @@ namespace SC2ModManager.ViewModels
             catch { }
 
             var downloadableMapsByFile = downloadableMaps
-                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.Ordinal);
+                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.OrdinalIgnoreCase);
 
             var downloadableGenericByFile = downloadableGenericMods
-                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.Ordinal);
+                .ToDictionary(m => m.FileName, m => (object)m, StringComparer.OrdinalIgnoreCase);
 
             var unknown = new List<ScanResultItem>();
             var matched = new List<ScanResultItem>();
 
             foreach (string file in inGamedata.OrderBy(f => f))
             {
-                if (knownMods.Contains(file) || originalFiles.Contains(file))
+                if (knownMods.Contains(file) || ModStorageService.IsOriginalGameFile(file))
                     continue;
 
                 if (downloadableMapsByFile.TryGetValue(file, out var matchedMap))
@@ -622,6 +624,8 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(ScanResults));
             OnPropertyChanged(nameof(ScanMatchResults));
+
+            HasUnrecognizedFiles = unknown.Any() || matched.Any();
         }
 
         public void DeleteUnknownFiles(IEnumerable<ScanResultItem> items)
@@ -1174,7 +1178,7 @@ namespace SC2ModManager.ViewModels
             var dialog = new OpenFileDialog
             {
                 Title = "Select a mod file",
-                Filter = "SC2 Mod Files (*.scd)|*.scd|ZIP files (*.zip)|*.zip",
+                Filter = "All Supported Files (*.scd;*.zip)|*.scd;*.zip|All Files (*.*)|*.*",
                 Multiselect = true
             };
 
@@ -1220,7 +1224,19 @@ namespace SC2ModManager.ViewModels
                     }
                     else
                     {
-                        MessageBox.Show($"Unsupported file type: {Path.GetFileName(file)}");
+                        // Non-standard file type — warn the user
+                        var confirm = MessageBox.Show(
+                            $"'{Path.GetFileName(file)}' is not a standard .scd file. " +
+                            "Importing non-standard files could cause issues with your game.\n\n" +
+                            "Are you sure you want to import it into the gamedata folder?",
+                            "Non-Standard File",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (confirm != MessageBoxResult.Yes) continue;
+
+                        await storageService.ImportGenericModAsync(file);
+                        successCount++;
                     }
                 }
                 catch (Exception ex)
