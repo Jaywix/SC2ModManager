@@ -119,6 +119,7 @@ namespace SC2ModManager
             DownloadMapsView.Visibility = Visibility.Collapsed;
             DownloadGenericModsView.Visibility = Visibility.Collapsed;
             ManualImportView.Visibility = Visibility.Collapsed;
+            FileLocationsView.Visibility = Visibility.Collapsed;
 
             switch (view)
             {
@@ -136,6 +137,7 @@ namespace SC2ModManager
                 case "DownloadMaps": DownloadMapsView.Visibility = Visibility.Visible; break;
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
+                case "FileLocations": FileLocationsView.Visibility = Visibility.Visible; break;
             }
         }
 
@@ -260,6 +262,50 @@ namespace SC2ModManager
         }
 
         private void Uninstall_Click(object sender, RoutedEventArgs e) => vm.Uninstall();
+
+        // ================= FILE LOCATIONS =================
+
+        private void GoToFileLocations(object sender, RoutedEventArgs e)
+        {
+            vm.InitializeFileLocations();
+            ShowView("FileLocations");
+        }
+
+        private void OpenReplaysFolder_Click(object sender, RoutedEventArgs e)
+            => vm.OpenFolder(vm.ReplaysPath);
+
+        private void OpenGameDataFolder_Click(object sender, RoutedEventArgs e)
+            => vm.OpenFolder(vm.GameDataPath);
+
+        private void OpenGamePrefsFolder_Click(object sender, RoutedEventArgs e)
+            => vm.OpenFolder(vm.GamePrefsFolder);
+
+        private void BrowseReplaysFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog { Title = "Select your Supreme Commander 2 Replays folder" };
+            if (dialog.ShowDialog() == true)
+                vm.ReplaysPath = dialog.FolderName;
+        }
+
+        private void BrowseGamePrefsFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Select the folder containing Game.prefs"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            if (!File.Exists(Path.Combine(dialog.FolderName, "Game.prefs")))
+            {
+                MessageBox.Show(
+                    "Game.prefs was not found in that folder. Please select the folder that contains Game.prefs directly.",
+                    "Invalid Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            vm.GamePrefsFolder = dialog.FolderName;
+        }
 
         // ================= BACKUPS =================
 

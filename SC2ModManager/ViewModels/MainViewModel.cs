@@ -1436,6 +1436,57 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // ================= FILE LOCATIONS =================
+
+        private string replaysPath;
+        public string ReplaysPath
+        {
+            get => replaysPath;
+            set { replaysPath = value; OnPropertyChanged(nameof(ReplaysPath)); OnPropertyChanged(nameof(ReplaysFound)); }
+        }
+
+        private string gamePrefsFolder;
+        public string GamePrefsFolder
+        {
+            get => gamePrefsFolder;
+            set { gamePrefsFolder = value; OnPropertyChanged(nameof(GamePrefsFolder)); OnPropertyChanged(nameof(GamePrefsFound)); }
+        }
+
+        public bool ReplaysFound => !string.IsNullOrEmpty(ReplaysPath) && Directory.Exists(ReplaysPath);
+        public bool GamePrefsFound => !string.IsNullOrEmpty(GamePrefsFolder) && File.Exists(Path.Combine(GamePrefsFolder, "Game.prefs"));
+        public string GameDataPath => string.IsNullOrEmpty(GamePath) ? null : Path.Combine(GamePath, "gamedata");
+        public bool GameDataFound => !string.IsNullOrEmpty(GameDataPath) && Directory.Exists(GameDataPath);
+
+        public void InitializeFileLocations()
+        {
+            // Replays
+            string defaultReplays = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "My Games", "SquareEnix", "Supreme Commander 2", "replays"
+            );
+            ReplaysPath = Directory.Exists(defaultReplays) ? defaultReplays : null;
+
+            // Game.prefs
+            string defaultPrefsFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Gas Powered Games", "Supreme Commander 2"
+            );
+            GamePrefsFolder = File.Exists(Path.Combine(defaultPrefsFolder, "Game.prefs"))
+                ? defaultPrefsFolder
+                : null;
+
+            OnPropertyChanged(nameof(GameDataPath));
+            OnPropertyChanged(nameof(GameDataFound));
+        }
+
+        public void OpenFolder(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            string folder = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+            if (Directory.Exists(folder))
+                Process.Start(new ProcessStartInfo { FileName = folder, UseShellExecute = true });
+        }
+
         // ================= EVENTS =================
 
         public event PropertyChangedEventHandler PropertyChanged;

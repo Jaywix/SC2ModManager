@@ -713,9 +713,141 @@
                             Style="{StaticResource DangerButton}"
                             Width="220" HorizontalAlignment="Left"
                             Click="Uninstall_Click"/>
+                            <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
+                            <TextBlock Text="File Locations"
+           Foreground="{DynamicResource AccentBrush}"
+           FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                            <TextBlock Text="Quickly open common Supreme Commander 2 file locations."
+           Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                            <Button Content="📁  Open File Locations"
+        Width="200" HorizontalAlignment="Left"
+        Click="GoToFileLocations"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
+
+                <!-- ===== FILE LOCATIONS ===== -->
+                <Grid x:Name="FileLocationsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Common File Locations" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Replays -->
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="🎬  Replays Folder"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+
+                            <!-- Found -->
+                            <StackPanel Visibility="{Binding ReplaysFound, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding ReplaysPath}" Foreground="#CCCCCC"
+                           FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
+                            Width="130" Margin="0,0,8,0" Click="OpenReplaysFolder_Click"/>
+                                    <Button Content="Change" Width="90" Click="BrowseReplaysFolder_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Not found -->
+                            <StackPanel Visibility="{Binding ReplaysFound, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ReplaysFound}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="Replays folder not found at the default location."
+                           Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                <Button Content="📁  Browse for Replays Folder"
+                        Width="200" HorizontalAlignment="Left"
+                        Click="BrowseReplaysFolder_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Gamedata -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="🗂  Gamedata Folder"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+
+                            <StackPanel Visibility="{Binding GameDataFound, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding GameDataPath}" Foreground="#CCCCCC"
+                           FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
+                        Width="130" HorizontalAlignment="Left" Click="OpenGameDataFolder_Click"/>
+                            </StackPanel>
+
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding GameDataFound}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="Gamedata folder not found. Make sure your game path is set correctly in Settings."
+                           Foreground="#AAAAAA" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Game.prefs -->
+                    <Border Grid.Row="3" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="⚙  Game.prefs Location"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+
+                            <StackPanel Visibility="{Binding GamePrefsFound, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding GamePrefsFolder}" Foreground="#CCCCCC"
+                           FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
+                            Width="130" Margin="0,0,8,0" Click="OpenGamePrefsFolder_Click"/>
+                                    <Button Content="Change" Width="90" Click="BrowseGamePrefsFolder_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding GamePrefsFound}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="Game.prefs not found at the default location."
+                           Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                <Button Content="📁  Browse for Game.prefs Folder"
+                        Width="220" HorizontalAlignment="Left"
+                        Click="BrowseGamePrefsFolder_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Row="4" Content="← Back" Width="80"
+            HorizontalAlignment="Left" Click="GoToSettings"/>
+                </Grid>
 
                 <!-- ===== MANAGE MODS ===== -->
                 <StackPanel x:Name="ModsView" Visibility="Collapsed">
