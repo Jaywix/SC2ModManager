@@ -206,6 +206,13 @@ namespace SC2ModManager
             }
         }
 
+        private void HowToToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = HowToPanel.Visibility == Visibility.Visible;
+            HowToPanel.Visibility = isVisible ? Visibility.Collapsed : Visibility.Visible;
+            HowToToggleButton.Content = isVisible ? "▼  How to Use" : "▲  How to Use";
+        }
+
         private void NewsItemToggle_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is NewsItemViewModel item)
@@ -365,16 +372,22 @@ namespace SC2ModManager
 
         // ================= INSTALLED: GENERIC MODS =================
 
+        private void GenericModCheckBox_Click(object sender, RoutedEventArgs e) => e.Handled = true;
+
         private void EnableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DisabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
+            var selected = vm.DisabledGenericMods.Where(m => m.IsChecked).ToList();
             vm.EnableSelectedGenericMods(selected);
+            foreach (var m in selected) m.IsChecked = false;
+            vm.RefreshInstalledGenericModSort();
         }
 
         private void DisableSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>().ToList();
+            var selected = vm.EnabledGenericMods.Where(m => m.IsChecked).ToList();
             vm.DisableSelectedGenericMods(selected);
+            foreach (var m in selected) m.IsChecked = false;
+            vm.RefreshInstalledGenericModSort();
         }
 
         private void EnableAllGenericMods_Click(object sender, RoutedEventArgs e) => vm.EnableAllGenericMods();

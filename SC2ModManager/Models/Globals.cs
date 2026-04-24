@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 18, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -31,6 +31,8 @@ namespace SC2ModManager.Models
         public static string MapImagesBaseUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/main/Images/";
         public static string NewsUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/news.json";
         public static string NewsImagesBaseUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/main/NewsImages/";
+        public static string GenericModImagesBaseUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/main/Images/GenericMods/";
+
 
 
 

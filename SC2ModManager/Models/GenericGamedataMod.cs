@@ -3,7 +3,7 @@
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
  * Created on: April 1, 2026
- * Last updated: April 8, 2026
+ * Last updated: April 23, 2026
  * Author: Jacob Wixom
  * 
 */
@@ -41,6 +41,21 @@ namespace SC2ModManager.Models
 
         [JsonPropertyName("downloadURL")]
         public string DownloadURL { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string DisplayName { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("pictureFileName")]
+        public string PictureFileName { get; set; }
+
+        [JsonIgnore]
+        public string PictureUrl =>
+            string.IsNullOrEmpty(PictureFileName)
+                ? null
+                : Globals.GenericModImagesBaseUrl + PictureFileName;
 
 
 
@@ -107,6 +122,9 @@ namespace SC2ModManager.Models
             this.DownloadURL = string.Empty;
             this.IsEnabled = false;
             this.IsDownloaded = true;
+            this.DisplayName = string.Empty;
+            this.Description = "No description available.";
+            this.PictureFileName = string.Empty;
 
             this.PropertyChanged += (sender, args) =>
             {
@@ -136,6 +154,9 @@ namespace SC2ModManager.Models
             this.DownloadURL = string.Empty;
             this.IsEnabled = false;
             this.IsDownloaded = true;
+            this.DisplayName = string.Empty;
+            this.Description = "No description available.";
+            this.PictureFileName = string.Empty;
 
             this.PropertyChanged += (sender, args) =>
             {

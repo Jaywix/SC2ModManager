@@ -382,6 +382,7 @@
                         <RowDefinition Height="Auto"/>  <!-- launch -->
                         <RowDefinition Height="Auto"/>  <!-- update -->
                         <RowDefinition Height="Auto"/>  <!-- unrecognized mods stuff -->
+                        <RowDefinition Height="Auto"/>  <!-- how-to -->
                         <RowDefinition Height="*"/>     <!-- news -->
                     </Grid.RowDefinitions>
 
@@ -426,6 +427,66 @@
                             <Button Grid.Column="1" Content="Review →" Style="{StaticResource PrimaryButton}"
                 Width="90" Margin="12,0,0,0" Click="GoToScanGamedata"/>
                         </Grid>
+                    </Border>
+
+                    <!-- How-to section -->
+                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <Button x:Name="HowToToggleButton"
+                Content="▼  How to Use"
+                HorizontalAlignment="Left"
+                Click="HowToToggle_Click"/>
+
+                            <StackPanel x:Name="HowToPanel" Visibility="Collapsed" Margin="0,14,0,0">
+
+                                <TextBlock Text="📥  Downloading Mods"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                Go to <Run FontWeight="Bold">Manage Mods → Download</Run> and choose a mod type (Maps or Generic Gamedata Mods).
+                Check the boxes next to the mods you want and click <Run FontWeight="Bold">Download</Run>.
+                Downloaded mods are stored by the mod manager and start out disabled.
+                                </TextBlock>
+
+                                <TextBlock Text="✅  Enabling and Disabling Mods"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                Go to <Run FontWeight="Bold">Manage Mods → Installed</Run> and choose a mod type.
+                Check the boxes next to the mods you want to enable or disable, then click the corresponding button.
+                When you're done, click <Run FontWeight="Bold">Save</Run> to apply the changes to your game.
+                Mods that are enabled are copied into your gamedata folder. Disabled mods are stored safely by the mod manager.
+                                </TextBlock>
+
+                                <TextBlock Text="💾  Using Presets"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                Presets let you save and restore your current mod setup instantly.
+                Go to <Run FontWeight="Bold">Manage Mods → Backups → Presets</Run>, enter a name, and click <Run FontWeight="Bold">Save</Run>.
+                To restore a setup, select a preset and click <Run FontWeight="Bold">Apply</Run>.
+                                </TextBlock>
+
+                                <TextBlock Text="🔄  Restoring Original Game Files"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18" Margin="0,0,0,12">
+                If something goes wrong with your game files, go to <Run FontWeight="Bold">Manage Mods → Backups → Restore Original Game Files</Run>.
+                This will download the original unmodified gamedata from GitHub and replace your current gamedata folder.
+                Your installed mods will not be deleted — they are stored separately by the mod manager.
+                                </TextBlock>
+
+                                <TextBlock Text="🔍  Scanning for Unrecognized Files"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="12" LineHeight="18">
+                If you added mod files directly to your gamedata folder without using the mod manager,
+                go to <Run FontWeight="Bold">Manage Mods → Installed → Scan Gamedata for Unrecognized Mods</Run>.
+                You can then import those files so the mod manager tracks them, or delete them if you don't want them.
+                                </TextBlock>
+
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
 
                     <!-- News feed -->
@@ -1123,93 +1184,171 @@
 
                 <!-- ===== INSTALLED: GENERIC GAMEDATA MODS ===== -->
                 <Grid x:Name="InstalledGenericModsView" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="320"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                    <!-- LEFT: Lists + buttons -->
+                    <Grid Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <!-- Sort bar -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button Content="{Binding InstalledGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
-            Click="InstalledGenericModSortName_Click"/>
-                        <Button Content="{Binding InstalledGenericModSort.DateButtonText}" Width="75"
-            Click="InstalledGenericModSortDate_Click"/>
-                    </StackPanel>
-                    
-                    <Grid Grid.Row="2" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
 
-                        <!-- Enabled -->
-                        <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
-                                <ListBox Grid.Row="1"
-                         x:Name="EnabledGenericModsList"
-                         ItemsSource="{Binding FilteredEnabledGenericMods}"
-                         SelectionMode="Multiple"
-                         BorderThickness="0"
-                         Background="Transparent">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <CheckBox Content="{Binding FileName}"
-                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
-                        </Border>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="{Binding InstalledGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+                    Click="InstalledGenericModSortName_Click"/>
+                            <Button Content="{Binding InstalledGenericModSort.DateButtonText}" Width="75"
+                    Click="InstalledGenericModSortDate_Click"/>
+                        </StackPanel>
 
-                        <!-- Disabled -->
-                        <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
-                                <ListBox Grid.Row="1"
-                         x:Name="DisabledGenericModsList"
-                         ItemsSource="{Binding FilteredDisabledGenericMods}"
-                         SelectionMode="Multiple"
-                         BorderThickness="0"
-                         Background="Transparent">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <CheckBox Content="{Binding FileName}"
-                                      IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
-                        </Border>
+                        <Grid Grid.Row="2" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Style="{StaticResource ContentPanel}" Margin="0,0,5,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    <ListBox Grid.Row="1"
+                             x:Name="EnabledGenericModsList"
+                             ItemsSource="{Binding FilteredEnabledGenericMods}"
+                             SelectedItem="{Binding SelectedInstalledGenericMod}"
+                             SelectionMode="Single"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              VerticalAlignment="Center" Margin="0,0,6,0"
+                                              Click="GenericModCheckBox_Click"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="1" Style="{StaticResource ContentPanel}" Margin="5,0,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    <ListBox Grid.Row="1"
+                             x:Name="DisabledGenericModsList"
+                             ItemsSource="{Binding FilteredDisabledGenericMods}"
+                             SelectedItem="{Binding SelectedInstalledGenericMod}"
+                             SelectionMode="Single"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              VerticalAlignment="Center" Margin="0,0,6,0"
+                                              Click="GenericModCheckBox_Click"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedGenericMods_Click"/>
+                            <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedGenericMods_Click"/>
+                            <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllGenericMods_Click"/>
+                            <Button Content="Disable All"          Width="95"  Click="DisableAllGenericMods_Click"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4" Orientation="Horizontal">
+                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
+                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
+                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
+                            <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
+                        </StackPanel>
                     </Grid>
 
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
-                        <Button Content="✅  Enable Selected"  Width="150" Margin="0,0,6,0" Click="EnableSelectedGenericMods_Click"/>
-                        <Button Content="🚫  Disable Selected" Width="150" Margin="0,0,6,0" Click="DisableSelectedGenericMods_Click"/>
-                        <Button Content="Enable All"           Width="95"  Margin="0,0,6,0" Click="EnableAllGenericMods_Click"/>
-                        <Button Content="Disable All"          Width="95"  Click="DisableAllGenericMods_Click"/>
-                    </StackPanel>
+                    <!-- RIGHT: Detail panel -->
+                    <Border Grid.Column="1" Style="{StaticResource ContentPanel}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Select a mod to view details"
+                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,20,0,0"
+                           Visibility="{Binding SelectedInstalledGenericMod, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal">
-                        <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
-                        <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
-                        <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
-                        <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
-                    </StackPanel>
+                                <StackPanel Visibility="{Binding SelectedInstalledGenericMod, Converter={StaticResource NullToVisibilityConverter}}">
+
+                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding SelectedInstalledGenericMod.PictureUrl}"
+                                   Stretch="Uniform"
+                                   Visibility="{Binding SelectedInstalledGenericMod.PictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            <TextBlock Text="No Image Available"
+                                       Foreground="#444444" FontSize="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding SelectedInstalledGenericMod.PictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <TextBlock Text="{Binding SelectedInstalledGenericMod.DisplayName}"
+                               FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Visibility="{Binding SelectedInstalledGenericMod.DisplayName, Converter={StaticResource StringToVisibilityConverter}}"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.FileName}" FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Author}"   FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.Version}"  FontSize="11"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInstalledGenericMod.LastUpdated}" FontSize="11"/>
+                                    </Grid>
+
+                                    <Separator Style="{StaticResource HRule}"/>
+
+                                    <TextBlock Text="{Binding SelectedInstalledGenericMod.Description}"
+                               FontSize="11" Foreground="#CCCCCC"
+                               TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </Grid>
 
                 <!-- ===== SCAN GAMEDATA ===== -->
@@ -1590,54 +1729,133 @@ Click="DownloadFiltersToggle_Click"/>
 
                 <!-- ===== DOWNLOAD: GENERIC GAMEDATA MODS ===== -->
                 <Grid x:Name="DownloadGenericModsView" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="320"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                    <!-- LEFT -->
+                    <Grid Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <!-- Sort bar -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button Content="{Binding DownloadGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
-            Click="DownloadGenericModSortName_Click"/>
-                        <Button Content="{Binding DownloadGenericModSort.DateButtonText}" Width="75"
-            Click="DownloadGenericModSortDate_Click"/>
-                    </StackPanel>
-                    
-                    <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
-                        <ListBox x:Name="DownloadGenericModsList"
-                                 ItemsSource="{Binding FilteredDownloadableGenericMods}"
-                                 SelectionMode="Multiple"
-                                 BorderThickness="0"
-                                 Background="Transparent">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="2">
-                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                        <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="{Binding DownloadGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
+                    Click="DownloadGenericModSortName_Click"/>
+                            <Button Content="{Binding DownloadGenericModSort.DateButtonText}" Width="75"
+                    Click="DownloadGenericModSortDate_Click"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Available Mods" Style="{StaticResource ColumnHeader}"/>
+                                <ListBox Grid.Row="1"
+                         x:Name="DownloadGenericModsList"
+                         ItemsSource="{Binding FilteredDownloadableGenericMods}"
+                         SelectedItem="{Binding SelectedDownloadGenericMod}"
+                         SelectionMode="Single"
+                         BorderThickness="0"
+                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="2">
+                                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
                                           VerticalAlignment="Center" Margin="0,0,6,0"
-                                          Click="MapCheckBox_Click"/>
-                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
-                                                   FontSize="11" VerticalAlignment="Center"
-                                                   Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                          Click="GenericModCheckBox_Click"/>
+                                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
+                                           FontSize="11" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadGenericMods_Click"/>
+                            <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadGenericMods_Click"/>
+                            <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedGenericMods_Click"/>
+                        </StackPanel>
+
+                        <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                    </Grid>
+
+                    <!-- RIGHT: Detail panel -->
+                    <Border Grid.Column="1" Style="{StaticResource ContentPanel}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Select a mod to view details"
+                           Foreground="#666666" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,20,0,0"
+                           Visibility="{Binding SelectedDownloadGenericMod, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+
+                                <StackPanel Visibility="{Binding SelectedDownloadGenericMod, Converter={StaticResource NullToVisibilityConverter}}">
+
+                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding SelectedDownloadGenericMod.PictureUrl}"
+                                   Stretch="Uniform"
+                                   Visibility="{Binding SelectedDownloadGenericMod.PictureUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            <TextBlock Text="No Image Available"
+                                       Foreground="#444444" FontSize="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding SelectedDownloadGenericMod.PictureUrl, Converter={StaticResource NullToInverseVisibilityConverter}}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <TextBlock Text="{Binding SelectedDownloadGenericMod.DisplayName}"
+                               FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Visibility="{Binding SelectedDownloadGenericMod.DisplayName, Converter={StaticResource StringToVisibilityConverter}}"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="File:"    Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.FileName}"    FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author:"  Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Author}"      FontSize="11" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.Version}"     FontSize="11"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Updated:" Foreground="#AAAAAA" FontSize="11" Margin="0,0,8,4"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDownloadGenericMod.LastUpdated}" FontSize="11"/>
+                                    </Grid>
+
+                                    <Separator Style="{StaticResource HRule}"/>
+
+                                    <TextBlock Text="{Binding SelectedDownloadGenericMod.Description}"
+                               FontSize="11" Foreground="#CCCCCC"
+                               TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Border>
-
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="Select All"   Width="100" Margin="0,0,6,0" Click="SelectAllDownloadGenericMods_Click"/>
-                        <Button Content="Deselect All" Width="100" Margin="0,0,6,0" Click="DeselectAllDownloadGenericMods_Click"/>
-                        <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedGenericMods_Click"/>
-                    </StackPanel>
-
-                    <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
                 </Grid>
 
                 <!-- ===== MANUAL IMPORT ===== -->

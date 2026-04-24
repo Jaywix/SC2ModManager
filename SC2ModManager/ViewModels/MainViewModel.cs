@@ -906,6 +906,22 @@ namespace SC2ModManager.ViewModels
             DisabledMaps.Clear();
         }
 
+        // ================= SELECTED GENERIC MOD =================
+
+        private GenericGamedataMod selectedInstalledGenericMod;
+        public GenericGamedataMod SelectedInstalledGenericMod
+        {
+            get => selectedInstalledGenericMod;
+            set { selectedInstalledGenericMod = value; OnPropertyChanged(nameof(SelectedInstalledGenericMod)); }
+        }
+
+        private GenericGamedataMod selectedDownloadGenericMod;
+        public GenericGamedataMod SelectedDownloadGenericMod
+        {
+            get => selectedDownloadGenericMod;
+            set { selectedDownloadGenericMod = value; OnPropertyChanged(nameof(SelectedDownloadGenericMod)); }
+        }
+
 
         // ================= INSTALLED: GENERIC MODS =================
 
@@ -1119,6 +1135,7 @@ namespace SC2ModManager.ViewModels
         {
             int successCount = 0;
             var errors = new List<string>();
+            var newlyDownloaded = new List<GenericGamedataMod>();
 
             List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
 
@@ -1126,19 +1143,30 @@ namespace SC2ModManager.ViewModels
             {
                 try
                 {
-                    if(installed.Any(m => m.FileName.Equals(mod.FileName, StringComparison.OrdinalIgnoreCase)))
-                    {
+                    if (installed.Any(m => m.FileName.Equals(mod.FileName, StringComparison.OrdinalIgnoreCase)))
                         throw new Exception($"A mod with the filename '{mod.FileName}' is already installed. Please uninstall it before downloading.");
-                    }
 
                     await storageService.DownloadGenericModAsync(mod);
                     mod.IsDownloaded = true;
+                    mod.IsEnabled = false;
+                    newlyDownloaded.Add(mod);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
                     errors.Add($"{mod.FileName}: {ex.Message}");
                 }
+            }
+
+            if (newlyDownloaded.Any())
+            {
+                var existingState = storageService.LoadGenericModsState();
+                var existingByFile = existingState.ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var mod in newlyDownloaded)
+                    existingByFile[mod.FileName] = mod;
+
+                storageService.SaveGenericModsState(existingByFile.Values);
             }
 
             if (errors.Any())
