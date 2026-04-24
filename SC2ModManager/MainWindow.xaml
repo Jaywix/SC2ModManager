@@ -1081,12 +1081,15 @@
                             <Button Content="Disable All"          Width="95"  Click="DisableAllMaps_Click"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="5" Orientation="Horizontal">
-                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
-                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
-                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
-                            <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
-                        </StackPanel>
+                        <DockPanel Grid.Row="5" LastChildFill="False">
+                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveMaps_Click"/>
+                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
+                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
+                                <Button Content="← Back"              Width="80" Click="GoToInstalledMods"/>
+                            </StackPanel>
+                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Maps" Width="180" Click="GoToDownloadMaps"/>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Map detail panel -->
@@ -1281,12 +1284,15 @@
                             <Button Content="Disable All"          Width="95"  Click="DisableAllGenericMods_Click"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="4" Orientation="Horizontal">
-                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
-                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
-                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
-                            <Button Content="← Back"              Width="80"  Click="GoToInstalledMods"/>
-                        </StackPanel>
+                        <DockPanel Grid.Row="4" LastChildFill="False">
+                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}" Width="90"  Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
+                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"  Width="150" Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
+                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"  Width="130" Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
+                                <Button Content="← Back"              Width="80" Click="GoToInstalledMods"/>
+                            </StackPanel>
+                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Mods" Width="200" Click="GoToDownloadGenericMods"/>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Detail panel -->
@@ -1638,7 +1644,10 @@ Click="DownloadFiltersToggle_Click"/>
                             <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedMaps_Click"/>
                         </StackPanel>
 
-                        <Button Grid.Row="5" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                        <DockPanel Grid.Row="5" LastChildFill="False">
+                            <Button DockPanel.Dock="Left"  Content="← Back"                    Width="80"  Click="GoToDownloadMods"/>
+                            <Button DockPanel.Dock="Right" Content="📦  Go to Installed Maps"  Width="180" Click="GoToInstalledMaps"/>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Map detail panel -->
@@ -1793,7 +1802,10 @@ Click="DownloadFiltersToggle_Click"/>
                             <Button Content="⬇  Download" Style="{StaticResource PrimaryButton}" Width="110" Click="DownloadSelectedGenericMods_Click"/>
                         </StackPanel>
 
-                        <Button Grid.Row="4" Content="← Back" Width="80" HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                        <DockPanel Grid.Row="4" LastChildFill="False">
+                            <Button DockPanel.Dock="Left"  Content="← Back"                   Width="80"  Click="GoToDownloadMods"/>
+                            <Button DockPanel.Dock="Right" Content="📦  Go to Installed Mods" Width="200" Click="GoToInstalledGenericMods"/>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Detail panel -->
