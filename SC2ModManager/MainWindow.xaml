@@ -763,8 +763,8 @@
                            FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
-                            Width="130" Margin="0,0,8,0" Click="OpenReplaysFolder_Click"/>
-                                    <Button Content="Change" Width="90" Click="BrowseReplaysFolder_Click"/>
+                            Margin="0,0,8,0" Click="OpenReplaysFolder_Click"/>
+                                    <Button Content="Change" Click="BrowseReplaysFolder_Click"/>
                                 </StackPanel>
                             </StackPanel>
 
@@ -783,7 +783,7 @@
                                 <TextBlock Text="Replays folder not found at the default location."
                            Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
                                 <Button Content="📁  Browse for Replays Folder"
-                        Width="200" HorizontalAlignment="Left"
+                         HorizontalAlignment="Left"
                         Click="BrowseReplaysFolder_Click"/>
                             </StackPanel>
                         </StackPanel>
@@ -800,7 +800,7 @@
                                 <TextBlock Text="{Binding GameDataPath}" Foreground="#CCCCCC"
                            FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                 <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
-                        Width="130" HorizontalAlignment="Left" Click="OpenGameDataFolder_Click"/>
+                         HorizontalAlignment="Left" Click="OpenGameDataFolder_Click"/>
                             </StackPanel>
 
                             <StackPanel>
@@ -832,8 +832,8 @@
                            FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
-                            Width="130" Margin="0,0,8,0" Click="OpenGamePrefsFolder_Click"/>
-                                    <Button Content="Change" Width="90" Click="BrowseGamePrefsFolder_Click"/>
+                             Margin="0,0,8,0" Click="OpenGamePrefsFolder_Click"/>
+                                    <Button Content="Change"  Click="BrowseGamePrefsFolder_Click"/>
                                 </StackPanel>
                             </StackPanel>
 
@@ -851,13 +851,13 @@
                                 <TextBlock Text="Game.prefs not found at the default location."
                            Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
                                 <Button Content="📁  Browse for Game.prefs Folder"
-                        Width="220" HorizontalAlignment="Left"
+                         HorizontalAlignment="Left"
                         Click="BrowseGamePrefsFolder_Click"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <Button Grid.Row="4" Content="← Back" Width="80"
+                    <Button Grid.Row="4" Content="← Back"
             HorizontalAlignment="Left" Click="GoToSettings"/>
                 </Grid>
 
