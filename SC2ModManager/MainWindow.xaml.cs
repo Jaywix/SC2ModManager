@@ -447,11 +447,12 @@ namespace SC2ModManager
 
         private void DeleteSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EnabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>()
-                .Concat(DisabledGenericModsList.SelectedItems.OfType<GenericGamedataMod>())
+            var selected = vm.EnabledGenericMods
+                .Concat(vm.DisabledGenericMods)
+                .Where(m => m.IsChecked)
                 .ToList();
 
-            if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
+            if (!selected.Any()) { MessageBox.Show("No mods checked. Check the boxes next to the mods you want to delete."); return; }
 
             var confirm = MessageBox.Show(
                 $"Delete {selected.Count} mod(s) from your PC?\n\nWarning: This may affect mod presets. Any presets that become empty as a result will also be deleted.",
@@ -465,6 +466,7 @@ namespace SC2ModManager
                 vm.UninstallGenericMod(mod);
 
             vm.CleanupPresetsAfterDeletion(selected.Select(m => m.FileName));
+            vm.RefreshInstalledGenericModSort();
         }
 
         private void DeleteAllGenericMods_Click(object sender, RoutedEventArgs e)
@@ -512,7 +514,7 @@ namespace SC2ModManager
 
             var confirm = MessageBox.Show(
                 $"Import {selected.Count} file(s) as Generic Gamedata Mods?\n\n" +
-                "These will appear in Installed → Generic Gamedata Mods as Disabled.\n\n" +
+                "These will appear in Installed → Generic Gamedata Mods as Enabled.\n\n" +
                 "Warning: If you later delete them from the mod manager, they cannot be automatically restored.",
                 "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -545,7 +547,7 @@ namespace SC2ModManager
 
             var confirm = MessageBox.Show(
                 $"Import {selected.Count} mod(s) with full metadata?\n\n" +
-                "These will appear in Installed as Disabled and can be managed normally.",
+                "These will appear in Installed as Enabled and can be managed normally.",
                 "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;
