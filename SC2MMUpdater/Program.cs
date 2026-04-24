@@ -50,8 +50,6 @@ namespace SC2MMUpdater
 
                 Thread.Sleep(3000); // let the OS release file locks
 
-
-
                 // Validate arguments
                 if (args.Length < 3)
                 {
@@ -73,25 +71,38 @@ namespace SC2MMUpdater
                 // Create temp extraction folder
                 string extractPath = Path.Combine(Path.GetTempPath(), "SC2_update_extract");
 
-                // Clean old extract if exists
                 if (Directory.Exists(extractPath))
-                {
                     Directory.Delete(extractPath, true);
-                }
 
                 Directory.CreateDirectory(extractPath);
 
                 // Extract ZIP
                 ZipFile.ExtractToDirectory(zipPath, extractPath);
 
-                // Detect if "publish" folder exists
+                // Detect if publish folder exists
                 string sourcePath = extractPath;
                 string publishPath = Path.Combine(extractPath, "publish");
 
                 if (Directory.Exists(publishPath))
-                {
                     sourcePath = publishPath;
+
+                // ================= DELETE MANIFEST =================
+
+                string manifestPath = Path.Combine(sourcePath, "delete_manifest.txt");
+                if (File.Exists(manifestPath))
+                {
+                    foreach (string line in File.ReadAllLines(manifestPath))
+                    {
+                        string trimmed = line.Trim();
+                        if (string.IsNullOrEmpty(trimmed)) continue;
+
+                        string targetFile = Path.Combine(installPath, trimmed);
+                        if (File.Exists(targetFile))
+                            File.Delete(targetFile);
+                    }
                 }
+
+                // ================= COPY FILES =================
 
                 var skipFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -99,7 +110,8 @@ namespace SC2MMUpdater
                     "SC2MMUpdater.dll",
                     "SC2MMUpdater.pdb",
                     "SC2MMUpdater.runtimeconfig.json",
-                    "SC2MMUpdater.deps.json"
+                    "SC2MMUpdater.deps.json",
+                    "delete_manifest.txt"
                 };
 
                 foreach (string file in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
@@ -118,18 +130,43 @@ namespace SC2MMUpdater
                     File.Copy(file, destinationPath, true);
                 }
 
-                // Clean up temp files
-                if (Directory.Exists(extractPath))
+                // ================= SELF-UPDATE =================
+
+                string newUpdaterPath = Path.Combine(sourcePath, "SC2MMUpdater.exe");
+                string currentUpdaterPath = Path.Combine(installPath, "SC2MMUpdater.exe");
+
+                if (File.Exists(newUpdaterPath))
                 {
-                    Directory.Delete(extractPath, true);
+                    string tempUpdater = Path.Combine(installPath, "SC2MMUpdater_new.exe");
+                    File.Copy(newUpdaterPath, tempUpdater, true);
+
+                    string batchPath = Path.Combine(Path.GetTempPath(), "sc2mm_updater_swap.bat");
+                    string batch = $@"@echo off
+                        timeout /t 2 /nobreak >nul
+                        move /y ""{tempUpdater}"" ""{currentUpdaterPath}""
+                        del ""%~f0""
+                        ";
+                    File.WriteAllText(batchPath, batch);
+
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"{batchPath}\"",
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    });
                 }
+
+                // ================= CLEANUP =================
+
+                if (Directory.Exists(extractPath))
+                    Directory.Delete(extractPath, true);
 
                 if (File.Exists(zipPath))
-                {
                     File.Delete(zipPath);
-                }
 
-                // Restart the main app
+                // ================= RESTART =================
+
                 string exePath = Path.Combine(installPath, exeName);
 
                 if (File.Exists(exePath))
