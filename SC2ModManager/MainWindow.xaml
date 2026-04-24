@@ -617,19 +617,30 @@
                                                         <TextBlock Text="{Binding Body}" FontSize="14" Foreground="#CCCCCC"
                                TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10"/>
 
-                                                        <Button HorizontalAlignment="Left"
-                            Content="{Binding LinkText}"
-                            Visibility="{Binding LinkUrl, Converter={StaticResource StringToVisibilityConverter}}"
-                            Tag="{Binding LinkUrl}"
-                            Click="NewsLink_Click">
-                                                            <Button.Style>
-                                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
-                                                                    <Setter Property="Height" Value="30"/>
-                                                                    <Setter Property="FontSize" Value="12"/>
-                                                                    <Setter Property="Padding" Value="12,4"/>
-                                                                </Style>
-                                                            </Button.Style>
-                                                        </Button>
+                                                        <ItemsControl ItemsSource="{Binding Links}"
+              Visibility="{Binding HasLinks, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Button Content="{Binding Text}"
+                    Tag="{Binding Url}"
+                    Click="NewsLink_Click"
+                    Margin="0,0,6,4">
+                                                                        <Button.Style>
+                                                                            <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
+                                                                                <Setter Property="Height"   Value="30"/>
+                                                                                <Setter Property="FontSize" Value="12"/>
+                                                                                <Setter Property="Padding"  Value="12,4"/>
+                                                                            </Style>
+                                                                        </Button.Style>
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>

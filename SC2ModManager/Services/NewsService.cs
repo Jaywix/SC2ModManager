@@ -39,17 +39,30 @@ namespace SC2ModManager.Services
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var items = JsonSerializer.Deserialize<List<NewsItem>>(json, options) ?? new List<NewsItem>();
 
-                // set image filenames to full urls
                 foreach (var item in items)
                 {
+                    // Set image filenames to full urls
                     if (!string.IsNullOrEmpty(item.ImageUrl) && !item.ImageUrl.StartsWith("http"))
                         item.ImageUrl = Globals.NewsImagesBaseUrl + item.ImageUrl;
+
+                    // Backwards compatibility, we need to migrate single link to links list
+                    if ((item.Links == null || !item.Links.Any()) && !string.IsNullOrEmpty(item.LinkUrl))
+                    {
+                        item.Links = new List<NewsLink>
+                        {
+                            new NewsLink { Text = item.LinkText ?? "Learn More", Url = item.LinkUrl }
+                        };
+                    }
+
+                    // Strip out any links with no URL so buttons don't render empty
+                    if (item.Links != null)
+                        item.Links = item.Links.Where(l => !string.IsNullOrEmpty(l.Url)).ToList();
                 }
 
                 // Pinned items first, then by date descending, take top 5
                 return items
                     .OrderByDescending(n => n.Pinned)
-                    .ThenByDescending(n => n.Date)
+                    .ThenByDescending(n => TryParseNewsDate(n.Date))
                     .Take(5)
                     .ToList();
             }
@@ -57,6 +70,21 @@ namespace SC2ModManager.Services
             {
                 return new List<NewsItem>();
             }
+        }
+
+        private static DateTime TryParseNewsDate(string date)
+        {
+            if (string.IsNullOrEmpty(date)) return DateTime.MinValue;
+
+            string[] formats = { "yyyy-MM-dd", "dd.MM.yyyy", "MM/dd/yyyy" };
+
+            if (DateTime.TryParseExact(date, formats,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var parsed))
+                return parsed;
+
+            return DateTime.MinValue;
         }
     }
 }

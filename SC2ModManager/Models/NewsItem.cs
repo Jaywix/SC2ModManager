@@ -44,5 +44,17 @@ namespace SC2ModManager.Models
 
         [JsonPropertyName("pinned")]
         public bool Pinned { get; set; }
+
+        [JsonPropertyName("links")]
+        public List<NewsLink> Links { get; set; } = new();
+    }
+
+    public class NewsLink
+    {
+        [JsonPropertyName("text")]
+        public string Text { get; set; }
+
+        [JsonPropertyName("url")]
+        public string Url { get; set; }
     }
 }

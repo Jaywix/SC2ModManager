@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -27,8 +28,11 @@ namespace SC2ModManager.ViewModels
         public string Title => item.Title;
         public string Date => item.Date;
         public string Body => item.Body;
-        public string LinkText => item.LinkText;
-        public string LinkUrl => item.LinkUrl;
+        //public string LinkText => item.LinkText;
+        //public string LinkUrl => item.LinkUrl;
+        public IEnumerable<NewsLink> Links => item.Links ?? Enumerable.Empty<NewsLink>();
+        public bool HasLinks => Links.Any();
+
         public string ImageUrl => item.ImageUrl;
         public bool Pinned => item.Pinned;
 
