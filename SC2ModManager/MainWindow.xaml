@@ -14,6 +14,9 @@
         <local:NullToVisibilityConverter        x:Key="NullToVisibilityConverter"/>
         <local:NullToInverseVisibilityConverter x:Key="NullToInverseVisibilityConverter"/>
         <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <local:BoolToVisConverter x:Key="BoolToVisConverter"/>
+        <local:InverseBoolToVisConverter x:Key="InverseBoolToVisConverter"/>
+        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
 
         <!-- ===== COLORS ===== -->
         <!--<Color x:Key="AccentColor">#1E90FF</Color>
@@ -321,6 +324,167 @@
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize"   Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- DataGrid styles -->
+        <Style TargetType="DataGrid">
+            <Setter Property="HorizontalGridLinesBrush" Value="#22FFFFFF"/>
+            <Setter Property="VerticalGridLinesBrush"   Value="Transparent"/>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListBoxHoverBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="BorderBrush"     Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background"  Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"                 Value="{DynamicResource ButtonBaseBrush}"/>
+            <Setter Property="Foreground"                 Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="FontWeight"                 Value="SemiBold"/>
+            <Setter Property="FontFamily"                 Value="Segoe UI"/>
+            <Setter Property="FontSize"                   Value="13"/>
+            <Setter Property="Padding"                    Value="8,4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="BorderBrush"                Value="#33FFFFFF"/>
+            <Setter Property="BorderThickness"            Value="0,0,0,1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Grid>
+                            <Border x:Name="headerBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Width="8" Cursor="SizeWE">
+                                <Thumb.Style>
+                                    <Style TargetType="Thumb">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border Background="Transparent"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Thumb.Style>
+                            </Thumb>
+                            <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Width="8" Cursor="SizeWE">
+                                <Thumb.Style>
+                                    <Style TargetType="Thumb">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border Background="Transparent"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Thumb.Style>
+                            </Thumb>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="headerBorder" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TabControl / TabItem styles -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderBrush"     Value="#33FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TabPanel Grid.Row="0" IsItemsHost="True"
+                                      Background="Transparent" Margin="0,0,0,-1"/>
+                            <Border Grid.Row="1"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="0,4,4,4"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter x:Name="PART_SelectedContentHost"
+                                                  ContentSource="SelectedContent"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground"  Value="#AAAAAA"/>
+            <Setter Property="Background"  Value="{DynamicResource ButtonBaseBrush}"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+            <Setter Property="FontFamily"  Value="Segoe UI"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="Padding"     Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="tabBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1,1,1,0"
+                                CornerRadius="4,4,0,0"
+                                Margin="0,0,2,0"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.FontFamily="{TemplateBinding FontFamily}"
+                                              TextBlock.FontSize="{TemplateBinding FontSize}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="tabBorder" Property="Background"  Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="tabBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="tabBorder" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
     </Window.Resources>
@@ -880,6 +1044,7 @@
                             <Button Content="💾  Backups"   Margin="0,0,0,6" Click="GoToBackups"/>
                             <Button Content="📦  Installed" Margin="0,0,0,6" Click="GoToInstalledMods"/>
                             <Button Content="⬇  Download"  Margin="0,0,0,6" Click="GoToDownloadMods"/>
+                            <Button Content="⌨  Maksing's Hotkey Mods"   Margin="0,0,0,6" Click="GoToHotkeyEditor"/>
                             <Separator Style="{StaticResource HRule}"/>
                             <Button Content="← Back" Click="GoHome" HorizontalAlignment="Left" Width="80"/>
                         </StackPanel>
@@ -1047,7 +1212,6 @@
                     <Border Style="{StaticResource ContentPanel}">
                         <StackPanel>
                             <Button Content="🗺  Custom Maps"           Margin="0,0,0,6" Click="GoToInstalledMaps"/>
-                            <Button Content="⌨  Hotkeys"               Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="⚖  Balance Mods"          Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="🎨  Visual Mods"           Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToInstalledGenericMods"/>
@@ -1644,7 +1808,6 @@
                     <Border Style="{StaticResource ContentPanel}">
                         <StackPanel>
                             <Button Content="🗺  Custom Maps"           Margin="0,0,0,6" Click="GoToDownloadMaps"/>
-                            <Button Content="⌨  Hotkeys"               Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="⚖  Balance Mods"          Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="🎨  Visual Mods"           Margin="0,0,0,6" IsEnabled="False"/>
                             <Button Content="🔧  Generic Gamedata Mods" Margin="0,0,0,6" Click="GoToDownloadGenericMods"/>
@@ -2059,6 +2222,840 @@ Click="DownloadFiltersToggle_Click"/>
 
                     <Button Grid.Row="2" Content="← Back" Width="80"
                             HorizontalAlignment="Left" Click="GoToDownloadMods"/>
+                </Grid>
+
+                <!-- ===== HOTKEY EDITOR ===== -->
+                <Grid x:Name="HotkeyEditorView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                        <Button DockPanel.Dock="Left" Content="← Back"
+                                Click="GoToMods"
+                                HorizontalAlignment="Left" Width="80" Margin="0,0,12,0"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="Maksing's Hotkey Mods"
+                                   Foreground="White" FontSize="24" FontFamily="Segoe UI"
+                                   FontWeight="Light" VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <TabControl Grid.Row="1"
+                                Background="Transparent"
+                                BorderBrush="#33FFFFFF"
+                                Foreground="White">
+                        <TabControl.Resources>
+                            <Style TargetType="TabItem">
+                                <Setter Property="Foreground" Value="#AAAAAA"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Padding" Value="18,10"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="TabItem">
+                                            <Border x:Name="Bd"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="{DynamicResource AccentBrush}"
+                                                    BorderThickness="0,0,0,2"
+                                                    Margin="0,0,8,0"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    TextBlock.Foreground="{TemplateBinding Foreground}">
+                                                <ContentPresenter ContentSource="Header"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#1A2535"/>
+                                                    <Setter TargetName="Bd" Property="BorderThickness" Value="0,0,0,3"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TabControl.Resources>
+
+                        <!-- ══ TAB 1: Normal Hotkeys ══════════════════════════════════════════ -->
+                        <TabItem Header="Normal Hotkeys  (luo.scd)">
+                            <Grid Margin="0,8,0,0">
+                                <!-- NOT INSTALLED -->
+                                <Border Style="{StaticResource ContentPanel}"
+                                        Visibility="{Binding HotkeyEditor.IsNormalModInstalled, Converter={StaticResource InverseBoolToVisConverter}}">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="460">
+                                        <TextBlock Text="⌨  Normal Hotkey Mod Not Installed"
+                                                   FontSize="18" FontWeight="SemiBold" Foreground="White"
+                                                   HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                        <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13"
+                                                   HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,16">
+                                            The hotkey mod (luo.scd) adds and customises unit ability hotkeys.
+                                            Click below and the mod manager will download and install it automatically.
+                                        </TextBlock>
+                                        <Button Content="⬇  Download &amp; Install"
+                                                Style="{StaticResource PrimaryButton}"
+                                                HorizontalAlignment="Center" Width="200"
+                                                IsEnabled="{Binding HotkeyEditor.IsNormalDownloading, Converter={StaticResource InverseBoolConverter}}"
+                                                Click="DownloadAndInstallNormalHotkey_Click"
+                                                Visibility="{Binding HotkeyEditor.IsNormalDownloading, Converter={StaticResource InverseBoolToVisConverter}}"/>
+                                        <TextBlock Text="Downloading..."
+                                                   Foreground="{DynamicResource AccentBrush}" FontSize="14"
+                                                   HorizontalAlignment="Center"
+                                                   Visibility="{Binding HotkeyEditor.IsNormalDownloading, Converter={StaticResource BoolToVisConverter}}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- INSTALLED EDITOR -->
+                                <Grid Visibility="{Binding HotkeyEditor.IsNormalModInstalled, Converter={StaticResource BoolToVisConverter}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Instructions -->
+                                    <Border Grid.Row="0" Background="#0D1A2A" BorderBrush="#22AACCFF" BorderThickness="1"
+                                            CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⌨" FontSize="22" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
+                                            <StackPanel>
+                                                <TextBlock Text="How to edit hotkeys" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
+                                                <TextBlock Foreground="#AAAAAA" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap">
+                                                    Click any <Run Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">Key Binding</Run> cell and type your new key combination.
+                                                    Use modifiers with a dash, e.g. <Run Foreground="{DynamicResource AccentBrush}">Ctrl-B</Run> or <Run Foreground="{DynamicResource AccentBrush}">Alt-M</Run>.
+                                                    Then click <Run Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">Save &amp; Apply to Game</Run>.
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Mode toggle -->
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="Mode:" Foreground="#AAAAAA" FontSize="13"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <RadioButton x:Name="NormalHotkeyNormalModeRadio"
+                                                     Content="Normal"
+                                                     IsChecked="{Binding HotkeyEditor.IsNormalAdvancedMode,
+                                                         Converter={StaticResource InverseBoolConverter}}"
+                                                     Margin="0,0,12,0" VerticalAlignment="Center"
+                                                     Foreground="White"/>
+                                        <RadioButton Content="Advanced (Raw Lua)"
+                                                     IsChecked="{Binding HotkeyEditor.IsNormalAdvancedMode}"
+                                                     VerticalAlignment="Center" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Normal mode: three expandable sections -->
+                                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                                                  Visibility="{Binding HotkeyEditor.IsNormalAdvancedMode,
+                                                      Converter={StaticResource InverseBoolToVisConverter}}">
+                                        <StackPanel>
+                                            <!-- Duplicate key legend -->
+                                            <TextBlock Margin="0,0,0,8" FontSize="11" Foreground="#AAAAAA">
+                                                <Run Foreground="#FF6666" FontWeight="Bold" FontSize="14">&#x25A0; </Run>
+                                                <Run>= Duplicate key binding within this section</Run>
+                                            </TextBlock>
+
+                                            <Expander Header="Main Hotkeys" IsExpanded="True"
+                                                      Foreground="White" Margin="0,0,0,8">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.MainHotkeys}"
+                                                          x:Name="MainHotkeysGrid"
+                                                          AutoGenerateColumns="False"
+                                                          CanUserAddRows="False"
+                                                          CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column"
+                                                          GridLinesVisibility="Horizontal"
+                                                          Background="Transparent"
+                                                          Foreground="White"
+                                                          BorderThickness="0"
+                                                          ColumnHeaderHeight="28"
+                                                          RowHeight="30"
+                                                          Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key Binding" Width="140">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Command"   Width="200" Binding="{Binding Command}"     IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+
+                                            <Expander Header="Tooltip Hotkeys" IsExpanded="False"
+                                                      Foreground="White" Margin="0,0,0,8">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.TooltipHotkeys}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False"
+                                                          CanUserDeleteRows="False" HeadersVisibility="Column"
+                                                          GridLinesVisibility="Horizontal"
+                                                          Background="Transparent"
+                                                          Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key Display" Width="140">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Command"     Width="200" Binding="{Binding Command}"     IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Description}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+
+                                            <Expander Header="Debug Hotkeys" IsExpanded="False"
+                                                      Foreground="White" Margin="0,0,0,8">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.DebugHotkeys}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False"
+                                                          CanUserDeleteRows="False" HeadersVisibility="Column"
+                                                          GridLinesVisibility="Horizontal"
+                                                          Background="Transparent"
+                                                          Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key Binding" Width="140">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Command"     Width="200" Binding="{Binding Command}"     IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Description}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                        </StackPanel>
+                                    </ScrollViewer>
+
+                                    <!-- Advanced mode: three Lua file sub-tabs -->
+                                    <TabControl Grid.Row="2"
+                                                Background="Transparent" BorderBrush="#33FFFFFF"
+                                                Foreground="White"
+                                                Visibility="{Binding HotkeyEditor.IsNormalAdvancedMode,
+                                                    Converter={StaticResource BoolToVisConverter}}">
+                                        <TabItem Header="defaultKeyMap.lua">
+                                            <TextBox Text="{Binding HotkeyEditor.RawDefaultKeyMapText, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" AcceptsTab="True"
+                                                     FontFamily="Consolas" FontSize="12"
+                                                     Background="#0D1117" Foreground="#DDDDDD"
+                                                     BorderThickness="0"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     TextWrapping="NoWrap"/>
+                                        </TabItem>
+                                        <TabItem Header="keyactions.lua">
+                                            <TextBox Text="{Binding HotkeyEditor.RawKeyActionsText, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" AcceptsTab="True"
+                                                     FontFamily="Consolas" FontSize="12"
+                                                     Background="#0D1117" Foreground="#DDDDDD"
+                                                     BorderThickness="0"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     TextWrapping="NoWrap"/>
+                                        </TabItem>
+                                        <TabItem Header="keydescriptions.lua">
+                                            <TextBox Text="{Binding HotkeyEditor.RawKeyDescriptionsText, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" AcceptsTab="True"
+                                                     FontFamily="Consolas" FontSize="12"
+                                                     Background="#0D1117" Foreground="#DDDDDD"
+                                                     BorderThickness="0"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     TextWrapping="NoWrap"/>
+                                        </TabItem>
+                                    </TabControl>
+
+                                    <!-- Action buttons -->
+                                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="💾  Save &amp; Apply to Game"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Margin="0,0,8,0"
+                                                Click="SaveNormalHotkeys_Click"/>
+                                        <Button Content="↩  Restore Original Keybindings"
+                                                Style="{StaticResource ModernButton}"
+                                                Margin="0,0,8,0"
+                                                Click="RestoreNormalHotkeys_Click"/>
+                                        <Button Content="🗑  Uninstall Mod"
+                                                Style="{StaticResource DangerButton}"
+                                                Click="UninstallNormalHotkeyMod_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- ══ TAB 2: Build Mode Hotkeys ════════════════════════════════════ -->
+                        <TabItem Header="Build Mode Hotkeys  (BuildmodeHotkeys.scd)">
+                            <Grid Margin="0,8,0,0">
+                                <!-- NOT INSTALLED -->
+                                <Border Style="{StaticResource ContentPanel}"
+                                        Visibility="{Binding HotkeyEditor.IsBuildModeModInstalled, Converter={StaticResource InverseBoolToVisConverter}}">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="460">
+                                        <TextBlock Text="🏗  Build Mode Hotkey Mod Not Installed"
+                                                   FontSize="18" FontWeight="SemiBold" Foreground="White"
+                                                   HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                        <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13"
+                                                   HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,16">
+                                            The build mode mod (BuildmodeHotkeys.scd) enables keyboard-only construction.
+                                            Press B on an engineer or ACU to enter build mode.
+                                            Click below and the mod manager will download and install it automatically.
+                                        </TextBlock>
+                                        <Button Content="⬇  Download &amp; Install"
+                                                Style="{StaticResource PrimaryButton}"
+                                                HorizontalAlignment="Center" Width="200"
+                                                IsEnabled="{Binding HotkeyEditor.IsBuildModeDownloading, Converter={StaticResource InverseBoolConverter}}"
+                                                Click="DownloadAndInstallBuildModeHotkey_Click"
+                                                Visibility="{Binding HotkeyEditor.IsBuildModeDownloading, Converter={StaticResource InverseBoolToVisConverter}}"/>
+                                        <TextBlock Text="Downloading..."
+                                                   Foreground="{DynamicResource AccentBrush}" FontSize="14"
+                                                   HorizontalAlignment="Center"
+                                                   Visibility="{Binding HotkeyEditor.IsBuildModeDownloading, Converter={StaticResource BoolToVisConverter}}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- INSTALLED EDITOR -->
+                                <Grid Visibility="{Binding HotkeyEditor.IsBuildModeModInstalled, Converter={StaticResource BoolToVisConverter}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Instructions -->
+                                    <Border Grid.Row="0" Background="#0D1A2A" BorderBrush="#22AACCFF" BorderThickness="1"
+                                            CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🏗" FontSize="22" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
+                                            <StackPanel>
+                                                <TextBlock Text="How to edit build mode hotkeys" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
+                                                <TextBlock Foreground="#AAAAAA" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap">
+                                                    Select your faction, then click any <Run Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">Key</Run> cell and type the new key (single uppercase letter, e.g. <Run Foreground="{DynamicResource AccentBrush}">D</Run>, <Run Foreground="{DynamicResource AccentBrush}">F</Run>).
+                                                    The same key can be reused across different categories. Click <Run Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">Save &amp; Apply to Game</Run> when done.
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Mode toggle -->
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="Mode:" Foreground="#AAAAAA" FontSize="13"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <RadioButton Content="Normal"
+                                                     IsChecked="{Binding HotkeyEditor.IsBuildModeAdvancedMode,
+                                                         Converter={StaticResource InverseBoolConverter}}"
+                                                     Margin="0,0,12,0" VerticalAlignment="Center" Foreground="White"/>
+                                        <RadioButton Content="Advanced (Raw Lua)"
+                                                     IsChecked="{Binding HotkeyEditor.IsBuildModeAdvancedMode}"
+                                                     VerticalAlignment="Center" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Faction selector (Normal mode only) -->
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8"
+                                                Visibility="{Binding HotkeyEditor.IsBuildModeAdvancedMode,
+                                                    Converter={StaticResource InverseBoolToVisConverter}}">
+                                        <TextBlock Text="Faction:" Foreground="#AAAAAA" FontSize="13"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <RadioButton Content="UEF"       IsChecked="{Binding HotkeyEditor.IsUEFSelected}"
+                                                     Margin="0,0,16,0" VerticalAlignment="Center" Foreground="White"/>
+                                        <RadioButton Content="Cybran"    IsChecked="{Binding HotkeyEditor.IsCybranSelected}"
+                                                     Margin="0,0,16,0" VerticalAlignment="Center" Foreground="White"/>
+                                        <RadioButton Content="Illuminate" IsChecked="{Binding HotkeyEditor.IsIlluminateSelected}"
+                                                     VerticalAlignment="Center" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Normal mode: category expanders -->
+                                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                                                  Visibility="{Binding HotkeyEditor.IsBuildModeAdvancedMode,
+                                                      Converter={StaticResource InverseBoolToVisConverter}}">
+                                        <StackPanel>
+                                            <!-- Duplicate key legend -->
+                                            <TextBlock Margin="0,0,0,8" FontSize="11" Foreground="#AAAAAA">
+                                                <Run Foreground="#FF6666" FontWeight="Bold" FontSize="14">&#x25A0; </Run>
+                                                <Run>= Duplicate key binding within this category</Run>
+                                            </TextBlock>
+
+                                            <Expander Header="Basic Engineering" IsExpanded="True"  Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.BasicEngineering}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Advanced Engineering" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.AdvancedEngineering}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Experimental Engineering" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.ExperimentalEngineering}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Basic Land Units" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.BasicLand}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Basic Air Units" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.BasicAir}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Naval Units" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.Sea}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Experimental Units" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.Experimental}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Experimental Land" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.ExperimentalLand}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Experimental Air" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.ExperimentalAir}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                            <Expander Header="Factory Add-ons" IsExpanded="False" Foreground="White" Margin="0,0,0,6">
+                                                <DataGrid ItemsSource="{Binding HotkeyEditor.FactoryAddons}"
+                                                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                                          Background="Transparent" Foreground="White" BorderThickness="0"
+                                                          ColumnHeaderHeight="28" RowHeight="30" Margin="0,4,0,0"
+                                                          PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
+                                                    <DataGrid.RowStyle>
+                                                        <Style TargetType="DataGridRow">
+                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                                    <Setter Property="Background" Value="#4D1A0A"/>
+                                                                    <Setter Property="Foreground" Value="#FF8080"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DataGrid.RowStyle>
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Key" Width="80">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             FontWeight="SemiBold"
+                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             Padding="4,1" VerticalAlignment="Center"
+                                                                             PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
+                                                                             Tag="capture"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                        <DataGridTextColumn Header="Unit ID"     Width="120" Binding="{Binding UnitId}"  IsReadOnly="True"/>
+                                                        <DataGridTextColumn Header="Description" Width="*"   Binding="{Binding Comment}" IsReadOnly="True"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Expander>
+                                        </StackPanel>
+                                    </ScrollViewer>
+
+                                    <!-- Advanced mode: single raw TextBox -->
+                                    <TextBox Grid.Row="3"
+                                             Text="{Binding HotkeyEditor.RawBuildModeText, UpdateSourceTrigger=PropertyChanged}"
+                                             AcceptsReturn="True" AcceptsTab="True"
+                                             FontFamily="Consolas" FontSize="12"
+                                             Background="#0D1117" Foreground="#DDDDDD"
+                                             BorderThickness="0"
+                                             VerticalScrollBarVisibility="Auto"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             TextWrapping="NoWrap"
+                                             Visibility="{Binding HotkeyEditor.IsBuildModeAdvancedMode,
+                                                 Converter={StaticResource BoolToVisConverter}}"/>
+
+                                    <!-- Action buttons -->
+                                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="💾  Save &amp; Apply to Game"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Margin="0,0,8,0"
+                                                Click="SaveBuildModeHotkeys_Click"/>
+                                        <Button Content="↩  Restore Original Keybindings"
+                                                Style="{StaticResource ModernButton}"
+                                                Margin="0,0,8,0"
+                                                Click="RestoreBuildModeHotkeys_Click"/>
+                                        <Button Content="🗑  Uninstall Mod"
+                                                Style="{StaticResource DangerButton}"
+                                                Click="UninstallBuildModeHotkeyMod_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </TabItem>
+
+                    </TabControl>
                 </Grid>
 
             </Grid>

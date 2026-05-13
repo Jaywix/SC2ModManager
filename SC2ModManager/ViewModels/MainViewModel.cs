@@ -48,6 +48,10 @@ namespace SC2ModManager.ViewModels
         private readonly ModRepositoryService repositoryService = new();
         private readonly ModStorageService storageService = new();
         private readonly GamedataService gamedataService = new();
+
+        // ================= HOTKEY EDITOR =================
+
+        public HotkeyEditorViewModel HotkeyEditor { get; } = new();
         private readonly ConfigService configService = new();
         private readonly PresetService presetService = new();
         private readonly UpdateService updateService = new();
@@ -543,11 +547,11 @@ namespace SC2ModManager.ViewModels
             set { hasUnrecognizedFiles = value; OnPropertyChanged(nameof(HasUnrecognizedFiles)); }
         }
 
-        public async Task ScanGamedataForUnknownMods()
+        public async Task ScanGamedataForUnknownMods(bool silentOnMissingPath = false)
         {
             if (string.IsNullOrEmpty(GamePath))
             {
-                MessageBox.Show("Game path not set.");
+                if (!silentOnMissingPath) MessageBox.Show("Game path not set.");
                 return;
             }
 
@@ -555,15 +559,16 @@ namespace SC2ModManager.ViewModels
 
             if (!Directory.Exists(gameDataPath))
             {
-                MessageBox.Show("Gamedata folder not found.");
+                if (!silentOnMissingPath) MessageBox.Show("Gamedata folder not found.");
                 return;
             }
 
             HashSet<string> knownMods = storageService.GetAllKnownModFileNames();
 
-            List<string> inGamedata = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
-                .Select(f => Path.GetFileName(f))
-                .ToList();
+            List<string> inGamedata = await Task.Run(() =>
+                Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
+                    .Select(f => Path.GetFileName(f))
+                    .ToList());
 
             List<Map> downloadableMaps = new List<Map>();
             List<GenericGamedataMod> downloadableGenericMods = new List<GenericGamedataMod>();
@@ -587,6 +592,11 @@ namespace SC2ModManager.ViewModels
             foreach (string file in inGamedata.OrderBy(f => f))
             {
                 if (knownMods.Contains(file) || ModStorageService.IsOriginalGameFile(file))
+                    continue;
+
+                // Hotkey mod files are managed exclusively by the mod manager — skip them
+                if (string.Equals(file, Globals.NormalHotkeyScdName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(file, Globals.BuildModeScdName,    StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 if (downloadableMapsByFile.TryGetValue(file, out var matchedMap))
@@ -1468,12 +1478,37 @@ namespace SC2ModManager.ViewModels
         public void Uninstall()
         {
             var confirm = MessageBox.Show(
-                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nAre you sure you want to uninstall?",
+                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring the original lua.scd).\n\nAre you sure you want to uninstall?",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
+
+            // Uninstall hotkey mods first so lua.scd is restored before we wipe the data folder
+            if (!string.IsNullOrEmpty(GamePath))
+            {
+                string gamedataPath = Path.Combine(GamePath, "gamedata");
+                var hotkeyService = new SC2ModManager.Services.HotkeyService();
+
+                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.NormalHotkey))
+                {
+                    try
+                    {
+                        hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath);
+                    }
+                    catch { }
+                }
+
+                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.BuildModeHotkey))
+                {
+                    try
+                    {
+                        hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.BuildModeHotkey, gamedataPath);
+                    }
+                    catch { }
+                }
+            }
 
             var installService = new InstallService();
             string installPath = Globals.GetInstallPath();

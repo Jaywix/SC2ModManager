@@ -55,7 +55,7 @@ namespace SC2ModManager.Models
         );
 
         /// <summary>
-        /// Returns the user-chosen install folder, or null if not yet set up.
+        ///     Returns the user-chosen install folder, or null if not yet set up.
         /// </summary>
         public static string GetInstallPath()
         {
@@ -67,7 +67,7 @@ namespace SC2ModManager.Models
         }
 
         /// <summary>
-        /// Saves the chosen install path to the pointer file.
+        ///     Saves the chosen install path to the pointer file.
         /// </summary>
         public static void SetInstallPath(string path)
         {
@@ -76,7 +76,7 @@ namespace SC2ModManager.Models
         }
 
         /// <summary>
-        /// Returns true if first-run setup has been completed.
+        ///     Returns true if first-run setup has been completed.
         /// </summary>
         public static bool IsSetupComplete()
         {
@@ -85,12 +85,45 @@ namespace SC2ModManager.Models
         }
 
         /// <summary>
-        /// Returns the data folder path (mods, config, presets) inside the install folder.
+        ///     Returns the data folder path (mods, config, presets) inside the install folder.
         /// </summary>
         public static string GetDataPath()
         {
             string install = GetInstallPath() ?? DefaultInstallPath;
             return Path.Combine(install, "Data");
+        }
+
+        // ================= MAKSING HOTKEY MOD =================
+
+        public static string LuaScdName = "lua.scd";
+        public static string NormalHotkeyScdName = "luo.scd";
+        public static string BuildModeScdName = "BuildmodeHotkeys.scd";
+
+        // toc.win.bdf must be placed in the SC2 game root directory (alongside the gamedata folder)
+        public static string TocWinBdfName = "toc.win.bdf";
+
+        // Direct download URLs (GitHub releases)
+        // I should probably change the code tot ake the base URL and filename separately, but this is fine for now since this will probably never change
+        public static string NormalHotkeyDirectDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/MaksingHotkeyModFiles/luo.scd";
+        public static string NormalHotkeyTocBdfDirectDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/MaksingHotkeyModFiles/toc.win.bdf";
+        public static string BuildModeDirectDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/MaksingHotkeyModFiles/BuildmodeHotkeys.scd";
+
+        // Suffix appended to backup lua files so we how they were made. This may come in handy when I implement the balance mods or any other mod that changes original files
+        public const string HotkeyModBackupSuffix = "_Original_MadeBy_HotkeyMod";
+
+        public static string GetHotkeyModsPath()
+        {
+            return Path.Combine(GetDataPath(), "HotkeyMods");
+        }
+
+        public static string GetLocalTocBdfPath()
+        {
+            return Path.Combine(GetHotkeyModsPath(), TocWinBdfName);
+        }
+
+        public static string GetHotkeyModsBackupPath()
+        {
+            return Path.Combine(GetHotkeyModsPath(), "Backups");
         }
     }
 

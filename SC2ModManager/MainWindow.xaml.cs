@@ -40,7 +40,7 @@ namespace SC2ModManager
             ShowView("Home");
             ApplyCurrentTheme();
 
-            Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods();
+            Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
         }
 
         // ================= THEMES ===============
@@ -120,6 +120,7 @@ namespace SC2ModManager
             DownloadGenericModsView.Visibility = Visibility.Collapsed;
             ManualImportView.Visibility = Visibility.Collapsed;
             FileLocationsView.Visibility = Visibility.Collapsed;
+            HotkeyEditorView.Visibility = Visibility.Collapsed;
 
             switch (view)
             {
@@ -138,6 +139,7 @@ namespace SC2ModManager
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
                 case "FileLocations": FileLocationsView.Visibility = Visibility.Visible; break;
+                case "HotkeyEditor": HotkeyEditorView.Visibility = Visibility.Visible; break;
             }
         }
 
@@ -148,6 +150,13 @@ namespace SC2ModManager
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
         private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
+
+        private void GoToHotkeyEditor(object sender, RoutedEventArgs e)
+        {
+            vm.HotkeyEditor.LoadNormalHotkeys();
+            vm.HotkeyEditor.LoadBuildModeHotkeys();
+            ShowView("HotkeyEditor");
+        }
 
         private void GoToScanGamedata(object sender, RoutedEventArgs e)
         {
@@ -845,6 +854,206 @@ namespace SC2ModManager
             bool anySuccess = await vm.ImportModFromFilePickerAsync();
             if (anySuccess)
                 MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
+        }
+
+        // ================= HOTKEY EDITOR =================
+
+        private string GetGamedataPath()
+        {
+            var config = new SC2ModManager.Services.ConfigService().Load();
+            if (string.IsNullOrEmpty(config?.GamePath))
+            {
+                MessageBox.Show("Game path is not set. Please configure it in Settings first.",
+                    "Game Path Not Set", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+            return System.IO.Path.Combine(config.GamePath, "gamedata");
+        }
+
+        private async void DownloadAndInstallNormalHotkey_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            await vm.HotkeyEditor.DownloadAndInstallNormalMod(gamedataPath);
+        }
+
+        private async void DownloadAndInstallBuildModeHotkey_Click(object sender, RoutedEventArgs e)
+            => await vm.HotkeyEditor.DownloadAndInstallBuildModeMod();
+
+        private void SaveNormalHotkeys_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.SaveNormalHotkeys(gamedataPath);
+            MessageBox.Show("Normal hotkeys saved and applied to game.", "Saved",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void SaveBuildModeHotkeys_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.SaveBuildModeHotkeys(gamedataPath);
+            MessageBox.Show("Build mode hotkeys saved and applied to game.", "Saved",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void RestoreNormalHotkeys_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.RestoreNormalDefaults(gamedataPath);
+        }
+
+        private void RestoreBuildModeHotkeys_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.RestoreBuildModeDefaults(gamedataPath);
+        }
+
+        private void UninstallNormalHotkeyMod_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.UninstallNormalMod(gamedataPath);
+        }
+
+        private void UninstallBuildModeHotkeyMod_Click(object sender, RoutedEventArgs e)
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            vm.HotkeyEditor.UninstallBuildModeMod(gamedataPath);
+        }
+
+        /// <summary>
+        /// Forwards mouse wheel events from a DataGrid up to the nearest parent ScrollViewer,
+        /// so the outer scroll area handles scrolling instead of the DataGrid swallowing the event.
+        /// </summary>
+        private void HotkeyDataGrid_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (e.Handled) return;
+            e.Handled = true;
+            var args = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+            {
+                RoutedEvent = UIElement.MouseWheelEvent,
+                Source = sender
+            };
+            if (((FrameworkElement)sender).Parent is UIElement parent)
+                parent.RaiseEvent(args);
+        }
+
+        /// <summary>
+        /// Captures a keystroke from a DataGrid TextBox and formats it to game notation.
+        /// E.g. Ctrl+X → "Ctrl-X",  Shift+M → "Shift-M",  R → "R".
+        /// Escape clears the binding.
+        /// </summary>
+        private void HotkeyCapture_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.TextBox tb) return;
+            e.Handled = true;
+
+            var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+
+            if (key == System.Windows.Input.Key.Escape)
+            {
+                tb.Text = string.Empty;
+                return;
+            }
+
+            // Ignore lone modifier key presses
+            if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+                    or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
+                    or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt)
+                return;
+
+            var mods = System.Windows.Input.Keyboard.Modifiers;
+            var parts = new System.Collections.Generic.List<string>();
+
+            if (mods.HasFlag(System.Windows.Input.ModifierKeys.Control)) parts.Add("Ctrl");
+            if (mods.HasFlag(System.Windows.Input.ModifierKeys.Shift))   parts.Add("Shift");
+            if (mods.HasFlag(System.Windows.Input.ModifierKeys.Alt))     parts.Add("Alt");
+
+            string keyStr = KeyToGameString(key);
+            if (string.IsNullOrEmpty(keyStr)) return;
+
+            parts.Add(keyStr);
+            tb.Text = string.Join("-", parts);
+        }
+
+        /// <summary>Same as HotkeyCapture but only captures single uppercase letters (build mode constraint).</summary>
+        private void BuildModeHotkeyCapture_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.TextBox tb) return;
+            e.Handled = true;
+
+            var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+
+            if (key == System.Windows.Input.Key.Escape)
+            {
+                tb.Text = string.Empty;
+                return;
+            }
+
+            if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+                    or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
+                    or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt)
+                return;
+
+            string keyStr = KeyToGameString(key);
+            if (string.IsNullOrEmpty(keyStr)) return;
+
+            // Build mode uses only single characters (the game file uses single letters)
+            tb.Text = keyStr;
+        }
+
+        private static string KeyToGameString(System.Windows.Input.Key key)
+        {
+            // A–Z
+            if (key >= System.Windows.Input.Key.A && key <= System.Windows.Input.Key.Z)
+                return key.ToString(); // WPF names these "A","B",... matching game format
+
+            // 0–9 (main row)
+            if (key >= System.Windows.Input.Key.D0 && key <= System.Windows.Input.Key.D9)
+                return ((int)(key - System.Windows.Input.Key.D0)).ToString();
+
+            // Numpad
+            if (key >= System.Windows.Input.Key.NumPad0 && key <= System.Windows.Input.Key.NumPad9)
+                return "Num" + (int)(key - System.Windows.Input.Key.NumPad0);
+
+            // Function keys
+            if (key >= System.Windows.Input.Key.F1 && key <= System.Windows.Input.Key.F12)
+                return key.ToString();
+
+            return key switch
+            {
+                System.Windows.Input.Key.Space     => "Space",
+                System.Windows.Input.Key.Return    => "Enter",
+                System.Windows.Input.Key.Tab       => "Tab",
+                System.Windows.Input.Key.Back      => "Backspace",
+                System.Windows.Input.Key.Delete    => "Delete",
+                System.Windows.Input.Key.Insert    => "Insert",
+                System.Windows.Input.Key.Home      => "Home",
+                System.Windows.Input.Key.End       => "End",
+                System.Windows.Input.Key.Prior     => "PageUp",
+                System.Windows.Input.Key.Next      => "PageDown",
+                System.Windows.Input.Key.Up        => "Up",
+                System.Windows.Input.Key.Down      => "Down",
+                System.Windows.Input.Key.Left      => "Left",
+                System.Windows.Input.Key.Right     => "Right",
+                System.Windows.Input.Key.OemMinus  => "-",
+                System.Windows.Input.Key.OemPlus   => "=",
+                System.Windows.Input.Key.OemOpenBrackets => "[",
+                System.Windows.Input.Key.OemCloseBrackets => "]",
+                System.Windows.Input.Key.OemSemicolon => ";",
+                System.Windows.Input.Key.OemQuotes => "'",
+                System.Windows.Input.Key.OemComma  => ",",
+                System.Windows.Input.Key.OemPeriod => ".",
+                System.Windows.Input.Key.OemQuestion => "/",
+                System.Windows.Input.Key.OemBackslash => "\\",
+                System.Windows.Input.Key.Oem5      => "\\",
+                _ => string.Empty
+            };
         }
     }
 }
