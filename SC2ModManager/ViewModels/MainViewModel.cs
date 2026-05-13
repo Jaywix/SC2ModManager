@@ -1141,14 +1141,24 @@ namespace SC2ModManager.ViewModels
             List<Map> installed = this.storageService.GetInstalledMaps();
             var newlyDownloaded = new List<Map>();
 
-            foreach (var map in maps)
+                var mapList = maps.ToList();
+
+            foreach (var map in mapList)
+                map.IsQueued = true;
+
+            foreach (var map in mapList)
             {
                 try
                 {
                     if (installed.Any(m => m.FileName.Equals(map.FileName, StringComparison.OrdinalIgnoreCase)))
                         throw new Exception($"A mod with the filename '{map.FileName}' is already installed. Please uninstall it before downloading.");
 
+                    map.IsQueued = false;
+                    map.IsDownloading = true;
+
                     await storageService.DownloadMapAsync(map);
+
+                    map.IsDownloading = false;
                     map.IsDownloaded = true;
                     map.IsEnabled = false;
                     newlyDownloaded.Add(map);
@@ -1156,6 +1166,9 @@ namespace SC2ModManager.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    map.IsQueued = false;
+                    map.IsDownloading = false;
+                    map.DownloadFailed = true;
                     errors.Add($"{map.FileName}: {ex.Message}");
                 }
             }
@@ -1202,14 +1215,24 @@ namespace SC2ModManager.ViewModels
 
             List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
 
-            foreach (var mod in mods)
+                var modList = mods.ToList();
+
+            foreach (var mod in modList)
+                mod.IsQueued = true;
+
+            foreach (var mod in modList)
             {
                 try
                 {
                     if (installed.Any(m => m.FileName.Equals(mod.FileName, StringComparison.OrdinalIgnoreCase)))
                         throw new Exception($"A mod with the filename '{mod.FileName}' is already installed. Please uninstall it before downloading.");
 
+                    mod.IsQueued = false;
+                    mod.IsDownloading = true;
+
                     await storageService.DownloadGenericModAsync(mod);
+
+                    mod.IsDownloading = false;
                     mod.IsDownloaded = true;
                     mod.IsEnabled = false;
                     newlyDownloaded.Add(mod);
@@ -1217,6 +1240,9 @@ namespace SC2ModManager.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    mod.IsQueued = false;
+                    mod.IsDownloading = false;
+                    mod.DownloadFailed = true;
                     errors.Add($"{mod.FileName}: {ex.Message}");
                 }
             }

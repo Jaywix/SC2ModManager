@@ -149,6 +149,51 @@ namespace SC2ModManager.Models
             }
         }
 
+        private bool isQueued;
+        [JsonIgnore]
+        public bool IsQueued
+        {
+            get => isQueued;
+            set
+            {
+                if (isQueued != value)
+                {
+                    isQueued = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private bool isDownloading;
+        [JsonIgnore]
+        public bool IsDownloading
+        {
+            get => isDownloading;
+            set
+            {
+                if (isDownloading != value)
+                {
+                    isDownloading = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private bool downloadFailed;
+        [JsonIgnore]
+        public bool DownloadFailed
+        {
+            get => downloadFailed;
+            set
+            {
+                if (downloadFailed != value)
+                {
+                    downloadFailed = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
 
         /// <summary>
         ///     This should only be necessary for the JSON. Do not use in the code

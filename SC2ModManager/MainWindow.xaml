@@ -1946,9 +1946,18 @@ Click="DownloadFiltersToggle_Click"/>
                                                   VerticalAlignment="Center" Margin="0,0,6,0"
                                                   Click="MapCheckBox_Click"/>
                                                 <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="  ⏳ Queued" Foreground="#CCCC00"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding IsQueued, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                <TextBlock Text="  ⬇ Downloading" Foreground="#CCCC00"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                 <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
                                            FontSize="12" VerticalAlignment="Center"
                                            Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                <TextBlock Text="  ✖ Failed" Foreground="#CC4444"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding DownloadFailed, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
@@ -2104,9 +2113,18 @@ Click="DownloadFiltersToggle_Click"/>
                                           VerticalAlignment="Center" Margin="0,0,6,0"
                                           Click="GenericModCheckBox_Click"/>
                                                 <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="  ⏳ Queued" Foreground="#CCCC00"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding IsQueued, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                <TextBlock Text="  ⬇ Downloading" Foreground="#CCCC00"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                 <TextBlock Text="  ✔ Downloaded" Foreground="#44CC44"
                                            FontSize="12" VerticalAlignment="Center"
                                            Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                <TextBlock Text="  ✖ Failed" Foreground="#CC4444"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Visibility="{Binding DownloadFailed, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
