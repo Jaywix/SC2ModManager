@@ -284,13 +284,21 @@ namespace SC2ModManager.Services
             {
                 string line = rawLine.TrimEnd();
 
-                // Detect section transitions
-                if (line.Contains("keymapTooltipHotkeys"))
-                    currentSection = HotkeySection.Tooltip;
-                else if (line.Contains("debugKeyMap"))
-                    currentSection = HotkeySection.Debug;
-                else if (line.Contains("defaultKeyMap"))
-                    currentSection = HotkeySection.Main;
+                // Comment lines must not drive section transitions — a comment containing
+                // "defaultKeyMap" would otherwise flip the current section back to Main
+                // mid-Tooltip/Debug, silently misclassifying the entries that follow.
+                bool isComment = line.TrimStart().StartsWith("--");
+
+                if (!isComment)
+                {
+                    // Detect section transitions
+                    if (line.Contains("keymapTooltipHotkeys"))
+                        currentSection = HotkeySection.Tooltip;
+                    else if (line.Contains("debugKeyMap"))
+                        currentSection = HotkeySection.Debug;
+                    else if (line.Contains("defaultKeyMap"))
+                        currentSection = HotkeySection.Main;
+                }
 
                 var m = entryRegex.Match(line);
                 if (!m.Success) continue;
@@ -302,6 +310,7 @@ namespace SC2ModManager.Services
                 entries.Add(new HotkeyEntry
                 {
                     KeyCombo = keyCombo,
+                    OriginalKeyCombo = keyCombo,
                     Command = command,
                     Description = desc ?? string.Empty,
                     Section = currentSection
@@ -313,11 +322,14 @@ namespace SC2ModManager.Services
 
         private static string RebuildDefaultKeyMap(string originalLua, List<HotkeyEntry> entries)
         {
-            // Build lookup: command → new keycombo per section
-            // We re-write each matching entry line in-place, preserving all other lines
-            var lookup = new Dictionary<(string command, HotkeySection section), string>();
+            // Build lookup: (originalKey, command, section) → new keycombo.
+            // Keying by the original key (not just command) lets us correctly handle
+            // files where the same command has multiple bindings in the same section
+            // (e.g. ['B'] = 'build' and ['Shift-B'] = 'build').  A command-only key
+            // would use last-write-wins and silently corrupt the first binding on save.
+            var lookup = new Dictionary<(string origKey, string command, HotkeySection section), string>();
             foreach (var e in entries)
-                lookup[(e.Command, e.Section)] = e.KeyCombo;
+                lookup[(e.OriginalKeyCombo, e.Command, e.Section)] = e.KeyCombo;
 
             var entryRegex = new Regex(
                 @"(\['[^']+'\](\s*)=\s*)'([^']+)'",
@@ -330,25 +342,30 @@ namespace SC2ModManager.Services
             {
                 string line = rawLine.TrimEnd('\r');
 
-                if (line.Contains("keymapTooltipHotkeys"))
-                    currentSection = HotkeySection.Tooltip;
-                else if (line.Contains("debugKeyMap"))
-                    currentSection = HotkeySection.Debug;
-                else if (line.Contains("defaultKeyMap"))
-                    currentSection = HotkeySection.Main;
-
-                // Try to match: ['OldKey'] = 'command'
-                // We need to swap the key, not the command
-                // The format is ['key'] = 'command' — key is group 1 of the original parse
-                // In rebuild: we look for a line whose command value (right side) matches an entry
-                var cmdMatch = new Regex(@"\['[^']+'\]\s*=\s*'([^']+)'").Match(line);
-                if (cmdMatch.Success)
+                // Leave comment lines untouched — don't update section state or rewrite keys
+                if (!line.TrimStart().StartsWith("--"))
                 {
-                    string command = cmdMatch.Groups[1].Value;
-                    if (lookup.TryGetValue((command, currentSection), out string? newKey))
+                    if (line.Contains("keymapTooltipHotkeys"))
+                        currentSection = HotkeySection.Tooltip;
+                    else if (line.Contains("debugKeyMap"))
+                        currentSection = HotkeySection.Debug;
+                    else if (line.Contains("defaultKeyMap"))
+                        currentSection = HotkeySection.Main;
+
+                    // Try to match: ['OldKey'] = 'command'
+                    // We need to swap the key, not the command
+                    // The format is ['key'] = 'command' — key is group 1 of the original parse
+                    // In rebuild: we look for a line whose command value (right side) matches an entry
+                    var cmdMatch = new Regex(@"\['([^']+)'\]\s*=\s*'([^']+)'").Match(line);
+                    if (cmdMatch.Success)
                     {
-                        // Replace the key on the left side: ['OldKey'] -> ['NewKey']
-                        line = new Regex(@"\['[^']+'\]").Replace(line, $"['{newKey}']", 1);
+                        string currentKey = cmdMatch.Groups[1].Value;
+                        string command    = cmdMatch.Groups[2].Value;
+                        if (lookup.TryGetValue((currentKey, command, currentSection), out string? newKey))
+                        {
+                            // Replace the key on the left side: ['OldKey'] -> ['NewKey']
+                            line = new Regex(@"\['[^']+'\]").Replace(line, $"['{newKey}']", 1);
+                        }
                     }
                 }
 

@@ -38,6 +38,14 @@ namespace SC2ModManager.Models
         /// </summary>
         public HotkeySection Section { get; init; }
 
+        /// <summary>
+        ///     The key combo as it was read from the file. Never changes after initial load.
+        ///     Used by RebuildDefaultKeyMap to uniquely identify the line to rewrite, so that
+        ///     two different bindings for the same command (e.g. B and Shift-B both mapped to
+        ///     'build') are each updated independently rather than trampling each other.
+        /// </summary>
+        public string OriginalKeyCombo { get; init; } = string.Empty;
+
         private string _keyCombo = string.Empty;
         /// <summary>
         ///     The key binding string in game format, e.g. "R", "Ctrl-1", "Shift-M", "Alt-B"
