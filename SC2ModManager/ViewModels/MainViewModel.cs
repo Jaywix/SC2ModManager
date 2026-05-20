@@ -1500,6 +1500,63 @@ namespace SC2ModManager.ViewModels
                 throw new Exception($"Download incomplete. Expected {totalBytes} bytes but got {totalRead}.");
         }
 
+        public async Task<List<Models.ReleaseInfo>> GetPreviousReleasesAsync()
+        {
+            return await updateService.GetAllReleasesAsync();
+        }
+
+        public async Task RestoreVersionAsync(string downloadUrl, string versionTag)
+        {
+            try
+            {
+                string updaterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SC2MMUpdater.exe");
+                string zipPath = Path.Combine(Path.GetTempPath(), "SC2ModManagerRestore.zip");
+                string installPath = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
+                string exeName = "SC2ModManager.exe";
+
+                if (!File.Exists(updaterPath))
+                {
+                    MessageBox.Show("Updater not found.");
+                    return;
+                }
+
+                await DownloadFileWithProgress(downloadUrl, zipPath);
+                MessageBox.Show($"Download complete. Restoring {versionTag}...");
+
+                try
+                {
+                    string zoneFile = updaterPath + ":Zone.Identifier";
+                    if (File.Exists(zoneFile))
+                        File.Delete(zoneFile);
+
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = updaterPath,
+                        Arguments = $"\"{zipPath}\" \"{installPath}\" \"{exeName}\"",
+                        UseShellExecute = true,
+                        WorkingDirectory = installPath
+                    });
+                }
+                catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+                {
+                    MessageBox.Show(
+                        $"The restore was cancelled. If Windows is blocking the updater, please run SC2MMUpdater.exe manually.",
+                        "Restore Cancelled",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+
+                    if (File.Exists(zipPath))
+                        File.Delete(zipPath);
+                }
+
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Restore failed: {ex.Message}");
+            }
+        }
+
         // ================= SETTINGS =================
         public void Uninstall()
         {

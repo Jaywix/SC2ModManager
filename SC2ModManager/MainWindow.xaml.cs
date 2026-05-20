@@ -121,6 +121,7 @@ namespace SC2ModManager
             ManualImportView.Visibility = Visibility.Collapsed;
             FileLocationsView.Visibility = Visibility.Collapsed;
             HotkeyEditorView.Visibility = Visibility.Collapsed;
+            PreviousVersionsView.Visibility = Visibility.Collapsed;
 
             switch (view)
             {
@@ -140,6 +141,7 @@ namespace SC2ModManager
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
                 case "FileLocations": FileLocationsView.Visibility = Visibility.Visible; break;
                 case "HotkeyEditor": HotkeyEditorView.Visibility = Visibility.Visible; break;
+                case "PreviousVersions": PreviousVersionsView.Visibility = Visibility.Visible; break;
             }
         }
 
@@ -271,6 +273,145 @@ namespace SC2ModManager
         }
 
         private void Uninstall_Click(object sender, RoutedEventArgs e) => vm.Uninstall();
+
+        private async void SeePreviousVersions_Click(object sender, RoutedEventArgs e)
+        {
+            // Clear any previous state
+            var staticChildren = new System.Windows.UIElement[]
+            {
+                PreviousVersionsLoadingText,
+                PreviousVersionsErrorText
+            };
+            var toRemove = new System.Collections.Generic.List<System.Windows.UIElement>();
+            foreach (System.Windows.UIElement child in PreviousVersionsListPanel.Children)
+                if (!System.Array.Exists(staticChildren, c => c == child))
+                    toRemove.Add(child);
+            foreach (var child in toRemove)
+                PreviousVersionsListPanel.Children.Remove(child);
+
+            PreviousVersionsLoadingText.Visibility = Visibility.Visible;
+            PreviousVersionsErrorText.Visibility = Visibility.Collapsed;
+
+            ShowView("PreviousVersions");
+
+            try
+            {
+                var releases = await vm.GetPreviousReleasesAsync();
+                PreviousVersionsLoadingText.Visibility = Visibility.Collapsed;
+
+                if (releases == null || releases.Count == 0)
+                {
+                    PreviousVersionsErrorText.Text = "No previous versions are available for restore.";
+                    PreviousVersionsErrorText.Visibility = Visibility.Visible;
+                    return;
+                }
+
+                foreach (var release in releases)
+                    PreviousVersionsListPanel.Children.Add(BuildReleaseCard(release));
+            }
+            catch (Exception ex)
+            {
+                PreviousVersionsLoadingText.Visibility = Visibility.Collapsed;
+                PreviousVersionsErrorText.Text = $"Failed to load versions: {ex.Message}";
+                PreviousVersionsErrorText.Visibility = Visibility.Visible;
+            }
+        }
+
+        private System.Windows.UIElement BuildReleaseCard(SC2ModManager.Models.ReleaseInfo release)
+        {
+            var card = new System.Windows.Controls.Border
+            {
+                Style = (System.Windows.Style)TryFindResource("ContentPanel"),
+                Margin = new System.Windows.Thickness(0, 0, 0, 10),
+                Padding = new System.Windows.Thickness(16, 12, 16, 14)
+            };
+
+            var outer = new System.Windows.Controls.Grid();
+            outer.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = System.Windows.GridLength.Auto });
+            outer.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = System.Windows.GridLength.Auto });
+            outer.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = System.Windows.GridLength.Auto });
+
+            // Header row: version label + restore button
+            var headerGrid = new System.Windows.Controls.Grid();
+            headerGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = System.Windows.GridLength.Auto });
+
+            var versionLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = release.TagName,
+                FontSize = 16,
+                FontWeight = System.Windows.FontWeights.SemiBold,
+                Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush") ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            };
+            System.Windows.Controls.Grid.SetColumn(versionLabel, 0);
+
+            var restoreBtn = new System.Windows.Controls.Button
+            {
+                Content = "Restore this Version",
+                Tag = release,
+                Style = (System.Windows.Style)TryFindResource("ModernButton"),
+                MinWidth = 155,
+                FontWeight = System.Windows.FontWeights.SemiBold
+            };
+            restoreBtn.Click += ReleaseCard_RestoreClick;
+            System.Windows.Controls.Grid.SetColumn(restoreBtn, 1);
+
+            headerGrid.Children.Add(versionLabel);
+            headerGrid.Children.Add(restoreBtn);
+            System.Windows.Controls.Grid.SetRow(headerGrid, 0);
+
+            var sep = new System.Windows.Controls.Separator
+            {
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x30, 0x36, 0x3D)),
+                Margin = new System.Windows.Thickness(0, 8, 0, 8),
+                Height = 1
+            };
+            System.Windows.Controls.Grid.SetRow(sep, 1);
+
+            var bodyText = new System.Windows.Controls.TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(release.Body)
+                    ? "No release notes provided."
+                    : release.Body.Replace("\r\n", "\n"),
+                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                FontSize = 12,
+                TextWrapping = System.Windows.TextWrapping.Wrap,
+                LineHeight = 18
+            };
+            System.Windows.Controls.Grid.SetRow(bodyText, 2);
+
+            outer.Children.Add(headerGrid);
+            outer.Children.Add(sep);
+            outer.Children.Add(bodyText);
+            card.Child = outer;
+            return card;
+        }
+
+        private async void ReleaseCard_RestoreClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button btn && btn.Tag is SC2ModManager.Models.ReleaseInfo release)
+            {
+                var confirm = MessageBox.Show(
+                    $"You are about to restore SC2 Mod Manager to {release.TagName}.\n\n" +
+                    "\u26a0 Warning: Rolling back to an older version may cause issues:\n" +
+                    "  \u2022 Some mods may stop working correctly\n" +
+                    "  \u2022 Features added in newer versions will be unavailable\n" +
+                    "  \u2022 Configuration saved by newer versions may not be compatible\n\n" +
+                    "The application will close and restart after the restore.\n\n" +
+                    "Are you sure you want to restore this version?",
+                    $"Restore {release.TagName}?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (confirm != MessageBoxResult.Yes) return;
+
+                btn.IsEnabled = false;
+                btn.Content = "Restoring...";
+
+                await vm.RestoreVersionAsync(release.DownloadUrl, release.TagName);
+            }
+        }
 
         // ================= FILE LOCATIONS =================
 

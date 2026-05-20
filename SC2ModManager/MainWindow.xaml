@@ -901,6 +901,15 @@
                              HorizontalAlignment="Left"
                             Click="Uninstall_Click"/>
                             <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
+                            <TextBlock Text="Previous Versions"
+                               Foreground="{DynamicResource AccentBrush}"
+                               FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Text="Roll back to an earlier version of SC2 Mod Manager if you are experiencing issues. Versions as far back as v1.6.0 are available."
+                               Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                            <Button Content="🕐  See Previous Versions"
+                                    HorizontalAlignment="Left"
+                                    Click="SeePreviousVersions_Click"/>
+                            <Separator Style="{StaticResource HRule}" Margin="0,16,8,0"/>
                             <TextBlock Text="File Locations"
            Foreground="{DynamicResource AccentBrush}"
            FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
@@ -912,6 +921,54 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+
+                <!-- ===== PREVIOUS VERSIONS ===== -->
+                <Grid x:Name="PreviousVersionsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header with back button -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="← Back to Settings"
+                                Margin="0,0,12,0"
+                                Click="GoToSettings"/>
+                        <TextBlock Grid.Column="1" Text="Previous Versions"
+                                   Style="{StaticResource SectionHeader}"
+                                   Margin="0"/>
+                    </Grid>
+
+                    <!-- Warning banner -->
+                    <Border Grid.Row="1" Background="#1C1600" BorderBrush="#856404"
+                            BorderThickness="1" CornerRadius="4" Padding="14,10" Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚠" Foreground="#E3B341" FontSize="16"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Foreground="#E3B341" FontSize="12"
+                                       VerticalAlignment="Center" TextWrapping="Wrap">
+                                <Run Text="Rolling back to an older version may cause some mods to stop working and can cause issues with newer features. Only versions v1.6.0 and newer are available."/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Version list -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="PreviousVersionsListPanel" Margin="0,0,4,0">
+                            <TextBlock x:Name="PreviousVersionsLoadingText"
+                                       Text="Loading versions..."
+                                       Foreground="#8B949E" FontSize="13" Margin="0,8"/>
+                            <TextBlock x:Name="PreviousVersionsErrorText"
+                                       Foreground="#F85149" FontSize="13"
+                                       Visibility="Collapsed" TextWrapping="Wrap" Margin="0,8"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
 
                 <!-- ===== FILE LOCATIONS ===== -->
                 <Grid x:Name="FileLocationsView" Visibility="Collapsed">

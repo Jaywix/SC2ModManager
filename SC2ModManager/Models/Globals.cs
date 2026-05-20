@@ -24,6 +24,7 @@ namespace SC2ModManager.Models
 
         // Github URLs
         public static string RepoUrl = "https://api.github.com/repos/Jaywix/SC2ModManager/releases/latest";
+        public static string ReleasesListUrl = "https://api.github.com/repos/Jaywix/SC2ModManager/releases";
         public static string GameDataBackupPt1GithubReleaseUrl = "https://github.com/Jaywix/SC2Mods/releases/download/GamedataBackupFilesPt1/gamedataBackupPt1.zip";
         public static string GameDataBackupPt2GithubReleaseUrl = "https://github.com/Jaywix/SC2Mods/releases/download/GamedataBackupFilesPt2/gamedataBackupPt2.zip";
         public static string MapsListUrl = "https://raw.githubusercontent.com/Jaywix/SC2Mods/master/maps.json";
