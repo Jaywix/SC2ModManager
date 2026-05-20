@@ -227,6 +227,7 @@ namespace SC2ModManager.ViewModels
             presetService = new PresetService();
 
             InitializeGamePath();
+            InitializeReplayPath();
             _ = CheckForUpdatesAsync();
             _ = LoadNewsAsync();
         }
@@ -1607,6 +1608,105 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // ================= REPLAYS =================
+
+        private readonly ReplayService replayService = new();
+
+        public bool IsReplayToolsInstalled => replayService.AreReplayToolsInstalled();
+
+        private bool isReplayDownloading;
+        public bool IsReplayDownloading
+        {
+            get => isReplayDownloading;
+            set { isReplayDownloading = value; OnPropertyChanged(nameof(IsReplayDownloading)); }
+        }
+
+        private bool isReplayRunning;
+        public bool IsReplayRunning
+        {
+            get => isReplayRunning;
+            set { isReplayRunning = value; OnPropertyChanged(nameof(IsReplayRunning)); }
+        }
+
+        public async Task DownloadReplayToolsAsync()
+        {
+            IsReplayDownloading = true;
+            try
+            {
+                await replayService.DownloadReplayToolsAsync();
+                OnPropertyChanged(nameof(IsReplayToolsInstalled));
+            }
+            finally
+            {
+                IsReplayDownloading = false;
+            }
+        }
+
+        public List<Models.ReplayEntry> GetReplays()
+        {
+            return replayService.GetReplays(ReplaysPath);
+        }
+
+        public async Task LaunchReplayAsync(Models.ReplayEntry replay)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set. Please configure it in Settings first.");
+                return;
+            }
+
+            IsReplayRunning = true;
+            try
+            {
+                await replayService.LaunchReplayAsync(replay, GamePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch replay: {ex.Message}");
+            }
+            finally
+            {
+                IsReplayRunning = false;
+            }
+        }
+
+        public void SaveReplayFolderPath(string path)
+        {
+            ReplaysPath = path;
+            var config = configService.Load();
+            config.ReplayFolderPath = path;
+            configService.Save(config);
+        }
+
+        public void CheckAndRestoreReplayBackups()
+        {
+            if (string.IsNullOrEmpty(GamePath)) return;
+
+            string gamedataPath = Path.Combine(GamePath, "gamedata");
+            if (!Directory.Exists(gamedataPath)) return;
+            if (!replayService.HasOrphanedBackups(gamedataPath)) return;
+
+            try
+            {
+                replayService.RestoreOrphanedBackups(gamedataPath);
+                MessageBox.Show(
+                    "Replay backup files were found from a previous session.\n\n" +
+                    "They have been automatically restored. Your game files should now be intact.",
+                    "Replay Files Restored",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Replay backup files were found but could not be fully restored: {ex.Message}\n\n" +
+                    "Your multiplayer may be affected. Please check your gamedata folder manually.",
+                    "Restore Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         // ================= FILE LOCATIONS =================
 
         private string replaysPath;
@@ -1630,12 +1730,16 @@ namespace SC2ModManager.ViewModels
 
         public void InitializeFileLocations()
         {
-            // Replays
-            string defaultReplays = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "My Games", "SquareEnix", "Supreme Commander 2", "replays"
-            );
-            ReplaysPath = Directory.Exists(defaultReplays) ? defaultReplays : null;
+            // Replays — load from config first, then fall back to default detection
+            var config = configService.Load();
+            if (!string.IsNullOrEmpty(config.ReplayFolderPath) && Directory.Exists(config.ReplayFolderPath))
+            {
+                ReplaysPath = config.ReplayFolderPath;
+            }
+            else
+            {
+                ReplaysPath = Directory.Exists(Globals.DefaultReplaysBasePath) ? Globals.DefaultReplaysBasePath : null;
+            }
 
             // Game.prefs
             string defaultPrefsFolder = Path.Combine(
@@ -1648,6 +1752,22 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(GameDataPath));
             OnPropertyChanged(nameof(GameDataFound));
+        }
+
+        /// <summary>
+        ///     Loads the replay folder path from config (or detects the default) without
+        ///     touching the other file-location properties. Called at startup.
+        /// </summary>
+        public void InitializeReplayPath()
+        {
+            var config = configService.Load();
+            if (!string.IsNullOrEmpty(config.ReplayFolderPath) && Directory.Exists(config.ReplayFolderPath))
+            {
+                ReplaysPath = config.ReplayFolderPath;
+                return;
+            }
+            if (Directory.Exists(Globals.DefaultReplaysBasePath))
+                ReplaysPath = Globals.DefaultReplaysBasePath;
         }
 
         public void OpenFolder(string path)

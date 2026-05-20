@@ -41,6 +41,7 @@ namespace SC2ModManager
             ApplyCurrentTheme();
 
             Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
+            Loaded += (s, e) => vm.CheckAndRestoreReplayBackups();
         }
 
         // ================= THEMES ===============
@@ -122,6 +123,7 @@ namespace SC2ModManager
             FileLocationsView.Visibility = Visibility.Collapsed;
             HotkeyEditorView.Visibility = Visibility.Collapsed;
             PreviousVersionsView.Visibility = Visibility.Collapsed;
+            ReplayView.Visibility = Visibility.Collapsed;
 
             switch (view)
             {
@@ -142,6 +144,7 @@ namespace SC2ModManager
                 case "FileLocations": FileLocationsView.Visibility = Visibility.Visible; break;
                 case "HotkeyEditor": HotkeyEditorView.Visibility = Visibility.Visible; break;
                 case "PreviousVersions": PreviousVersionsView.Visibility = Visibility.Visible; break;
+                case "Replays": ReplayView.Visibility = Visibility.Visible; break;
             }
         }
 
@@ -413,6 +416,12 @@ namespace SC2ModManager
             }
         }
 
+        private void GoToReplays(object sender, RoutedEventArgs e)
+        {
+            ShowView("Replays");
+            PopulateReplayView();
+        }
+
         // ================= FILE LOCATIONS =================
 
         private void GoToFileLocations(object sender, RoutedEventArgs e)
@@ -455,6 +464,194 @@ namespace SC2ModManager
             }
 
             vm.GamePrefsFolder = dialog.FolderName;
+        }
+
+        // ================= REPLAYS =================
+
+        private void PopulateReplayView()
+        {
+            // Show the right panel based on whether replay tools are installed
+            if (!vm.IsReplayToolsInstalled)
+            {
+                ReplayNotInstalledPanel.Visibility = Visibility.Visible;
+                ReplayInstalledPanel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            ReplayNotInstalledPanel.Visibility = Visibility.Collapsed;
+            ReplayInstalledPanel.Visibility = Visibility.Visible;
+
+            RefreshReplayList();
+        }
+
+        private void RefreshReplayList()
+        {
+            // Show folder path
+            ReplayFolderPathText.Text = string.IsNullOrEmpty(vm.ReplaysPath)
+                ? "(not set)"
+                : vm.ReplaysPath;
+
+            // Clear old cards (keep nothing — they're all dynamic)
+            ReplayListPanel.Children.Clear();
+            ReplayFolderMissingText.Visibility = Visibility.Collapsed;
+            ReplayEmptyText.Visibility = Visibility.Collapsed;
+
+            if (string.IsNullOrEmpty(vm.ReplaysPath) || !System.IO.Directory.Exists(vm.ReplaysPath))
+            {
+                ReplayFolderMissingText.Visibility = Visibility.Visible;
+                return;
+            }
+
+            var replays = vm.GetReplays();
+            if (replays.Count == 0)
+            {
+                ReplayEmptyText.Visibility = Visibility.Visible;
+                return;
+            }
+
+            foreach (var replay in replays)
+                ReplayListPanel.Children.Add(BuildReplayCard(replay));
+        }
+
+        private System.Windows.UIElement BuildReplayCard(SC2ModManager.Models.ReplayEntry replay)
+        {
+            var card = new System.Windows.Controls.Border
+            {
+                Style = (System.Windows.Style)TryFindResource("ContentPanel"),
+                Margin = new System.Windows.Thickness(0, 0, 0, 8),
+                Padding = new System.Windows.Thickness(14, 10, 14, 12)
+            };
+
+            var grid = new System.Windows.Controls.Grid();
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = System.Windows.GridLength.Auto });
+
+            // Left: name + metadata
+            var leftStack = new System.Windows.Controls.StackPanel { VerticalAlignment = System.Windows.VerticalAlignment.Center };
+
+            var nameText = new System.Windows.Controls.TextBlock
+            {
+                Text = replay.DisplayName,
+                FontSize = 14,
+                FontWeight = System.Windows.FontWeights.SemiBold,
+                Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush")
+                             ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
+                TextWrapping = System.Windows.TextWrapping.Wrap
+            };
+
+            var metaText = new System.Windows.Controls.TextBlock
+            {
+                Text = $"Folder: {replay.FolderName}  •  {replay.LastModified:yyyy-MM-dd  HH:mm}",
+                FontSize = 11,
+                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                Margin = new System.Windows.Thickness(0, 3, 0, 0)
+            };
+
+            leftStack.Children.Add(nameText);
+            leftStack.Children.Add(metaText);
+            System.Windows.Controls.Grid.SetColumn(leftStack, 0);
+
+            // Right: launch button
+            var launchBtn = new System.Windows.Controls.Button
+            {
+                Content = "▶  Launch",
+                Tag = replay,
+                Style = (System.Windows.Style)TryFindResource("PrimaryButton"),
+                MinWidth = 110,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(12, 0, 0, 0)
+            };
+            launchBtn.Click += LaunchReplay_Click;
+            System.Windows.Controls.Grid.SetColumn(launchBtn, 1);
+
+            grid.Children.Add(leftStack);
+            grid.Children.Add(launchBtn);
+            card.Child = grid;
+            return card;
+        }
+
+        private async void DownloadReplayTools_Click(object sender, RoutedEventArgs e)
+        {
+            DownloadReplayToolsBtn.IsEnabled = false;
+            ReplayDownloadStatusText.Visibility = Visibility.Visible;
+
+            try
+            {
+                await vm.DownloadReplayToolsAsync();
+                // Switch to the installed panel
+                PopulateReplayView();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to download replay tools: {ex.Message}", "Download Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                DownloadReplayToolsBtn.IsEnabled = true;
+            }
+            finally
+            {
+                ReplayDownloadStatusText.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void LaunchReplay_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn || btn.Tag is not SC2ModManager.Models.ReplayEntry replay)
+                return;
+
+            // Show warning dialog unless suppressed
+            var config = new SC2ModManager.Services.ConfigService().Load();
+            if (!config.SuppressReplayWarning)
+            {
+                var dialog = new SC2ModManager.Views.ReplayWarningDialog { Owner = this };
+                dialog.ShowDialog();
+
+                if (!dialog.Confirmed) return;
+
+                if (dialog.SuppressInFuture)
+                {
+                    config.SuppressReplayWarning = true;
+                    new SC2ModManager.Services.ConfigService().Save(config);
+                }
+            }
+
+            // Disable all launch buttons while running
+            SetReplayLaunchButtonsEnabled(false);
+            ReplayRunningBanner.Visibility = Visibility.Visible;
+
+            try
+            {
+                await vm.LaunchReplayAsync(replay);
+            }
+            finally
+            {
+                ReplayRunningBanner.Visibility = Visibility.Collapsed;
+                SetReplayLaunchButtonsEnabled(true);
+            }
+        }
+
+        private void SetReplayLaunchButtonsEnabled(bool enabled)
+        {
+            foreach (var child in ReplayListPanel.Children.OfType<System.Windows.Controls.Border>())
+            {
+                var grid = child.Child as System.Windows.Controls.Grid;
+                if (grid == null) continue;
+                foreach (var col in grid.Children.OfType<System.Windows.Controls.Button>())
+                    col.IsEnabled = enabled;
+            }
+        }
+
+        private void BrowseReplayFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog { Title = "Select your Supreme Commander 2 Replays folder" };
+            if (dialog.ShowDialog() != true) return;
+
+            vm.SaveReplayFolderPath(dialog.FolderName);
+            RefreshReplayList();
+        }
+
+        private void RefreshReplays_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshReplayList();
         }
 
         // ================= BACKUPS =================

@@ -42,5 +42,15 @@ namespace SC2ModManager.Models
         ///     and the github repository's generic gamedata mods' .json file. This is used to keep track of which maps are enabled and to display map information in the UI.
         /// </summary>
         public List<string> EnabledGenericMods { get; set; } = new();
+
+        /// <summary>
+        ///     User-chosen path to the SC2 replays folder. Defaults to the standard My Documents location.
+        /// </summary>
+        public string ReplayFolderPath { get; set; } = string.Empty;
+
+        /// <summary>
+        ///     When true, the replay launch warning dialog is suppressed.
+        /// </summary>
+        public bool SuppressReplayWarning { get; set; } = false;
     }
 }

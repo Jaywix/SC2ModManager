@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SC2ModManager", "SC2ModMana
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SC2MMUpdater", "SC2MMUpdater\SC2MMUpdater.csproj", "{B7B61A49-5AEE-4817-B888-0D367D076808}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SC2ReplayParser", "SC2ReplayParser\SC2ReplayParser.csproj", "{CBA1F888-30EB-9991-32EA-1B2D24C9B868}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B7B61A49-5AEE-4817-B888-0D367D076808}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7B61A49-5AEE-4817-B888-0D367D076808}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7B61A49-5AEE-4817-B888-0D367D076808}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBA1F888-30EB-9991-32EA-1B2D24C9B868}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBA1F888-30EB-9991-32EA-1B2D24C9B868}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBA1F888-30EB-9991-32EA-1B2D24C9B868}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBA1F888-30EB-9991-32EA-1B2D24C9B868}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

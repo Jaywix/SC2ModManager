@@ -543,6 +543,7 @@
 
                     <Button Content="🏠  Home"        Style="{StaticResource SidebarButton}" Click="GoHome"/>
                     <Button Content="⚙  Manage Mods" Style="{StaticResource SidebarButton}" Click="GoToMods"/>
+                    <Button Content="🎬  Replays"     Style="{StaticResource SidebarButton}" Click="GoToReplays"/>
                     <Button Content="⚙  Settings" Style="{StaticResource SidebarButton}" Click="GoToSettings"/>
                 </StackPanel>
             </Grid>
@@ -921,6 +922,114 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+
+                <!-- ===== REPLAYS ===== -->
+                <Grid x:Name="ReplayView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                        <Button DockPanel.Dock="Left" Content="← Back"
+                                Click="GoHome"
+                                HorizontalAlignment="Left" Width="80" Margin="0,0,12,0"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="Replays"
+                                   Foreground="White" FontSize="24" FontFamily="Segoe UI"
+                                   FontWeight="Light" VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <!-- Not Installed panel -->
+                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}"
+                            x:Name="ReplayNotInstalledPanel">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="460">
+                            <TextBlock Text="🎬  Replay Launcher Not Set Up"
+                                       FontSize="18" FontWeight="SemiBold" Foreground="White"
+                                       HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13"
+                                       HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,16">
+                                To launch replays, the mod manager needs to download two small replay
+                                support files. These files are stored in the mod manager's data folder
+                                and never interfere with your game.
+                            </TextBlock>
+                            <Button x:Name="DownloadReplayToolsBtn"
+                                    Content="⬇  Download Replay Tools"
+                                    Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Center" Width="240"
+                                    Click="DownloadReplayTools_Click"/>
+                            <TextBlock x:Name="ReplayDownloadStatusText"
+                                       Text="Downloading..."
+                                       Foreground="{DynamicResource AccentBrush}" FontSize="14"
+                                       HorizontalAlignment="Center" Margin="0,10,0,0"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Installed content -->
+                    <Grid Grid.Row="1" x:Name="ReplayInstalledPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Folder path row -->
+                        <Border Grid.Row="0" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="📁  Browse" Margin="0,0,6,0" Click="BrowseReplayFolder_Click"/>
+                                    <Button Content="🔄  Refresh" Click="RefreshReplays_Click"/>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Replays Folder"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="ReplayFolderPathText"
+                                               Foreground="#CCCCCC" FontSize="12" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Game running banner -->
+                        <Border Grid.Row="1" Background="#0D1A2A" BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="1" CornerRadius="4" Padding="14,10" Margin="0,0,0,10"
+                                x:Name="ReplayRunningBanner" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="▶" Foreground="{DynamicResource AccentBrush}" FontSize="16"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Foreground="White" FontSize="13" VerticalAlignment="Center"
+                                           TextWrapping="Wrap">
+                                    <Run Text="Replay is running. "/>
+                                    <Run FontWeight="SemiBold"
+                                         Text="Close the game when you're done"/>
+                                    <Run Text=" — your game files will be restored automatically."/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Replay list -->
+                        <Grid Grid.Row="2">
+                            <TextBlock x:Name="ReplayFolderMissingText"
+                                       Foreground="#AAAAAA" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top"
+                                       Margin="0,20,0,0" TextWrapping="Wrap" TextAlignment="Center"
+                                       Visibility="Collapsed">
+                                Replays folder not found. Click <Run Foreground="{DynamicResource AccentBrush}">📁 Browse</Run> to locate your replays folder.
+                            </TextBlock>
+                            <TextBlock x:Name="ReplayEmptyText"
+                                       Text="No replays found in the selected folder."
+                                       Foreground="#666666" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top"
+                                       Margin="0,20,0,0"
+                                       Visibility="Collapsed"/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="ReplayListPanel" Margin="0,0,4,0"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+                </Grid>
 
                 <!-- ===== PREVIOUS VERSIONS ===== -->
                 <Grid x:Name="PreviousVersionsView" Visibility="Collapsed">

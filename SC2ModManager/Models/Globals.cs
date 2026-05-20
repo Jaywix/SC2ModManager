@@ -126,6 +126,27 @@ namespace SC2ModManager.Models
         {
             return Path.Combine(GetHotkeyModsPath(), "Backups");
         }
+
+        // ================= REPLAY TOOLS =================
+
+        public static string LuaReplayFileName = "lua.replay";
+        public static string ZLuaDlc1ReplayFileName = "z_lua_dlc1.replay";
+        public static string ZLuaDlc1ScdName = "z_lua_dlc1.scd";
+        public const string ReplayBackupSuffix = "_replaybackup.bkup";
+
+        public static string ReplayToolsLuaReplayDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/ReplayTools_v1.0.0/lua.replay";
+        public static string ReplayToolsZLuaDlc1ReplayDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/ReplayTools_v1.0.0/z_lua_dlc1.replay";
+
+        public static string GetReplayToolsPath()
+        {
+            return Path.Combine(GetDataPath(), "replaytools");
+        }
+
+        public static string DefaultReplaysBasePath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "My Games", "SquareEnix", "Supreme Commander 2", "replays"
+            );
     }
 
 
