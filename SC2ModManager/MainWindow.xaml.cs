@@ -12,6 +12,7 @@ using SC2ModManager.Models;
 using SC2ModManager.Services;
 using SC2ModManager.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,6 +27,11 @@ namespace SC2ModManager
         private MainViewModel vm;
 
         private readonly ThemeService themeService = new(new ConfigService());
+
+        // ── Replay filter/sort state ──────────────────────────────────────────
+        private string _replaySortMode = "DateDesc";
+        private bool   _filterHasAI   = false;
+        private int    _filterPlayerCount = 0;   // 0 = all, 2 = 1v1, 3 = 3-player, 4 = 4+
 
 
         public MainWindow()
@@ -124,6 +130,7 @@ namespace SC2ModManager
             HotkeyEditorView.Visibility = Visibility.Collapsed;
             PreviousVersionsView.Visibility = Visibility.Collapsed;
             ReplayView.Visibility = Visibility.Collapsed;
+            ReplayDetailsView.Visibility = Visibility.Collapsed;
 
             switch (view)
             {
@@ -145,6 +152,7 @@ namespace SC2ModManager
                 case "HotkeyEditor": HotkeyEditorView.Visibility = Visibility.Visible; break;
                 case "PreviousVersions": PreviousVersionsView.Visibility = Visibility.Visible; break;
                 case "Replays": ReplayView.Visibility = Visibility.Visible; break;
+                case "ReplayDetails": ReplayDetailsView.Visibility = Visibility.Visible; break;
             }
         }
 
@@ -481,6 +489,7 @@ namespace SC2ModManager
             ReplayNotInstalledPanel.Visibility = Visibility.Collapsed;
             ReplayInstalledPanel.Visibility = Visibility.Visible;
 
+            UpdateReplayFilterButtonStyles();
             RefreshReplayList();
         }
 
@@ -491,10 +500,11 @@ namespace SC2ModManager
                 ? "(not set)"
                 : vm.ReplaysPath;
 
-            // Clear old cards (keep nothing — they're all dynamic)
+            // Clear old cards
             ReplayListPanel.Children.Clear();
             ReplayFolderMissingText.Visibility = Visibility.Collapsed;
             ReplayEmptyText.Visibility = Visibility.Collapsed;
+            ReplayLoadingText.Visibility = Visibility.Collapsed;
 
             if (string.IsNullOrEmpty(vm.ReplaysPath) || !System.IO.Directory.Exists(vm.ReplaysPath))
             {
@@ -502,14 +512,63 @@ namespace SC2ModManager
                 return;
             }
 
-            var replays = vm.GetReplays();
-            if (replays.Count == 0)
+            ReplayLoadingText.Visibility = Visibility.Visible;
+
+            // Parse metadata on background thread, update UI on dispatcher
+            _ = Task.Run(() => vm.GetReplays())
+                .ContinueWith(t =>
+                {
+                    var all = t.Result;
+                    Dispatcher.Invoke(() =>
+                    {
+                        ReplayLoadingText.Visibility = Visibility.Collapsed;
+                        ApplyReplayFilter(all);
+                    });
+                });
+        }
+
+        private void ApplyReplayFilter(List<SC2ModManager.Models.ReplayEntry> all)
+        {
+            string search = ReplaySearchBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+
+            // 1. Filter
+            IEnumerable<SC2ModManager.Models.ReplayEntry> filtered = all;
+
+            if (!string.IsNullOrEmpty(search))
+                filtered = filtered.Where(r =>
+                    r.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (r.Metadata?.MapDisplayName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true));
+
+            if (_filterHasAI)
+                filtered = filtered.Where(r => r.Metadata?.HasAI == true);
+
+            if (_filterPlayerCount == 2)
+                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == 2);
+            else if (_filterPlayerCount == 3)
+                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == 3);
+            else if (_filterPlayerCount == 4)
+                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount >= 4);
+
+            // 2. Sort
+            IOrderedEnumerable<SC2ModManager.Models.ReplayEntry> sorted = _replaySortMode switch
+            {
+                "DateAsc"  => filtered.OrderBy(r => r.LastModified),
+                "NameAz"   => filtered.OrderBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase),
+                "MapAz"    => filtered.OrderBy(r => r.Metadata?.MapDisplayName ?? string.Empty, StringComparer.OrdinalIgnoreCase),
+                _          => filtered.OrderByDescending(r => r.LastModified)
+            };
+
+            var list = sorted.ToList();
+
+            ReplayListPanel.Children.Clear();
+
+            if (list.Count == 0)
             {
                 ReplayEmptyText.Visibility = Visibility.Visible;
                 return;
             }
 
-            foreach (var replay in replays)
+            foreach (var replay in list)
                 ReplayListPanel.Children.Add(BuildReplayCard(replay));
         }
 
@@ -538,36 +597,327 @@ namespace SC2ModManager
                              ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
                 TextWrapping = System.Windows.TextWrapping.Wrap
             };
-
-            var metaText = new System.Windows.Controls.TextBlock
-            {
-                Text = $"Folder: {replay.FolderName}  •  {replay.LastModified:yyyy-MM-dd  HH:mm}",
-                FontSize = 11,
-                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
-                Margin = new System.Windows.Thickness(0, 3, 0, 0)
-            };
-
             leftStack.Children.Add(nameText);
-            leftStack.Children.Add(metaText);
+
+            // Map name (if parsed)
+            if (replay.Metadata?.ParseFailed == false && !string.IsNullOrEmpty(replay.Metadata.MapDisplayName))
+            {
+                leftStack.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = $"Map: {replay.Metadata.MapDisplayName}",
+                    FontSize = 12,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCC, 0xCC, 0xCC)),
+                    Margin = new System.Windows.Thickness(0, 3, 0, 0)
+                });
+            }
+
+            // Players (if parsed)
+            if (replay.Metadata?.Players is { Count: > 0 })
+            {
+                string playerList = string.Join(", ", replay.Metadata.Players.Select(p =>
+                    p.IsHuman ? p.Name : $"AI ({p.AIPersonality ?? p.Faction})"));
+                leftStack.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = $"Players: {playerList}",
+                    FontSize = 11,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                    Margin = new System.Windows.Thickness(0, 2, 0, 0),
+                    TextWrapping = System.Windows.TextWrapping.Wrap
+                });
+            }
+
+            // Date
+            leftStack.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = $"{replay.LastModified:yyyy-MM-dd  HH:mm}",
+                FontSize = 11,
+                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x77, 0x77, 0x77)),
+                Margin = new System.Windows.Thickness(0, 2, 0, 0)
+            });
+
             System.Windows.Controls.Grid.SetColumn(leftStack, 0);
 
-            // Right: launch button
+            // Right: details + launch buttons
+            var btnStack = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(12, 0, 0, 0)
+            };
+
+            var detailsBtn = new System.Windows.Controls.Button
+            {
+                Content = "Details →",
+                Tag = replay,
+                Style = (System.Windows.Style)TryFindResource("ModernButton"),
+                MinWidth = 85,
+                Margin = new System.Windows.Thickness(0, 0, 6, 0)
+            };
+            detailsBtn.Click += (s, e) =>
+            {
+                if (s is System.Windows.Controls.Button b && b.Tag is SC2ModManager.Models.ReplayEntry r)
+                    GoToReplayDetails(r);
+            };
+
             var launchBtn = new System.Windows.Controls.Button
             {
                 Content = "▶  Launch",
                 Tag = replay,
                 Style = (System.Windows.Style)TryFindResource("PrimaryButton"),
-                MinWidth = 110,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                Margin = new System.Windows.Thickness(12, 0, 0, 0)
+                MinWidth = 110
             };
             launchBtn.Click += LaunchReplay_Click;
-            System.Windows.Controls.Grid.SetColumn(launchBtn, 1);
+
+            btnStack.Children.Add(detailsBtn);
+            btnStack.Children.Add(launchBtn);
+            System.Windows.Controls.Grid.SetColumn(btnStack, 1);
 
             grid.Children.Add(leftStack);
-            grid.Children.Add(launchBtn);
+            grid.Children.Add(btnStack);
             card.Child = grid;
             return card;
+        }
+
+        // ── Replay Details ────────────────────────────────────────────────────
+
+        private void GoToReplayDetails(SC2ModManager.Models.ReplayEntry replay)
+        {
+            ReplayDetailsTitle.Text = replay.DisplayName;
+            ReplayDetailsPanel.Children.Clear();
+
+            BuildReplayDetailsContent(replay);
+
+            ShowView("ReplayDetails");
+        }
+
+        private void BackToReplayList_Click(object sender, RoutedEventArgs e)
+        {
+            ShowView("Replays");
+        }
+
+        private void BuildReplayDetailsContent(SC2ModManager.Models.ReplayEntry replay)
+        {
+            var meta = replay.Metadata;
+
+            // Helper to make a section header
+            System.Windows.Controls.TextBlock SectionHeader(string text)
+            {
+                return new System.Windows.Controls.TextBlock
+                {
+                    Text = text,
+                    FontSize = 15,
+                    FontWeight = System.Windows.FontWeights.SemiBold,
+                    Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush")
+                                 ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
+                    Margin = new System.Windows.Thickness(0, 0, 0, 8)
+                };
+            }
+
+            // Helper to make a labelled data row
+            System.Windows.Controls.Border DataRow(string label, string value)
+            {
+                var row = new System.Windows.Controls.Border
+                {
+                    Padding = new System.Windows.Thickness(0, 4, 0, 4)
+                };
+                var dp = new System.Windows.Controls.DockPanel();
+                dp.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = label + ":",
+                    Width = 160,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                    FontSize = 13,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Top
+                });
+                dp.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = value ?? "—",
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEE, 0xEE, 0xEE)),
+                    FontSize = 13,
+                    TextWrapping = System.Windows.TextWrapping.Wrap
+                });
+                row.Child = dp;
+                return row;
+            }
+
+            System.Windows.Controls.Border SectionBorder(System.Windows.Controls.StackPanel content)
+            {
+                return new System.Windows.Controls.Border
+                {
+                    Style = (System.Windows.Style)TryFindResource("ContentPanel"),
+                    Margin = new System.Windows.Thickness(0, 0, 0, 12),
+                    Child = content
+                };
+            }
+
+            if (meta == null || meta.ParseFailed)
+            {
+                var errPanel = new System.Windows.Controls.StackPanel();
+                errPanel.Children.Add(SectionHeader("File Info"));
+                errPanel.Children.Add(DataRow("File", replay.FileName));
+                errPanel.Children.Add(DataRow("Date", replay.LastModified.ToString("yyyy-MM-dd HH:mm")));
+                if (meta?.ParseFailed == true)
+                    errPanel.Children.Add(DataRow("Parse Error", meta.ParseError));
+                ReplayDetailsPanel.Children.Add(SectionBorder(errPanel));
+                return;
+            }
+
+            // ── Map & Game Info ──────────────────────────────────────────────
+            var mapPanel = new System.Windows.Controls.StackPanel();
+            mapPanel.Children.Add(SectionHeader("Map & Game Info"));
+            mapPanel.Children.Add(DataRow("Map", meta.MapDisplayName));
+            mapPanel.Children.Add(DataRow("Date Recorded", replay.LastModified.ToString("yyyy-MM-dd HH:mm")));
+            mapPanel.Children.Add(DataRow("Game Version", meta.GameVersion));
+            mapPanel.Children.Add(DataRow("Replay Version", meta.ReplayVersion));
+            if (!string.IsNullOrWhiteSpace(meta.VictoryCondition))
+                mapPanel.Children.Add(DataRow("Victory Condition", meta.VictoryCondition));
+            if (!string.IsNullOrWhiteSpace(meta.FogOfWar))
+                mapPanel.Children.Add(DataRow("Fog of War", meta.FogOfWar));
+            if (!string.IsNullOrWhiteSpace(meta.TeamSpawn))
+                mapPanel.Children.Add(DataRow("Team Spawn", meta.TeamSpawn));
+            if (meta.UnitCap > 0)
+                mapPanel.Children.Add(DataRow("Unit Cap", meta.UnitCap.ToString()));
+            mapPanel.Children.Add(DataRow("Ranked", meta.Ranked ? "Yes" : "No"));
+            mapPanel.Children.Add(DataRow("Cheats Enabled", meta.CheatsEnabled ? "Yes" : "No"));
+            ReplayDetailsPanel.Children.Add(SectionBorder(mapPanel));
+
+            // ── Players ──────────────────────────────────────────────────────
+            var playersPanel = new System.Windows.Controls.StackPanel();
+            playersPanel.Children.Add(SectionHeader($"Players ({meta.TotalPlayerCount})"));
+
+            foreach (var p in meta.Players)
+            {
+                var pBorder = new System.Windows.Controls.Border
+                {
+                    Background = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)),
+                    CornerRadius = new System.Windows.CornerRadius(4),
+                    Padding = new System.Windows.Thickness(10, 6, 10, 6),
+                    Margin = new System.Windows.Thickness(0, 0, 0, 6)
+                };
+                var pGrid = new System.Windows.Controls.Grid();
+                pGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star) });
+                pGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = System.Windows.GridLength.Auto });
+
+                var pInfo = new System.Windows.Controls.StackPanel();
+                var nameColor = p.IsHuman
+                    ? (System.Windows.Media.Brush)TryFindResource("AccentBrush") ?? System.Windows.Media.Brushes.White
+                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xCC, 0xAA));
+
+                pInfo.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = p.IsHuman ? p.Name : $"AI — {p.AIPersonality ?? "Unknown"}",
+                    FontSize = 13,
+                    FontWeight = System.Windows.FontWeights.SemiBold,
+                    Foreground = nameColor
+                });
+                pInfo.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = $"Faction: {p.Faction}  •  Color: {p.Color}  •  Team {p.Team}",
+                    FontSize = 11,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                    Margin = new System.Windows.Thickness(0, 2, 0, 0)
+                });
+
+                var teamBadge = new System.Windows.Controls.TextBlock
+                {
+                    Text = $"Team {p.Team}",
+                    FontSize = 11,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x88, 0x88, 0x88)),
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                };
+                System.Windows.Controls.Grid.SetColumn(pInfo, 0);
+                System.Windows.Controls.Grid.SetColumn(teamBadge, 1);
+                pGrid.Children.Add(pInfo);
+                pGrid.Children.Add(teamBadge);
+                pBorder.Child = pGrid;
+                playersPanel.Children.Add(pBorder);
+            }
+
+            ReplayDetailsPanel.Children.Add(SectionBorder(playersPanel));
+
+            // ── Game Settings (only non-default values) ───────────────────────
+            if (meta.InitialMass > 0 || meta.InitialEnergy > 0 || meta.InitialResearch > 0)
+            {
+                var settingsPanel = new System.Windows.Controls.StackPanel();
+                settingsPanel.Children.Add(SectionHeader("Starting Resources"));
+                if (meta.InitialMass > 0)   settingsPanel.Children.Add(DataRow("Initial Mass",     meta.InitialMass.ToString()));
+                if (meta.InitialEnergy > 0) settingsPanel.Children.Add(DataRow("Initial Energy",   meta.InitialEnergy.ToString()));
+                if (meta.InitialResearch > 0) settingsPanel.Children.Add(DataRow("Initial Research", meta.InitialResearch.ToString()));
+                ReplayDetailsPanel.Children.Add(SectionBorder(settingsPanel));
+            }
+        }
+
+        // ── Sort / filter handlers ────────────────────────────────────────────
+
+        private void ReplaySort_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            _replaySortMode = btn.Tag as string ?? "DateDesc";
+            UpdateReplayFilterButtonStyles();
+            ApplyReplayFilter(vm.GetReplays());
+        }
+
+        private void ReplaySearch_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            ApplyReplayFilter(vm.GetReplays());
+        }
+
+        private void ClearReplaySearch_Click(object sender, RoutedEventArgs e)
+        {
+            if (ReplaySearchBox != null)
+                ReplaySearchBox.Text = string.Empty;
+        }
+
+        private void ReplayFilterBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            string tag = btn.Tag as string ?? string.Empty;
+
+            if (tag == "AI")
+            {
+                _filterHasAI = !_filterHasAI;
+            }
+            else if (int.TryParse(tag, out int pc))
+            {
+                _filterPlayerCount = (_filterPlayerCount == pc) ? 0 : pc;
+            }
+
+            UpdateReplayFilterButtonStyles();
+            ApplyReplayFilter(vm.GetReplays());
+        }
+
+        private void ClearReplayFilters_Click(object sender, RoutedEventArgs e)
+        {
+            _filterHasAI = false;
+            _filterPlayerCount = 0;
+            _replaySortMode = "DateDesc";
+            if (ReplaySearchBox != null)
+                ReplaySearchBox.Text = string.Empty;
+            UpdateReplayFilterButtonStyles();
+            ApplyReplayFilter(vm.GetReplays());
+        }
+
+        /// <summary>
+        ///     Reflects current sort/filter state onto the toolbar buttons by toggling
+        ///     between PrimaryButton (active) and ModernButton (inactive) styles.
+        /// </summary>
+        private void UpdateReplayFilterButtonStyles()
+        {
+            var active   = (Style)TryFindResource("PrimaryButton");
+            var inactive = (Style)TryFindResource("ModernButton");
+
+            // Sort buttons — only the selected one gets PrimaryButton
+            SortDateDescBtn.Style = _replaySortMode == "DateDesc" ? active : inactive;
+            SortDateAscBtn.Style  = _replaySortMode == "DateAsc"  ? active : inactive;
+            SortNameBtn.Style     = _replaySortMode == "NameAz"   ? active : inactive;
+            SortMapBtn.Style      = _replaySortMode == "MapAz"    ? active : inactive;
+
+            // Filter toggles — active when the filter is on
+            FilterAIBtn.Style = _filterHasAI               ? active : inactive;
+            Filter2pBtn.Style = _filterPlayerCount == 2    ? active : inactive;
+            Filter3pBtn.Style = _filterPlayerCount == 3    ? active : inactive;
+            Filter4pBtn.Style = _filterPlayerCount == 4    ? active : inactive;
         }
 
         private async void DownloadReplayTools_Click(object sender, RoutedEventArgs e)

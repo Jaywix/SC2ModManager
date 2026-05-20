@@ -38,4 +38,8 @@
 		<Resource Include="Assets\Supreme_Commander_2_2.ico"/>
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\SC2ReplayParser\SC2ReplayParser.csproj"/>
+	</ItemGroup>
+
 </Project>

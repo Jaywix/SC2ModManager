@@ -18,5 +18,7 @@ namespace SC2ModManager.Models
         public string FolderName { get; set; }
         public DateTime LastModified { get; set; }
         public string DisplayName => Path.GetFileNameWithoutExtension(FilePath);
+
+        public ReplayMetadata Metadata { get; set; }
     }
 }

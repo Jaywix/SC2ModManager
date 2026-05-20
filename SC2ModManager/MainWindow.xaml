@@ -972,6 +972,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -992,8 +993,51 @@
                             </DockPanel>
                         </Border>
 
+                        <!-- Sort / filter bar -->
+                        <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                            <StackPanel>
+                                <!-- Search row -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Search" Foreground="#AAAAAA" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBox x:Name="ReplaySearchBox"
+                                             Width="220" VerticalContentAlignment="Center"
+                                             TextChanged="ReplaySearch_Changed"/>
+                                    <Button Content="✕" Width="26" Height="26" Margin="4,0,0,0"
+                                            Click="ClearReplaySearch_Click" ToolTip="Clear search"/>
+                                </StackPanel>
+                                <!-- Sort + filter row -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                    <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Button x:Name="SortDateDescBtn" Content="Date ↓" Margin="0,0,4,0"
+                                            Tag="DateDesc" Click="ReplaySort_Click"/>
+                                    <Button x:Name="SortDateAscBtn"  Content="Date ↑" Margin="0,0,4,0"
+                                            Tag="DateAsc"  Click="ReplaySort_Click"/>
+                                    <Button x:Name="SortNameBtn"     Content="Name"   Margin="0,0,4,0"
+                                            Tag="NameAz"   Click="ReplaySort_Click"/>
+                                    <Button x:Name="SortMapBtn"      Content="Map"    Margin="0,0,14,0"
+                                            Tag="MapAz"    Click="ReplaySort_Click"/>
+
+                                    <Separator Width="1" Height="20" Background="#444444" Margin="0,0,14,0"/>
+
+                                    <TextBlock Text="Filter:" Foreground="#AAAAAA" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Button x:Name="FilterAIBtn"     Content="🤖 Has AI"   Margin="0,0,4,0"
+                                            Tag="AI"  Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter2pBtn"     Content="1v1"          Margin="0,0,4,0"
+                                            Tag="2"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter3pBtn"     Content="3 Players"    Margin="0,0,4,0"
+                                            Tag="3"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter4pBtn"     Content="4+ Players"   Margin="0,0,10,0"
+                                            Tag="4"   Click="ReplayFilterBtn_Click"/>
+                                    <Button Content="Clear Filters" Click="ClearReplayFilters_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Game running banner -->
-                        <Border Grid.Row="1" Background="#0D1A2A" BorderBrush="{DynamicResource AccentBrush}"
+                        <Border Grid.Row="2" Background="#0D1A2A" BorderBrush="{DynamicResource AccentBrush}"
                                 BorderThickness="1" CornerRadius="4" Padding="14,10" Margin="0,0,0,10"
                                 x:Name="ReplayRunningBanner" Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
@@ -1002,15 +1046,14 @@
                                 <TextBlock Foreground="White" FontSize="13" VerticalAlignment="Center"
                                            TextWrapping="Wrap">
                                     <Run Text="Replay is running. "/>
-                                    <Run FontWeight="SemiBold"
-                                         Text="Close the game when you're done"/>
+                                    <Run FontWeight="SemiBold" Text="Close the game when you're done"/>
                                     <Run Text=" — your game files will be restored automatically."/>
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <!-- Replay list -->
-                        <Grid Grid.Row="2">
+                        <Grid Grid.Row="3">
                             <TextBlock x:Name="ReplayFolderMissingText"
                                        Foreground="#AAAAAA" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Top"
@@ -1024,11 +1067,42 @@
                                        HorizontalAlignment="Center" VerticalAlignment="Top"
                                        Margin="0,20,0,0"
                                        Visibility="Collapsed"/>
+                            <TextBlock x:Name="ReplayLoadingText"
+                                       Text="Loading replays..."
+                                       Foreground="{DynamicResource AccentBrush}" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top"
+                                       Margin="0,20,0,0"
+                                       Visibility="Collapsed"/>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel x:Name="ReplayListPanel" Margin="0,0,4,0"/>
                             </ScrollViewer>
                         </Grid>
                     </Grid>
+                </Grid>
+
+                <!-- ===== REPLAY DETAILS ===== -->
+                <Grid x:Name="ReplayDetailsView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header: back button + title -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                        <Button DockPanel.Dock="Left"
+                                Content="← Back to Replay List"
+                                Click="BackToReplayList_Click"
+                                Margin="0,0,12,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ReplayDetailsTitle"
+                                   Foreground="White" FontSize="20" FontFamily="Segoe UI"
+                                   FontWeight="Light" VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </DockPanel>
+
+                    <!-- Scrollable content — populated dynamically -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ReplayDetailsPanel" Margin="0,0,4,0"/>
+                    </ScrollViewer>
                 </Grid>
 
                 <!-- ===== PREVIOUS VERSIONS ===== -->

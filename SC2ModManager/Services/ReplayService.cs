@@ -6,6 +6,7 @@
  * Author: Jacob Wixom
  * 
 */
+using ReplayParser.SC2;
 using SC2ModManager.Models;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace SC2ModManager.Services
 {
     public class ReplayService
     {
-        // ── Local paths ─────────────────────────────────────────────────────────
+        // ============================== Local paths ==============================
 
         private string ReplayToolsPath => Globals.GetReplayToolsPath();
         private string LocalLuaReplayPath => Path.Combine(ReplayToolsPath, Globals.LuaReplayFileName);
@@ -33,7 +34,7 @@ namespace SC2ModManager.Services
             return File.Exists(LocalLuaReplayPath) && File.Exists(LocalZLuaDlc1ReplayPath);
         }
 
-        // ── Download ─────────────────────────────────────────────────────────────
+        // ============================== Download ==============================
 
         public async Task DownloadReplayToolsAsync()
         {
@@ -60,7 +61,7 @@ namespace SC2ModManager.Services
                 await file.WriteAsync(buffer, 0, bytes);
         }
 
-        // ── Replay discovery ─────────────────────────────────────────────────────
+        // ============================== Replay discovery ==============================
 
         /// <summary>
         ///     Scans the base replay folder and all numeric subdirectories (account folders)
@@ -93,19 +94,114 @@ namespace SC2ModManager.Services
 
                 foreach (string file in files)
                 {
-                    result.Add(new ReplayEntry
+                    var entry = new ReplayEntry
                     {
                         FilePath = file,
                         FolderName = folderName,
                         LastModified = File.GetLastWriteTime(file)
-                    });
+                    };
+                    entry.Metadata = ParseReplayMetadata(file);
+                    result.Add(entry);
                 }
             }
 
             return result.OrderByDescending(r => r.LastModified).ToList();
         }
 
-        // ── Backup / restore helpers ─────────────────────────────────────────────
+        // ============================== Replay metadata parsing ==============================
+
+        private static readonly Dictionary<float, string> FactionNames = new()
+        {
+            { 1f, "UEF" },
+            { 2f, "Cybran" },
+            { 3f, "Illuminate" }
+        };
+
+        private static readonly Dictionary<int, string> ColorNames = new()
+        {
+            { 0, "Blue" }, { 1, "Green" }, { 2, "Red" }, { 3, "Purple" },
+            { 4, "Tan" }, { 5, "Grey" }, { 6, "Olive" }, { 7, "Cyan" },
+            { 8, "Yellow" }, { 9, "Orange" }
+        };
+
+        public ReplayMetadata ParseReplayMetadata(string filePath)
+        {
+            var meta = new ReplayMetadata();
+            try
+            {
+                var data = SC2ReplayParser.Parse(filePath);
+
+                meta.MapRawPath = data.MapName;
+                meta.GameVersion = data.Version;
+                meta.ReplayVersion = data.ReplayVersion;
+
+                // Extract readable map name from GameOptions["name"], stripping <LOC ...> prefix, the map name at the top is not the correct map name
+                if (data.GameOptions.TryGetValue("name", out var rawName) && rawName != null)
+                {
+                    string nameStr = rawName.ToString();
+                    // Strip <LOC TAG_NAME> prefix pattern
+                    nameStr = Regex.Replace(nameStr, @"<LOC\s+\S+>", string.Empty).Trim();
+                    meta.MapDisplayName = nameStr;
+                }
+                else
+                {
+                    meta.MapDisplayName = Path.GetFileNameWithoutExtension(data.MapName ?? string.Empty);
+                }
+
+                // Build player list, excluding ARMY_EXTRA/civilian slots
+                foreach (var p in data.Players)
+                {
+                    if (string.Equals(p.ArmyName, "ARMY_EXTRA", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (!p.IsHuman && string.IsNullOrWhiteSpace(p.Name))
+                        continue;
+
+                    meta.Players.Add(new ReplayPlayerInfo
+                    {
+                        Name = string.IsNullOrWhiteSpace(p.Name) ? "(AI)" : p.Name,
+                        Faction = FactionNames.TryGetValue(p.Faction, out var fn) ? fn : $"({p.Faction})",
+                        Color = ColorNames.TryGetValue((int)p.PlayerColor, out var cn) ? cn : $"({p.PlayerColor})",
+                        Team = p.Team,
+                        IsHuman = p.IsHuman,
+                        AIPersonality = p.AIPersonality
+                    });
+                }
+
+                // Game options
+                meta.CheatsEnabled = data.GameOptions.TryGetValue("CheatsEnabled", out var cheat) && cheat is bool b && b;
+
+                // For some reason, Assassination is written as demoralization. I think it's funny, but I may come back to this line to add an if statement to change it back to assassination
+                meta.VictoryCondition = GetOption(data.GameOptions, "Options.Victory");
+                meta.FogOfWar = GetOption(data.GameOptions, "Options.FogOfWar");
+                meta.TeamSpawn = GetOption(data.GameOptions, "Options.TeamSpawn");
+
+                if (data.GameOptions.TryGetValue("Options.UnitCap", out var uc) && uc is float ucf)
+                    meta.UnitCap = (int)ucf;
+                if (data.GameOptions.TryGetValue("Options.InitialMass", out var im) && im is float imf)
+                    meta.InitialMass = (int)imf;
+                if (data.GameOptions.TryGetValue("Options.InitialEnergy", out var ie) && ie is float ief)
+                    meta.InitialEnergy = (int)ief;
+                if (data.GameOptions.TryGetValue("Options.InitialResearch", out var ir) && ir is float irf)
+                    meta.InitialResearch = (int)irf;
+                if (data.GameOptions.TryGetValue("Options.Ranked", out var ranked))
+                    meta.Ranked = ranked is bool rb && rb;
+            }
+            catch (Exception ex)
+            {
+                meta.ParseFailed = true;
+                meta.ParseError = ex.Message;
+            }
+            return meta;
+        }
+
+        private static string GetOption(Dictionary<string, object> opts, string key)
+        {
+            if (opts.TryGetValue(key, out var val) && val != null)
+                return val.ToString();
+            return null;
+        }
+
+        // ============================== Backup / restore helpers ============================== 
 
         private static string GetLuaBackupPath(string gamedataPath) =>
             Path.Combine(gamedataPath,
@@ -115,7 +211,7 @@ namespace SC2ModManager.Services
             Path.Combine(gamedataPath,
                 Path.GetFileNameWithoutExtension(Globals.ZLuaDlc1ScdName) + Globals.ReplayBackupSuffix);
 
-        // ── Crash recovery ───────────────────────────────────────────────────────
+        // ============================== Crash recovery ============================== 
 
         /// <summary>
         ///     Returns true if orphaned replay backup files exist from a previous (crashed) session.
@@ -150,7 +246,7 @@ namespace SC2ModManager.Services
             }
         }
 
-        // ── Launch replay ────────────────────────────────────────────────────────
+        // ============================== Launch replay ==============================
 
         /// <summary>
         ///     Backs up the .scd files, copies the .replay files over them, launches the game
