@@ -1,4 +1,4 @@
-﻿/*
+/*
  * SC2 Mod Manager
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
@@ -11,6 +11,7 @@
 using Microsoft.Win32;
 using SC2ModManager.Models;
 using SC2ModManager.Services;
+using SC2ModManager.ViewModels;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -226,6 +227,13 @@ namespace SC2ModManager.ViewModels
             gameService = new GameService(configService);
             presetService = new PresetService();
 
+            var launcherLaunch = new LauncherLaunchService(storageService, gamedataService, configService);
+            Launcher = new LauncherViewModel(
+                launcherLaunch,
+                new LobbySyncService(storageService),
+                storageService,
+                () => GamePath);
+
             InitializeGamePath();
             _ = CheckForUpdatesAsync();
             _ = LoadNewsAsync();
@@ -239,9 +247,25 @@ namespace SC2ModManager.ViewModels
             catch (Exception ex) { MessageBox.Show($"Error launching game: {ex.Message}"); }
         }
 
+        private string ipcDllPath = "";
+        public string IpcDllPath
+        {
+            get => ipcDllPath;
+            set { ipcDllPath = value; OnPropertyChanged(nameof(IpcDllPath)); }
+        }
+
+        public void SaveIpcDllPath(string path)
+        {
+            var config = configService.Load();
+            config.IpcDllPath = path?.Trim() ?? "";
+            configService.Save(config);
+            IpcDllPath = config.IpcDllPath;
+        }
+
         public void InitializeGamePath()
         {
             var config = configService.Load();
+            IpcDllPath = config.IpcDllPath ?? "";
 
             if (!string.IsNullOrEmpty(config.GamePath))
             {
@@ -1657,6 +1681,10 @@ namespace SC2ModManager.ViewModels
             if (Directory.Exists(folder))
                 Process.Start(new ProcessStartInfo { FileName = folder, UseShellExecute = true });
         }
+
+        // ================= LAUNCHER =================
+
+        public LauncherViewModel Launcher { get; }
 
         // ================= EVENTS =================
 

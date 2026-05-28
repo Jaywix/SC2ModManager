@@ -1,4 +1,4 @@
-﻿/*
+/*
  * SC2 Mod Manager
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
@@ -25,6 +25,18 @@ namespace SC2ModManager.Models
         ///     This is the path to Supreme Commander 2's installation directory. It is used to locate the game's gamedata folder where mods will be enabled/disabled.
         /// </summary>
         public string GamePath { get; set; } = string.Empty;
+
+        /// <summary>
+        ///     Path to ipc_dll.dll for lobby IPC. Empty = auto-detect next to exe or dev paths.
+        /// </summary>
+        public string IpcDllPath { get; set; } = string.Empty;
+
+        /// <summary>
+        ///     Optional path to the SC2 replays root folder.
+        ///     Example: C:\Users\&lt;User&gt;\Documents\My Games\SquareEnix\Supreme Commander 2\replays
+        ///     Empty = auto-detect from Documents.
+        /// </summary>
+        public string ReplaysPath { get; set; } = string.Empty;
 
         /// <summary>
         ///     This defines the applications color theme

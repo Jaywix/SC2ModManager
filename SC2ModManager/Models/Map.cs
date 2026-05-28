@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -102,6 +103,52 @@ namespace SC2ModManager.Models
         string.IsNullOrEmpty(MapPictureFileName)
             ? null
             : Globals.MapImagesBaseUrl + MapPictureFileName;
+
+        /// <summary>
+        ///     MD5 hash of the mod file. Used to match against lobby tags (mod_<hash>).
+        /// </summary>
+        [JsonPropertyName("modHash")]
+        public string? ModHash { get; set; }
+
+        /// <summary>
+        ///     Returns path to this mod file (Enabled > Disabled).
+        /// </summary>
+        [JsonIgnore]
+        public string? ModFilePath
+        {
+            get
+            {
+                string appData = Globals.GetDataPath();
+                string root = Path.Combine(appData, "Mods", "Maps");
+                string enabled = Path.Combine(root, "Enabled", FileName);
+                if (File.Exists(enabled)) return enabled;
+                string disabled = Path.Combine(root, "Disabled", FileName);
+                if (File.Exists(disabled)) return disabled;
+                return null;
+            }
+        }
+
+        [JsonIgnore]
+        public string ComputedHash
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(ModHash))
+                    return ModHash;
+                var path = ModFilePath;
+                if (path != null && File.Exists(path))
+                    return ComputeFileHash(path);
+                return "";
+            }
+        }
+
+        public static string ComputeFileHash(string filePath)
+        {
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            using var stream = File.OpenRead(filePath);
+            var hash = md5.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLower();
+        }
 
 
         private bool isChecked;
