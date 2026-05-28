@@ -1,4 +1,4 @@
-﻿/*
+/*
  * SC2 Mod Manager
  * A mod manager for Supreme Commander 2 that allows users to easily install, manage, and switch between mods without modifying the original game files.
  * 
@@ -121,6 +121,7 @@ namespace SC2ModManager
             ManualImportView.Visibility = Visibility.Collapsed;
             FileLocationsView.Visibility = Visibility.Collapsed;
             HotkeyEditorView.Visibility = Visibility.Collapsed;
+            LauncherView.Visibility = Visibility.Collapsed;
             PreviousVersionsView.Visibility = Visibility.Collapsed;
 
             switch (view)
@@ -140,6 +141,7 @@ namespace SC2ModManager
                 case "DownloadGenericMods": DownloadGenericModsView.Visibility = Visibility.Visible; break;
                 case "ManualImport": ManualImportView.Visibility = Visibility.Visible; break;
                 case "FileLocations": FileLocationsView.Visibility = Visibility.Visible; break;
+                case "Launcher": LauncherView.Visibility = Visibility.Visible; break;
                 case "HotkeyEditor": HotkeyEditorView.Visibility = Visibility.Visible; break;
                 case "PreviousVersions": PreviousVersionsView.Visibility = Visibility.Visible; break;
             }
@@ -147,6 +149,37 @@ namespace SC2ModManager
 
         private void GoHome(object sender, RoutedEventArgs e) => ShowView("Home");
         private void GoToMods(object sender, RoutedEventArgs e) => ShowView("Mods");
+        private async void GoToLauncher(object sender, RoutedEventArgs e)
+        {
+            vm.Launcher.RefreshIpcStatus();
+            ShowView("Launcher");
+            if (vm.Launcher.IsIpcOnline && vm.Launcher.Lobbies.Count == 0)
+                await vm.Launcher.ScanLobbiesAsync();
+        }
+
+        private async void LauncherLaunchGame_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.LaunchGameAsync();
+
+        private async void LauncherScan_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.ScanLobbiesAsync();
+
+        private async void LauncherSync_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.SyncAndLaunchAsync();
+
+        private async void LauncherSyncMods_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.SyncModsOnlyAsync();
+
+        private async void LauncherInstallMissingMods_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.InstallMissingModsAsync();
+
+        private async void LauncherEnableRequiredMods_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.EnableRequiredModsAsync();
+
+        private async void LauncherDisableExtraMods_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.DisableExtraModsAsync();
+
+        private async void LauncherHostTags_Click(object sender, RoutedEventArgs e)
+            => await vm.Launcher.PushHostTagsAsync();
         private void GoToSettings(object sender, RoutedEventArgs e) => ShowView("Settings");
         private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
@@ -244,6 +277,13 @@ namespace SC2ModManager
 
             if (dialog.ShowDialog() != true) return;
             GamePathInput.Text = System.IO.Path.GetDirectoryName(dialog.FileName);
+        }
+
+        private void SetIpcDllPath_Click(object sender, RoutedEventArgs e)
+        {
+            // vm.SaveIpcDllPath(IpcDllPathInput.Text);
+            // MessageBox.Show("Путь к IPC DLL сохранён.", "Settings",
+            //     MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void SetGamePath_Click(object sender, RoutedEventArgs e)
@@ -421,21 +461,11 @@ namespace SC2ModManager
             ShowView("FileLocations");
         }
 
-        private void OpenReplaysFolder_Click(object sender, RoutedEventArgs e)
-            => vm.OpenFolder(vm.ReplaysPath);
-
         private void OpenGameDataFolder_Click(object sender, RoutedEventArgs e)
             => vm.OpenFolder(vm.GameDataPath);
 
         private void OpenGamePrefsFolder_Click(object sender, RoutedEventArgs e)
             => vm.OpenFolder(vm.GamePrefsFolder);
-
-        private void BrowseReplaysFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFolderDialog { Title = "Select your Supreme Commander 2 Replays folder" };
-            if (dialog.ShowDialog() == true)
-                vm.ReplaysPath = dialog.FolderName;
-        }
 
         private void BrowseGamePrefsFolder_Click(object sender, RoutedEventArgs e)
         {

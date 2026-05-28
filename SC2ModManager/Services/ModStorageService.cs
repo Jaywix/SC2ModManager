@@ -308,6 +308,11 @@ namespace SC2ModManager.Services
             return result;
         }
 
+        public bool HasEnabledGenericMods()
+        {
+            return Directory.GetFiles(genericModsEnabledPath, "*.scd").Length > 0;
+        }
+
         /// <summary>
         ///     Moves a generic mod file to the Enabled folder.
         /// </summary>

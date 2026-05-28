@@ -10,8 +10,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -51,14 +53,60 @@ namespace SC2ModManager.Models
         [JsonPropertyName("pictureFileName")]
         public string PictureFileName { get; set; }
 
+        /// <summary>
+        ///     MD5 hash of the mod file. Used to match against lobby tags (mod_<hash>).
+        /// </summary>
+        [JsonPropertyName("modHash")]
+        public string? ModHash { get; set; }
+
         [JsonIgnore]
         public string PictureUrl =>
             string.IsNullOrEmpty(PictureFileName)
                 ? null
                 : Globals.GenericModImagesBaseUrl + PictureFileName;
 
+        /// <summary>
+        ///     Computes the MD5 hash from the actual file on disk.
+        ///     Uses stored ModHash first if available.
+        /// </summary>
+        [JsonIgnore]
+        public string ComputedHash
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(ModHash))
+                    return ModHash;
+                var path = GetModFilePath();
+                if (path != null && File.Exists(path))
+                    return ComputeFileHash(path);
+                return "";
+            }
+        }
 
+        /// <summary>
+        ///     Returns path to this mod file (Enabled > Disabled).
+        /// </summary>
+        [JsonIgnore]
+        public string? ModFilePath => GetModFilePath();
 
+        private string? GetModFilePath()
+        {
+            string appData = Globals.GetDataPath();
+            string root = Path.Combine(appData, "Mods", "GenericMods");
+            string enabled = Path.Combine(root, "Enabled", FileName);
+            if (File.Exists(enabled)) return enabled;
+            string disabled = Path.Combine(root, "Disabled", FileName);
+            if (File.Exists(disabled)) return disabled;
+            return null;
+        }
+
+        public static string ComputeFileHash(string filePath)
+        {
+            using var md5 = MD5.Create();
+            using var stream = File.OpenRead(filePath);
+            var hash = md5.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLower();
+        }
 
         private bool isEnabled;
         [JsonIgnore]
