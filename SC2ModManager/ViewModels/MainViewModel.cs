@@ -1678,6 +1678,9 @@ namespace SC2ModManager.ViewModels
             configService.Save(config);
         }
 
+        public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
+            => replayService.RenameReplay(entry, newDisplayName);
+
         public void CheckAndRestoreReplayBackups()
         {
             if (string.IsNullOrEmpty(GamePath)) return;

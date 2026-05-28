@@ -1023,14 +1023,18 @@
 
                                     <TextBlock Text="Filter:" Foreground="#AAAAAA" FontSize="12"
                                                VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <Button x:Name="FilterAIBtn"     Content="🤖 Has AI"   Margin="0,0,4,0"
+                                    <Button x:Name="FilterAIBtn"     Content="Has AI"       Margin="0,0,4,0"
                                             Tag="AI"  Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="Filter2pBtn"     Content="1v1"          Margin="0,0,4,0"
                                             Tag="2"   Click="ReplayFilterBtn_Click"/>
-                                    <Button x:Name="Filter3pBtn"     Content="3 Players"    Margin="0,0,4,0"
-                                            Tag="3"   Click="ReplayFilterBtn_Click"/>
-                                    <Button x:Name="Filter4pBtn"     Content="4+ Players"   Margin="0,0,10,0"
+                                    <Button x:Name="Filter4pBtn"     Content="4 Players"    Margin="0,0,4,0"
                                             Tag="4"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter6pBtn"     Content="6 Players"    Margin="0,0,4,0"
+                                            Tag="6"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter8pBtn"     Content="8 Players"    Margin="0,0,4,0"
+                                            Tag="8"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="FilterExclusionsBtn" Content="Has Exclusions" Margin="0,0,10,0"
+                                            Tag="Exclusions" Click="ReplayFilterBtn_Click"/>
                                     <Button Content="Clear Filters" Click="ClearReplayFilters_Click"/>
                                 </StackPanel>
                             </StackPanel>
@@ -1087,11 +1091,15 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Header: back button + title -->
+                    <!-- Header: back button + rename button + title -->
                     <DockPanel Grid.Row="0" Margin="0,0,0,16">
                         <Button DockPanel.Dock="Left"
                                 Content="← Back to Replay List"
                                 Click="BackToReplayList_Click"
+                                Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Left"
+                                Content="✏ Rename"
+                                Click="RenameReplay_Click"
                                 Margin="0,0,12,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="ReplayDetailsTitle"
                                    Foreground="White" FontSize="20" FontFamily="Segoe UI"

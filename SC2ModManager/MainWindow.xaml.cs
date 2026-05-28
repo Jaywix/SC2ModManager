@@ -28,10 +28,13 @@ namespace SC2ModManager
 
         private readonly ThemeService themeService = new(new ConfigService());
 
-        // ── Replay filter/sort state ──────────────────────────────────────────
-        private string _replaySortMode = "DateDesc";
-        private bool   _filterHasAI   = false;
-        private int    _filterPlayerCount = 0;   // 0 = all, 2 = 1v1, 3 = 3-player, 4 = 4+
+        // ================= Replay filter/sort state =================
+        private string _replaySortMode       = "DateDesc";
+        private bool   _filterHasAI          = false;
+        private bool   _filterHasExclusions  = false;
+        private int    _filterPlayerCount    = 0;   // 0 = all, 2 = 1v1, 4/6/8 = exact count
+
+        private SC2ModManager.Models.ReplayEntry _currentDetailReplay;
 
 
         public MainWindow()
@@ -542,12 +545,11 @@ namespace SC2ModManager
             if (_filterHasAI)
                 filtered = filtered.Where(r => r.Metadata?.HasAI == true);
 
-            if (_filterPlayerCount == 2)
-                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == 2);
-            else if (_filterPlayerCount == 3)
-                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == 3);
-            else if (_filterPlayerCount == 4)
-                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount >= 4);
+            if (_filterHasExclusions)
+                filtered = filtered.Where(r => r.Metadata?.HasExclusions == true);
+
+            if (_filterPlayerCount > 0)
+                filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == _filterPlayerCount);
 
             // 2. Sort
             IOrderedEnumerable<SC2ModManager.Models.ReplayEntry> sorted = _replaySortMode switch
@@ -645,6 +647,17 @@ namespace SC2ModManager
                 Margin = new System.Windows.Thickness(12, 0, 0, 0)
             };
 
+            var renameBtn = new System.Windows.Controls.Button
+            {
+                Content = "✏",
+                Tag = replay,
+                Style = (System.Windows.Style)TryFindResource("ModernButton"),
+                Width = 36,
+                ToolTip = "Rename",
+                Margin = new System.Windows.Thickness(0, 0, 6, 0)
+            };
+            renameBtn.Click += RenameReplay_Click;
+
             var detailsBtn = new System.Windows.Controls.Button
             {
                 Content = "Details →",
@@ -668,6 +681,7 @@ namespace SC2ModManager
             };
             launchBtn.Click += LaunchReplay_Click;
 
+            btnStack.Children.Add(renameBtn);
             btnStack.Children.Add(detailsBtn);
             btnStack.Children.Add(launchBtn);
             System.Windows.Controls.Grid.SetColumn(btnStack, 1);
@@ -682,6 +696,7 @@ namespace SC2ModManager
 
         private void GoToReplayDetails(SC2ModManager.Models.ReplayEntry replay)
         {
+            _currentDetailReplay = replay;
             ReplayDetailsTitle.Text = replay.DisplayName;
             ReplayDetailsPanel.Children.Clear();
 
@@ -841,10 +856,67 @@ namespace SC2ModManager
             {
                 var settingsPanel = new System.Windows.Controls.StackPanel();
                 settingsPanel.Children.Add(SectionHeader("Starting Resources"));
-                if (meta.InitialMass > 0)   settingsPanel.Children.Add(DataRow("Initial Mass",     meta.InitialMass.ToString()));
-                if (meta.InitialEnergy > 0) settingsPanel.Children.Add(DataRow("Initial Energy",   meta.InitialEnergy.ToString()));
+                if (meta.InitialMass > 0)     settingsPanel.Children.Add(DataRow("Initial Mass",     meta.InitialMass.ToString()));
+                if (meta.InitialEnergy > 0)   settingsPanel.Children.Add(DataRow("Initial Energy",   meta.InitialEnergy.ToString()));
                 if (meta.InitialResearch > 0) settingsPanel.Children.Add(DataRow("Initial Research", meta.InitialResearch.ToString()));
                 ReplayDetailsPanel.Children.Add(SectionBorder(settingsPanel));
+            }
+
+            // ── Exclusions ────────────────────────────────────────────────────
+            if (meta.HasExclusions)
+            {
+                var exPanel = new System.Windows.Controls.StackPanel();
+                exPanel.Children.Add(SectionHeader("Exclusions"));
+                foreach (string exclusion in meta.Exclusions)
+                {
+                    exPanel.Children.Add(new System.Windows.Controls.TextBlock
+                    {
+                        Text = exclusion,
+                        FontSize = 13,
+                        Foreground = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(0xEE, 0xEE, 0xEE)),
+                        Margin = new System.Windows.Thickness(0, 0, 0, 3)
+                    });
+                }
+                ReplayDetailsPanel.Children.Add(SectionBorder(exPanel));
+            }
+        }
+
+        // ── Rename ────────────────────────────────────────────────────────────
+
+        private void RenameReplay_Click(object sender, RoutedEventArgs e)
+        {
+            SC2ModManager.Models.ReplayEntry replay = null;
+
+            if (sender is System.Windows.Controls.Button btn && btn.Tag is SC2ModManager.Models.ReplayEntry r)
+                replay = r;
+            else if (_currentDetailReplay != null)
+                replay = _currentDetailReplay;
+
+            if (replay == null) return;
+
+            var dialog = new SC2ModManager.Views.RenameReplayDialog(replay.DisplayName) { Owner = this };
+            dialog.ShowDialog();
+
+            if (!dialog.Confirmed) return;
+
+            try
+            {
+                var updated = vm.RenameReplay(replay, dialog.NewName);
+
+                // If we're on the details page, refresh the title with the new name
+                if (_currentDetailReplay != null &&
+                    string.Equals(_currentDetailReplay.FilePath, replay.FilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentDetailReplay = updated;
+                    ReplayDetailsTitle.Text = updated.DisplayName;
+                }
+
+                RefreshReplayList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Rename Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -878,6 +950,10 @@ namespace SC2ModManager
             {
                 _filterHasAI = !_filterHasAI;
             }
+            else if (tag == "Exclusions")
+            {
+                _filterHasExclusions = !_filterHasExclusions;
+            }
             else if (int.TryParse(tag, out int pc))
             {
                 _filterPlayerCount = (_filterPlayerCount == pc) ? 0 : pc;
@@ -890,6 +966,7 @@ namespace SC2ModManager
         private void ClearReplayFilters_Click(object sender, RoutedEventArgs e)
         {
             _filterHasAI = false;
+            _filterHasExclusions = false;
             _filterPlayerCount = 0;
             _replaySortMode = "DateDesc";
             if (ReplaySearchBox != null)
@@ -914,10 +991,12 @@ namespace SC2ModManager
             SortMapBtn.Style      = _replaySortMode == "MapAz"    ? active : inactive;
 
             // Filter toggles — active when the filter is on
-            FilterAIBtn.Style = _filterHasAI               ? active : inactive;
-            Filter2pBtn.Style = _filterPlayerCount == 2    ? active : inactive;
-            Filter3pBtn.Style = _filterPlayerCount == 3    ? active : inactive;
-            Filter4pBtn.Style = _filterPlayerCount == 4    ? active : inactive;
+            FilterAIBtn.Style          = _filterHasAI               ? active : inactive;
+            Filter2pBtn.Style          = _filterPlayerCount == 2    ? active : inactive;
+            Filter4pBtn.Style          = _filterPlayerCount == 4    ? active : inactive;
+            Filter6pBtn.Style          = _filterPlayerCount == 6    ? active : inactive;
+            Filter8pBtn.Style          = _filterPlayerCount == 8    ? active : inactive;
+            FilterExclusionsBtn.Style  = _filterHasExclusions       ? active : inactive;
         }
 
         private async void DownloadReplayTools_Click(object sender, RoutedEventArgs e)

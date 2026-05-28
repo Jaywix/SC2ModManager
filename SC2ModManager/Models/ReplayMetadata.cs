@@ -36,6 +36,9 @@ namespace SC2ModManager.Models
         public bool CheatsEnabled { get; set; }
         public string TeamSpawn { get; set; }
 
+        public List<string> Exclusions { get; set; } = new();
+        public bool HasExclusions => Exclusions.Count > 0;
+
         public bool ParseFailed { get; set; }
         public string ParseError { get; set; }
     }

@@ -27,7 +27,7 @@ namespace SC2ModManager.Services
         private string LocalLuaReplayPath => Path.Combine(ReplayToolsPath, Globals.LuaReplayFileName);
         private string LocalZLuaDlc1ReplayPath => Path.Combine(ReplayToolsPath, Globals.ZLuaDlc1ReplayFileName);
 
-        // ── Installation detection ───────────────────────────────────────────────
+        // ============================== Installation detection ==============================
 
         public bool AreReplayToolsInstalled()
         {
@@ -124,6 +124,24 @@ namespace SC2ModManager.Services
             { 8, "Yellow" }, { 9, "Orange" }
         };
 
+        private static readonly Dictionary<string, string> ExclusionNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "ADDONS",             "No Structure Add-ons" },
+            { "AIR",               "No Air Units" },
+            { "ALL_RESEARCH",      "No Research / All Research and Units Unlocked" },
+            { "ALL_RESEARCH_UNITS","No Research / All Units Unlocked" },
+            { "ARTILLERY",         "No Artillery Structures" },
+            { "EXPERIMENTALS",     "No Experimentals" },
+            { "INTEL",             "No Intel Structures" },
+            { "LAND",              "No Land Units" },
+            { "MASSCONVERT",       "No Mass Conversion" },
+            { "NAVAL",             "No Naval Units" },
+            { "NO_DLC",            "No DLC Units" },
+            { "NUKE",              "No Nukes" },
+            { "SHIELDS",           "No Shield Structures" },
+            { "SLOW_RESEARCH",     "Slow Research (No Research Stations)" }
+        };
+
         public ReplayMetadata ParseReplayMetadata(string filePath)
         {
             var meta = new ReplayMetadata();
@@ -170,8 +188,14 @@ namespace SC2ModManager.Services
                 // Game options
                 meta.CheatsEnabled = data.GameOptions.TryGetValue("CheatsEnabled", out var cheat) && cheat is bool b && b;
 
-                // For some reason, Assassination is written as demoralization. I think it's funny, but I may come back to this line to add an if statement to change it back to assassination
-                meta.VictoryCondition = GetOption(data.GameOptions, "Options.Victory");
+
+                string rawVictory = GetOption(data.GameOptions, "Options.Victory");
+                meta.VictoryCondition = rawVictory?.ToLowerInvariant() switch
+                {
+                    "demoralization" => "Assassination",
+                    "domination"     => "Supremacy",
+                    "sandbox"        => "Infinite War"
+                };
                 meta.FogOfWar = GetOption(data.GameOptions, "Options.FogOfWar");
                 meta.TeamSpawn = GetOption(data.GameOptions, "Options.TeamSpawn");
 
@@ -185,6 +209,50 @@ namespace SC2ModManager.Services
                     meta.InitialResearch = (int)irf;
                 if (data.GameOptions.TryGetValue("Options.Ranked", out var ranked))
                     meta.Ranked = ranked is bool rb && rb;
+
+                // Collect RestrictedCategories — may live at the top level or nested under Options.
+                // Two possible table formats seen in the wild:
+                //   A) {1 = "ADDONS", 2 = "AIR", ...}  - iterate VALUES for category names
+                //   B) {ADDONS = true, AIR = true, ...} - iterate KEYS for category names
+                Dictionary<object, object> rcDict = null;
+
+                if (data.GameOptions.TryGetValue("RestrictedCategories", out var rcRaw1)
+                    && rcRaw1 is Dictionary<object, object> d1)
+                    rcDict = d1;
+                else if (data.GameOptions.TryGetValue("Options.RestrictedCategories", out var rcRaw2)
+                    && rcRaw2 is Dictionary<object, object> d2)
+                    rcDict = d2;
+                else
+                {
+                    // try any key that ends with "RestrictedCategories"
+                    var matchKey = data.GameOptions.Keys.FirstOrDefault(
+                        k => k.EndsWith("RestrictedCategories", StringComparison.OrdinalIgnoreCase));
+                    if (matchKey != null && data.GameOptions[matchKey] is Dictionary<object, object> d3)
+                        rcDict = d3;
+                }
+
+                if (rcDict != null)
+                {
+                    foreach (var kvp2 in rcDict)
+                    {
+                        string rawCategory;
+
+                        // Format A: key is a number, value is the category name string
+                        if (kvp2.Key is float || kvp2.Key is double || kvp2.Key is int)
+                            rawCategory = kvp2.Value?.ToString() ?? string.Empty;
+                        // Format B: key IS the category name, value is true/false
+                        else
+                            rawCategory = kvp2.Key?.ToString() ?? string.Empty;
+
+                        if (!string.IsNullOrWhiteSpace(rawCategory))
+                        {
+                            string displayName = ExclusionNames.TryGetValue(rawCategory, out var dn) ? dn : rawCategory;
+                            if (!meta.Exclusions.Contains(displayName))
+                                meta.Exclusions.Add(displayName);
+                        }
+                    }
+                    meta.Exclusions.Sort(StringComparer.OrdinalIgnoreCase);
+                }
             }
             catch (Exception ex)
             {
@@ -199,6 +267,32 @@ namespace SC2ModManager.Services
             if (opts.TryGetValue(key, out var val) && val != null)
                 return val.ToString();
             return null;
+        }
+
+        // ============================== Rename ==============================
+
+        /// <summary>
+        ///     Renames a replay file on disk. Returns the updated ReplayEntry on success,
+        ///     or throws on failure (caller handles UI feedback).
+        /// </summary>
+        public ReplayEntry RenameReplay(ReplayEntry entry, string newDisplayName)
+        {
+            string dir       = Path.GetDirectoryName(entry.FilePath);
+            string extension = Path.GetExtension(entry.FilePath);
+            string newPath   = Path.Combine(dir, newDisplayName + extension);
+
+            if (File.Exists(newPath) && !string.Equals(newPath, entry.FilePath, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"A replay named \"{newDisplayName}\" already exists in that folder.");
+
+            File.Move(entry.FilePath, newPath);
+
+            return new ReplayEntry
+            {
+                FilePath     = newPath,
+                FolderName   = entry.FolderName,
+                LastModified = File.GetLastWriteTime(newPath),
+                Metadata     = entry.Metadata
+            };
         }
 
         // ============================== Backup / restore helpers ============================== 
