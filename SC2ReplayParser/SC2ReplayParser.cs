@@ -40,15 +40,24 @@ namespace ReplayParser.SC2
             reader.ReadBytes(4);
             
             var modsSize = reader.ReadUInt32();
-            if (modsSize > 0 && modsSize < reader.BaseStream.Length - reader.BaseStream.Position)
+            if (modsSize > 0)
             {
+                // If the declared block size can't fit in the remaining bytes the file is
+                // truncated/corrupt — stop here rather than reading the next fields from
+                // inside the unconsumed payload (everything after would be garbage).
+                if (modsSize > reader.BaseStream.Length - reader.BaseStream.Position)
+                    return;
+
                 var modsData = ReadLuaDataSafe(reader, 0);
                 data.Mods = ParseMods(modsData);
             }
-            
+
             var scenarioSize = reader.ReadUInt32();
-            if (scenarioSize > 0 && scenarioSize < reader.BaseStream.Length - reader.BaseStream.Position)
+            if (scenarioSize > 0)
             {
+                if (scenarioSize > reader.BaseStream.Length - reader.BaseStream.Position)
+                    return;
+
                 var scenarioData = ReadLuaDataSafe(reader, 0);
                 ParseScenario(scenarioData, data);
             }
@@ -212,6 +221,11 @@ namespace ReplayParser.SC2
                     case DataType.STRING:
                         return ReadNullTerminatedString(reader);
                     case DataType.NIL:
+                        // A NIL marker is followed by one payload byte (see ReplayReader.ReadNil,
+                        // the original Maksing implementation). It must be consumed here or every
+                        // subsequent read is shifted by one byte and parses garbage.
+                        if (reader.BaseStream.Position + 1 <= reader.BaseStream.Length)
+                            reader.ReadByte();
                         return null;
                     case DataType.BOOL:
                         if (reader.BaseStream.Position + 1 <= reader.BaseStream.Length)
@@ -256,16 +270,10 @@ namespace ReplayParser.SC2
                         break;
                     
                     var key = ReadLuaValueSafe(reader, keyType, depth + 1);
-                    if (key == null) 
-                    {
-                        if (reader.BaseStream.Position + 4 <= reader.BaseStream.Length)
-                            reader.ReadBytes(4);
-                        continue;
-                    }
-                    
+
                     if (reader.BaseStream.Position >= reader.BaseStream.Length)
                         break;
-                        
+
                     byte valueType;
                     try
                     {
@@ -275,9 +283,15 @@ namespace ReplayParser.SC2
                     {
                         break;
                     }
-                    
+
+                    // Always read the value, even when the key parsed as null (e.g. a NIL key) —
+                    // the value bytes are present in the stream either way, and skipping them
+                    // (the old code blindly skipped 4 bytes instead) misaligns everything after.
                     var value = ReadLuaValueSafe(reader, valueType, depth + 1);
-                    
+
+                    if (key == null)
+                        continue;
+
                     try
                     {
                         table[key] = value;

@@ -941,34 +941,8 @@
                                    FontWeight="Light" VerticalAlignment="Center"/>
                     </DockPanel>
 
-                    <!-- Not Installed panel -->
-                    <Border Grid.Row="1" Style="{StaticResource ContentPanel}"
-                            x:Name="ReplayNotInstalledPanel">
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="460">
-                            <TextBlock Text="🎬  Replay Launcher Not Set Up"
-                                       FontSize="18" FontWeight="SemiBold" Foreground="White"
-                                       HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                            <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13"
-                                       HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,16">
-                                To launch replays, the mod manager needs to download two small replay
-                                support files. These files are stored in the mod manager's data folder
-                                and never interfere with your game.
-                            </TextBlock>
-                            <Button x:Name="DownloadReplayToolsBtn"
-                                    Content="⬇  Download Replay Tools"
-                                    Style="{StaticResource PrimaryButton}"
-                                    HorizontalAlignment="Center" Width="240"
-                                    Click="DownloadReplayTools_Click"/>
-                            <TextBlock x:Name="ReplayDownloadStatusText"
-                                       Text="Downloading..."
-                                       Foreground="{DynamicResource AccentBrush}" FontSize="14"
-                                       HorizontalAlignment="Center" Margin="0,10,0,0"
-                                       Visibility="Collapsed"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Installed content -->
-                    <Grid Grid.Row="1" x:Name="ReplayInstalledPanel" Visibility="Collapsed">
+                    <!-- Replay list content -->
+                    <Grid Grid.Row="1" x:Name="ReplayContentPanel">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -1050,8 +1024,7 @@
                                 <TextBlock Foreground="White" FontSize="13" VerticalAlignment="Center"
                                            TextWrapping="Wrap">
                                     <Run Text="Replay is running. "/>
-                                    <Run FontWeight="SemiBold" Text="Close the game when you're done"/>
-                                    <Run Text=" — your game files will be restored automatically."/>
+                                    <Run FontWeight="SemiBold" Text="Close the game when you're done."/>
                                 </TextBlock>
                             </StackPanel>
                         </Border>

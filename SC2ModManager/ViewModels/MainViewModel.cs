@@ -193,6 +193,12 @@ namespace SC2ModManager.ViewModels
 
             InitializeGamePath();
 
+            // Load from disk first — these collections are only populated when the user
+            // visits the Installed screens, so disabling without loading would be a no-op
+            // on empty collections and leave the storage folders out of sync.
+            LoadInstalledMaps();
+            LoadInstalledGenericMods();
+
             this.DisableAllGenericMods();
             this.DisableAllMaps();
         }
@@ -321,6 +327,14 @@ namespace SC2ModManager.ViewModels
 
                 // Snapshot the original files list after a clean restore
                 presetService.SaveOriginalFilesList(GamePath + "\\gamedata");
+
+                // Load the installed collections from disk BEFORE disabling. They are only
+                // populated when the user visits the Installed screens — if the user came
+                // straight here, DisableAll* would run on empty collections and the state
+                // save below would overwrite maps_state/generic mods state with nothing,
+                // wiping all saved mod metadata.
+                LoadInstalledMaps();
+                LoadInstalledGenericMods();
 
                 // Mark all maps and generic mods as disabled since gamedata was wiped
                 DisableAllMaps();
@@ -482,6 +496,11 @@ namespace SC2ModManager.ViewModels
                 EnableSelectedGenericMods(modsToEnable);
 
                 SaveGenericModsToGamedata();
+
+                // Presets deliberately leave the hotkey files (lua.scd / luo.scd / toc.win.bdf)
+                // untouched, but the gamedata shuffle above could expose a pre-existing bad
+                // combination. Heal it so the game still launches after the switch.
+                new HotkeyService().ReconcileNormalHotkeyState(Path.Combine(GamePath, "gamedata"));
 
                 MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
             }
@@ -1195,17 +1214,30 @@ namespace SC2ModManager.ViewModels
 
         public async Task LoadDownloadableGenericModsAsync()
         {
-            var all = await storageService.GetDownloadableGenericModsAsync();
-            var installed = storageService.GetInstalledGenericMods();
-            var fileNames = installed.Select(m => m.FileName).ToHashSet();
+            try
+            {
+                var all = await storageService.GetDownloadableGenericModsAsync();
+                var installed = storageService.GetInstalledGenericMods();
+                var fileNames = installed.Select(m => m.FileName).ToHashSet();
 
-            foreach (var mod in all)
-                mod.IsDownloaded = fileNames.Contains(mod.FileName);
+                foreach (var mod in all)
+                    mod.IsDownloaded = fileNames.Contains(mod.FileName);
 
-            DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
-            OnPropertyChanged(nameof(DownloadableGenericMods));
+                DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
+                OnPropertyChanged(nameof(DownloadableGenericMods));
 
-            RefreshDownloadGenericModSort();
+                RefreshDownloadGenericModSort();
+            }
+            catch
+            {
+                // This is awaited from an async void navigation handler — an unhandled
+                // exception here (e.g. no internet) would crash the whole app.
+                MessageBox.Show(
+                    "Could not connect to the internet to load the mod list.\n\nPlease check your connection and try again.",
+                    "Connection Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
@@ -1612,6 +1644,10 @@ namespace SC2ModManager.ViewModels
 
         private readonly ReplayService replayService = new();
 
+        // Replay-tools download/install was removed — replays launch directly with no support
+        // files. IsReplayToolsInstalled / IsReplayDownloading / DownloadReplayToolsAsync are
+        // disabled (kept commented for possible future revival).
+        /*
         public bool IsReplayToolsInstalled => replayService.AreReplayToolsInstalled();
 
         private bool isReplayDownloading;
@@ -1619,13 +1655,6 @@ namespace SC2ModManager.ViewModels
         {
             get => isReplayDownloading;
             set { isReplayDownloading = value; OnPropertyChanged(nameof(IsReplayDownloading)); }
-        }
-
-        private bool isReplayRunning;
-        public bool IsReplayRunning
-        {
-            get => isReplayRunning;
-            set { isReplayRunning = value; OnPropertyChanged(nameof(IsReplayRunning)); }
         }
 
         public async Task DownloadReplayToolsAsync()
@@ -1641,6 +1670,14 @@ namespace SC2ModManager.ViewModels
                 IsReplayDownloading = false;
             }
         }
+        */
+
+        private bool isReplayRunning;
+        public bool IsReplayRunning
+        {
+            get => isReplayRunning;
+            set { isReplayRunning = value; OnPropertyChanged(nameof(IsReplayRunning)); }
+        }
 
         public List<Models.ReplayEntry> GetReplays()
         {
@@ -1655,10 +1692,20 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            // Hard guard against launching a second game instance while one is running —
+            // the button-disable in the UI is best-effort, this is the actual gate.
+            if (IsReplayRunning)
+            {
+                MessageBox.Show("A replay is already running. Close the game before launching another one.");
+                return;
+            }
+
             IsReplayRunning = true;
             try
             {
-                await replayService.LaunchReplayAsync(replay, GamePath);
+                // Test path: launch with /replay and no gamedata file swap. If the game plays
+                // the replay with this alone, the replay-tools dependency can be removed.
+                await replayService.LaunchReplayDirectAsync(replay, GamePath);
             }
             catch (Exception ex)
             {
@@ -1681,6 +1728,10 @@ namespace SC2ModManager.ViewModels
         public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
             => replayService.RenameReplay(entry, newDisplayName);
 
+        // Replay backup crash-recovery was tied to the replay-tools file swap, which no longer
+        // runs. Direct launch never creates backups, so there is nothing to restore. Disabled
+        // (kept commented for possible future revival).
+        /*
         public void CheckAndRestoreReplayBackups()
         {
             if (string.IsNullOrEmpty(GamePath)) return;
@@ -1709,6 +1760,7 @@ namespace SC2ModManager.ViewModels
                     MessageBoxImage.Warning);
             }
         }
+        */
 
         // ================= FILE LOCATIONS =================
 

@@ -50,7 +50,6 @@ namespace SC2ModManager
             ApplyCurrentTheme();
 
             Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
-            Loaded += (s, e) => vm.CheckAndRestoreReplayBackups();
         }
 
         // ================= THEMES ===============
@@ -169,8 +168,14 @@ namespace SC2ModManager
 
         private void GoToHotkeyEditor(object sender, RoutedEventArgs e)
         {
-            vm.HotkeyEditor.LoadNormalHotkeys();
-            vm.HotkeyEditor.LoadBuildModeHotkeys();
+            // Pass the gamedata path so the editor adopts the installed .scd files as the
+            // source of truth (protects user-customized luo.scd from being clobbered).
+            string? gamedataPath = string.IsNullOrEmpty(vm.GamePath)
+                ? null
+                : System.IO.Path.Combine(vm.GamePath, "gamedata");
+
+            vm.HotkeyEditor.LoadNormalHotkeys(gamedataPath);
+            vm.HotkeyEditor.LoadBuildModeHotkeys(gamedataPath);
             ShowView("HotkeyEditor");
         }
 
@@ -481,16 +486,9 @@ namespace SC2ModManager
 
         private void PopulateReplayView()
         {
-            // Show the right panel based on whether replay tools are installed
-            if (!vm.IsReplayToolsInstalled)
-            {
-                ReplayNotInstalledPanel.Visibility = Visibility.Visible;
-                ReplayInstalledPanel.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            ReplayNotInstalledPanel.Visibility = Visibility.Collapsed;
-            ReplayInstalledPanel.Visibility = Visibility.Visible;
+            // Replays launch directly with no support files, so there is no "tools installed"
+            // gate anymore — the replay list is always available.
+            ReplayContentPanel.Visibility = Visibility.Visible;
 
             UpdateReplayFilterButtonStyles();
             RefreshReplayList();
@@ -999,49 +997,13 @@ namespace SC2ModManager
             FilterExclusionsBtn.Style  = _filterHasExclusions       ? active : inactive;
         }
 
-        private async void DownloadReplayTools_Click(object sender, RoutedEventArgs e)
-        {
-            DownloadReplayToolsBtn.IsEnabled = false;
-            ReplayDownloadStatusText.Visibility = Visibility.Visible;
-
-            try
-            {
-                await vm.DownloadReplayToolsAsync();
-                // Switch to the installed panel
-                PopulateReplayView();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to download replay tools: {ex.Message}", "Download Failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                DownloadReplayToolsBtn.IsEnabled = true;
-            }
-            finally
-            {
-                ReplayDownloadStatusText.Visibility = Visibility.Collapsed;
-            }
-        }
-
         private async void LaunchReplay_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not System.Windows.Controls.Button btn || btn.Tag is not SC2ModManager.Models.ReplayEntry replay)
                 return;
 
-            // Show warning dialog unless suppressed
-            var config = new SC2ModManager.Services.ConfigService().Load();
-            if (!config.SuppressReplayWarning)
-            {
-                var dialog = new SC2ModManager.Views.ReplayWarningDialog { Owner = this };
-                dialog.ShowDialog();
-
-                if (!dialog.Confirmed) return;
-
-                if (dialog.SuppressInFuture)
-                {
-                    config.SuppressReplayWarning = true;
-                    new SC2ModManager.Services.ConfigService().Save(config);
-                }
-            }
+            // Direct launch no longer modifies any game files, so the old "your files will be
+            // temporarily changed" warning dialog was removed.
 
             // Disable all launch buttons while running
             SetReplayLaunchButtonsEnabled(false);
@@ -1060,12 +1022,16 @@ namespace SC2ModManager
 
         private void SetReplayLaunchButtonsEnabled(bool enabled)
         {
+            // The buttons live inside a StackPanel within the card's grid (see BuildReplayCard),
+            // not directly in the grid — the old code searched one level too shallow and
+            // never disabled anything.
             foreach (var child in ReplayListPanel.Children.OfType<System.Windows.Controls.Border>())
             {
-                var grid = child.Child as System.Windows.Controls.Grid;
-                if (grid == null) continue;
-                foreach (var col in grid.Children.OfType<System.Windows.Controls.Button>())
-                    col.IsEnabled = enabled;
+                if (child.Child is not System.Windows.Controls.Grid grid) continue;
+
+                foreach (var stack in grid.Children.OfType<System.Windows.Controls.StackPanel>())
+                    foreach (var btn in stack.Children.OfType<System.Windows.Controls.Button>())
+                        btn.IsEnabled = enabled;
             }
         }
 

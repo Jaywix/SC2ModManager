@@ -82,6 +82,11 @@ namespace SC2ModManager.Services
 
         // ================= RESTORE =================
 
+        /// <summary>
+        ///     Restores the original gamedata from GitHub. Nothing in the existing gamedata
+        ///     folder is deleted until BOTH backup archives have been fully downloaded and
+        ///     validated — a failed or interrupted download leaves the current gamedata intact.
+        /// </summary>
         public async Task RestoreOriginalGamedataAsync(string gameDataPath)
         {
             var progressVm = new ProgressViewModel { Status = "Restoring original gamedata..." };
@@ -89,73 +94,102 @@ namespace SC2ModManager.Services
 
             progressWindow.Show();
 
-            if (!Directory.Exists(gameDataPath))
-                Directory.CreateDirectory(gameDataPath);
-
-            progressVm.Status = "Deleting current gamedata...";
-
-            foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
-            {
-                try
-                {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"Failed to delete file: {file}", ex);
-                }
-            }
-
-            foreach (var dir in Directory.GetDirectories(gameDataPath, "*", SearchOption.AllDirectories))
-            {
-                try { Directory.Delete(dir, false); }
-                catch { }
-            }
-
-            var progress = new Progress<int>(value =>
-            {
-                progressVm.Progress = value;
-                progressVm.Status = $"Downloading... {value}%";
-            });
-
-            await GetGamedataFilesFromGithub(gameDataPath, progress, progressVm);
-
-            await Task.Delay(500);
-            progressWindow.Close();
-        }
-
-        private async Task GetGamedataFilesFromGithub(string gameDataPath, IProgress<int> progress, ProgressViewModel progressVm)
-        {
-            string url1 = Globals.GameDataBackupPt1GithubReleaseUrl;
-            string url2 = Globals.GameDataBackupPt2GithubReleaseUrl;
-
             string tempDir = Path.Combine(Path.GetTempPath(), "SC2ModManager_GameData");
-            Directory.CreateDirectory(tempDir);
-
             string zip1Path = Path.Combine(tempDir, "gamedata1.zip");
             string zip2Path = Path.Combine(tempDir, "gamedata2.zip");
 
-            using (HttpClient client = new HttpClient())
+            try
             {
-                await Task.WhenAll(
-                    DownloadToFileAsync(client, url1, zip1Path, progress),
-                    DownloadToFileAsync(client, url2, zip2Path, progress)
-                );
+                Directory.CreateDirectory(tempDir);
+
+                // 1. Download both archives completely BEFORE touching gamedata
+                var progress = new Progress<int>(value =>
+                {
+                    progressVm.Progress = value;
+                    progressVm.Status = $"Downloading... {value}%";
+                });
+
+                using (HttpClient client = new HttpClient())
+                {
+                    await Task.WhenAll(
+                        DownloadToFileAsync(client, Globals.GameDataBackupPt1GithubReleaseUrl, zip1Path, progress),
+                        DownloadToFileAsync(client, Globals.GameDataBackupPt2GithubReleaseUrl, zip2Path, progress)
+                    );
+                }
+
+                // 2. Verify both archives are readable zips before deleting anything
+                progressVm.Status = "Validating downloads...";
+                ValidateZipArchive(zip1Path);
+                ValidateZipArchive(zip2Path);
+
+                // 3. Only now is it safe to wipe the current gamedata
+                progressVm.Status = "Deleting current gamedata...";
+
+                if (!Directory.Exists(gameDataPath))
+                    Directory.CreateDirectory(gameDataPath);
+
+                foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"Failed to delete file: {file}", ex);
+                    }
+                }
+
+                foreach (var dir in Directory.GetDirectories(gameDataPath, "*", SearchOption.AllDirectories))
+                {
+                    try { Directory.Delete(dir, false); }
+                    catch { }
+                }
+
+                // 4. Extract the validated archives
+                progressVm.Status = "Extracting files...";
+                progressVm.Progress = 0;
+
+                ExtractZipToDirectory(zip1Path, gameDataPath);
+                ExtractZipToDirectory(zip2Path, gameDataPath);
+
+                // 5. The restore brings back the original lua.scd, so the hotkey mod is no
+                //    longer active — heal the lua/luo/toc trio (removes an orphaned
+                //    toc.win.bdf from the game root, which would otherwise crash the game).
+                new HotkeyService().ReconcileNormalHotkeyState(gameDataPath);
+
+                await Task.Delay(500);
             }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(zip1Path)) File.Delete(zip1Path);
+                    if (File.Exists(zip2Path)) File.Delete(zip2Path);
+                }
+                catch { }
 
-            Directory.CreateDirectory(gameDataPath);
+                // Always close the progress window, even when the restore fails
+                progressWindow.Close();
+            }
+        }
 
-            progressVm.Status = "Extracting files...";
-            progressVm.Progress = 0;
-
-            ExtractZipToDirectory(zip1Path, gameDataPath);
-            ExtractZipToDirectory(zip2Path, gameDataPath);
+        /// <summary>
+        ///     Throws if the file is not a readable, non-empty ZIP archive
+        ///     (e.g. an HTML error page saved by a failed download).
+        /// </summary>
+        private static void ValidateZipArchive(string zipPath)
+        {
+            using var archive = ZipFile.OpenRead(zipPath);
+            if (archive.Entries.Count == 0)
+                throw new InvalidDataException($"Downloaded archive is empty: {Path.GetFileName(zipPath)}");
         }
 
         private async Task DownloadToFileAsync(HttpClient client, string url, string filePath, IProgress<int> progress)
         {
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
             using var stream = await response.Content.ReadAsStreamAsync();
             using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
 

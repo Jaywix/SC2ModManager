@@ -112,6 +112,29 @@ namespace SC2ModManager.Models
         // Suffix appended to backup lua files so we how they were made. This may come in handy when I implement the balance mods or any other mod that changes original files
         public const string HotkeyModBackupSuffix = "_Original_MadeBy_HotkeyMod";
 
+        /// <summary>
+        ///     Gamedata files owned exclusively by the hotkey mod system. The preset system
+        ///     must never capture, add, or delete these — lua.scd / luo.scd are a coupled pair
+        ///     (see <see cref="Services.HotkeyService"/>) and removing one without restoring the
+        ///     other leaves gamedata in a combination that crashes the game. Hotkey state is
+        ///     toggled only from the Hotkeys tab, independently of presets.
+        /// </summary>
+        public static readonly string[] HotkeyManagedGamedataFiles =
+        {
+            LuaScdName,           // lua.scd  (original keymap)
+            NormalHotkeyScdName,  // luo.scd  (modified keymap)
+            BuildModeScdName      // BuildmodeHotkeys.scd
+        };
+
+        /// <summary>
+        ///     True if the given file name or relative path refers to a hotkey-managed gamedata file.
+        /// </summary>
+        public static bool IsHotkeyManagedFile(string fileNameOrRelativePath)
+        {
+            string name = Path.GetFileName(fileNameOrRelativePath);
+            return HotkeyManagedGamedataFiles.Any(f => string.Equals(f, name, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static string GetHotkeyModsPath()
         {
             return Path.Combine(GetDataPath(), "HotkeyMods");
@@ -127,8 +150,10 @@ namespace SC2ModManager.Models
             return Path.Combine(GetHotkeyModsPath(), "Backups");
         }
 
-        // ================= REPLAY TOOLS =================
-
+        // ================= REPLAY TOOLS (DISABLED) =================
+        // Replays now launch directly with no support files, so these are no longer used.
+        // Kept commented out for possible future revival.
+        /*
         public static string LuaReplayFileName = "lua.replay";
         public static string ZLuaDlc1ReplayFileName = "z_lua_dlc1.replay";
         public static string ZLuaDlc1ScdName = "z_lua_dlc1.scd";
@@ -141,6 +166,7 @@ namespace SC2ModManager.Models
         {
             return Path.Combine(GetDataPath(), "replaytools");
         }
+        */
 
         public static string DefaultReplaysBasePath =>
             Path.Combine(
