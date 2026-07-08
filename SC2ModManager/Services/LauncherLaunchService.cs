@@ -85,8 +85,11 @@ namespace SC2ModManager.Services
                 }
             }
 
-            _storage.SaveMapsState(allMaps);
-            _storage.SaveGenericModsState(allMods);
+            // Persist the enabled/disabled flags without clobbering the saved mod metadata —
+            // allMaps/allMods here are filename-only, so saving them directly would wipe names,
+            // hashes, images, etc.
+            _storage.SyncMapsStateWithDisk();
+            _storage.SyncGenericModsStateWithDisk();
         }
 
         public async Task<bool> PushHostTagsAsync()
@@ -112,12 +115,15 @@ namespace SC2ModManager.Services
             string exe = GetGameExePath(gamePath);
             string dllPath = GetIpcDllPath();
 
-            // if (restartIfRunning)
-            // {
+            // Only kill the running game when the caller actually asked to restart it. Killing
+            // unconditionally would take down a game the user launched some other way (e.g. a
+            // replay from the replay browser).
+            if (restartIfRunning)
+            {
                 progress?.Report("Terminating previous game process...");
                 DllInjectionService.TryKillGameProcess();
                 await Task.Delay(1500);
-            // }
+            }
 
             Process? process = DllInjectionService.FindGameProcess();
             if (process == null || restartIfRunning)

@@ -271,6 +271,34 @@ namespace SC2ModManager.Services
             }
         }
 
+        /// <summary>
+        ///     Rewrites the maps state to match what's on disk while keeping the saved metadata
+        ///     (name, hash, image, etc.). Only the enabled/disabled flag comes from disk. Use this
+        ///     instead of SaveMapsState(GetInstalledMaps()) — GetInstalledMaps only knows filenames,
+        ///     so saving it directly wipes all the metadata.
+        /// </summary>
+        public void SyncMapsStateWithDisk()
+        {
+            var saved = LoadMapsState().ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+            var merged = new List<Map>();
+
+            foreach (var onDisk in GetInstalledMaps())
+            {
+                if (saved.TryGetValue(onDisk.FileName, out var s))
+                {
+                    s.IsEnabled = onDisk.IsEnabled;
+                    s.IsDownloaded = true;
+                    merged.Add(s);
+                }
+                else
+                {
+                    merged.Add(onDisk);
+                }
+            }
+
+            SaveMapsState(merged);
+        }
+
         // ================= MAPS: GITHUB =================
 
         /// <summary>
@@ -434,6 +462,33 @@ namespace SC2ModManager.Services
             {
                 return new List<GenericGamedataMod>();
             }
+        }
+
+        /// <summary>
+        ///     Same as SyncMapsStateWithDisk but for generic mods — keeps the saved metadata and only
+        ///     takes the enabled/disabled flag from disk. Use this instead of
+        ///     SaveGenericModsState(GetInstalledGenericMods()), which wipes the metadata.
+        /// </summary>
+        public void SyncGenericModsStateWithDisk()
+        {
+            var saved = LoadGenericModsState().ToDictionary(m => m.FileName, m => m, StringComparer.OrdinalIgnoreCase);
+            var merged = new List<GenericGamedataMod>();
+
+            foreach (var onDisk in GetInstalledGenericMods())
+            {
+                if (saved.TryGetValue(onDisk.FileName, out var s))
+                {
+                    s.IsEnabled = onDisk.IsEnabled;
+                    s.IsDownloaded = true;
+                    merged.Add(s);
+                }
+                else
+                {
+                    merged.Add(onDisk);
+                }
+            }
+
+            SaveGenericModsState(merged);
         }
 
         // ================= GENERIC MODS: GITHUB =================

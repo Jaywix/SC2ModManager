@@ -75,6 +75,29 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
+        ///     True if the game is currently running. Shared check so the replay browser and the
+        ///     launcher don't each start their own copy at the same time. Disposes the process
+        ///     handles it opens so we don't leak them.
+        /// </summary>
+        public static bool IsGameRunning()
+        {
+            var procs = Process.GetProcessesByName(ProcessName);
+            try
+            {
+                foreach (var p in procs)
+                {
+                    try { if (!p.HasExited) return true; }
+                    catch { }
+                }
+                return false;
+            }
+            finally
+            {
+                foreach (var p in procs) p.Dispose();
+            }
+        }
+
+        /// <summary>
         ///     Injects a DLL into the target process via LoadLibraryA.
         /// </summary>
         public static bool Inject(int processId, string dllPath)

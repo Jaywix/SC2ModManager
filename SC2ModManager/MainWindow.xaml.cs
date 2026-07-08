@@ -49,7 +49,14 @@ namespace SC2ModManager
             ShowView("Home");
             ApplyCurrentTheme();
 
+#if !ENABLE_LAUNCHER
+            // The launcher is gated behind the EnableLauncher flag in the .csproj. When it's off,
+            // hide the nav button so the whole launcher section is out of reach.
+            LauncherNavButton.Visibility = Visibility.Collapsed;
+#endif
+
             Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
+            Closed += (s, e) => vm.StopAutoSave();
         }
 
         // ================= THEMES ===============
@@ -164,11 +171,21 @@ namespace SC2ModManager
         private void GoToMods(object sender, RoutedEventArgs e) => ShowView("Mods");
         private async void GoToLauncher(object sender, RoutedEventArgs e)
         {
-            vm.Launcher.RefreshIpcStatus();
             ShowView("Launcher");
+
+            // Like the hotkey mod: make sure the launcher's support files are installed, offering to
+            // download them if they aren't. If the user declines or it fails, leave the tab open but
+            // don't bother scanning (the launch button won't work without the files).
+            if (!await vm.Launcher.EnsureLauncherFilesInstalledAsync())
+                return;
+
+            vm.Launcher.RefreshIpcStatus();
             if (vm.Launcher.IsIpcOnline && vm.Launcher.Lobbies.Count == 0)
                 await vm.Launcher.ScanLobbiesAsync();
         }
+
+        private void LauncherUninstallFiles_Click(object sender, RoutedEventArgs e)
+            => vm.Launcher.UninstallLauncherFiles();
 
         private async void LauncherLaunchGame_Click(object sender, RoutedEventArgs e)
             => await vm.Launcher.LaunchGameAsync();
@@ -519,6 +536,9 @@ namespace SC2ModManager
             // Replays launch directly with no support files now, so there's no "tools installed"
             // check anymore. The replay list is always available.
             ReplayContentPanel.Visibility = Visibility.Visible;
+
+            // Reflect the saved auto-save setting on the toggle.
+            AutoSaveReplaysCheckBox.IsChecked = vm.AutoSaveReplays;
 
             UpdateReplayFilterButtonStyles();
             RefreshReplayList();
@@ -1067,6 +1087,11 @@ namespace SC2ModManager
         private void BrowseReplayFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog { Title = "Select your Supreme Commander 2 Replays folder" };
+
+            // Start in the folder currently shown on the side, if it's set and exists.
+            if (!string.IsNullOrEmpty(vm.ReplaysPath) && System.IO.Directory.Exists(vm.ReplaysPath))
+                dialog.InitialDirectory = vm.ReplaysPath;
+
             if (dialog.ShowDialog() != true) return;
 
             vm.SaveReplayFolderPath(dialog.FolderName);
@@ -1076,6 +1101,35 @@ namespace SC2ModManager
         private void RefreshReplays_Click(object sender, RoutedEventArgs e)
         {
             RefreshReplayList();
+        }
+
+        private void AutoSaveReplays_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.CheckBox cb) return;
+
+            if (cb.IsChecked == true)
+            {
+                // Auto-save needs a folder to copy into (the same one the browser reads from). If
+                // there isn't one yet, ask the user to pick it now.
+                if (string.IsNullOrEmpty(vm.ReplaysPath) || !System.IO.Directory.Exists(vm.ReplaysPath))
+                {
+                    var dialog = new OpenFolderDialog { Title = "Select the folder to auto-save replays into" };
+                    if (dialog.ShowDialog() != true)
+                    {
+                        cb.IsChecked = false;   // user cancelled — leave auto-save off
+                        return;
+                    }
+
+                    vm.SaveReplayFolderPath(dialog.FolderName);
+                    RefreshReplayList();
+                }
+
+                vm.SetAutoSaveReplays(true);
+            }
+            else
+            {
+                vm.SetAutoSaveReplays(false);
+            }
         }
 
         // ================= BACKUPS =================

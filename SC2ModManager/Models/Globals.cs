@@ -149,6 +149,26 @@ namespace SC2ModManager.Models
             return Path.Combine(GetHotkeyModsPath(), "Backups");
         }
 
+        // ================= LAUNCHER FILES =================
+        // Maksing's launcher needs these support files. They don't replace any game files so there
+        // are no backups. Some go in the game's bin folder, the rest go next to the mod manager exe
+        // (the launcher folder), which is where the injected DLL and its helper get loaded from.
+
+        public static string LauncherFilesDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/launcherfiles/launcherfiles.zip";
+
+        public static string VMProtectDllName = "VMProtectSDK32.dll";
+        public static string LibCryptoDllName = "libcrypto-3.dll";
+        public static string LibSslDllName = "libssl-3.dll";
+        public static string IpcDllName = "ipc_dll.dll";
+        public static string Injector32HelperName = "Injector32Helper.exe";
+        public static string BannedListName = "banned_list.json.enc";
+
+        // The launcher folder is wherever the mod manager exe lives (see DllInjectionService).
+        public static string GetLauncherFolderPath()
+        {
+            return AppContext.BaseDirectory;
+        }
+
         // ================= REPLAY TOOLS (DISABLED) =================
         // Replays launch directly now and don't need the support files, so none of this is used.
         // Keeping it commented out in case I ever bring the replay tools back.

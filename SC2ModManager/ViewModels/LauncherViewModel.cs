@@ -20,6 +20,7 @@ namespace SC2ModManager.ViewModels
         private readonly LauncherLaunchService _launch;
         private readonly ModStorageService _storage;
         private readonly LobbySyncService _sync;
+        private readonly LauncherFilesService _files = new();
         private readonly Func<string?> _getGamePath;
         private Dictionary<string, string> _knownNamesByHash = new(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource? _loadModsCts;
@@ -390,8 +391,9 @@ namespace SC2ModManager.ViewModels
                 foreach (var map in allMaps.Where(m => syncResult.ModsToEnable.Contains(m.FileName) && !m.IsEnabled))
                     _storage.MoveMapToEnabled(map);
 
-                _storage.SaveGenericModsState(_storage.GetInstalledGenericMods());
-                _storage.SaveMapsState(_storage.GetInstalledMaps());
+                // Preserve the saved mod metadata; only the enabled/disabled flags changed here.
+                _storage.SyncGenericModsStateWithDisk();
+                _storage.SyncMapsStateWithDisk();
 
                 StatusMessage = syncResult.ModsToEnable.Any() ? "Required mods enabled" : "All required mods are already enabled";
                 await LoadModDetailsAsync();
@@ -426,8 +428,9 @@ namespace SC2ModManager.ViewModels
                 foreach (var map in allMaps.Where(m => syncResult.ModsToRemove.Contains(m.FileName) && m.IsEnabled))
                     _storage.MoveMapToDisabled(map);
 
-                _storage.SaveGenericModsState(_storage.GetInstalledGenericMods());
-                _storage.SaveMapsState(_storage.GetInstalledMaps());
+                // Preserve the saved mod metadata; only the enabled/disabled flags changed here.
+                _storage.SyncGenericModsStateWithDisk();
+                _storage.SyncMapsStateWithDisk();
 
                 StatusMessage = syncResult.ModsToRemove.Any() ? "Extra mods disabled" : "No extra enabled mods found";
                 await LoadModDetailsAsync();
@@ -523,6 +526,95 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(HasSelectedLobby));
             OnPropertyChanged(nameof(CanSync));
+        }
+
+        // ======================  Launcher support files ======================
+
+        public bool AreLauncherFilesInstalled
+        {
+            get
+            {
+                string? gamePath = _getGamePath();
+                return !string.IsNullOrEmpty(gamePath) && _files.AreFilesInstalled(gamePath!);
+            }
+        }
+
+        /// <summary>
+        ///     Makes sure the launcher support files are there. If they aren't, asks the user (like
+        ///     the hotkey mod does) whether to download them, and downloads/installs on yes. Returns
+        ///     true when the files are installed and the launcher is good to go.
+        /// </summary>
+        public async Task<bool> EnsureLauncherFilesInstalledAsync()
+        {
+            string? gamePath = _getGamePath();
+            if (string.IsNullOrEmpty(gamePath))
+            {
+                MessageBox.Show("Set the game path in Settings first.", "Launcher",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (_files.AreFilesInstalled(gamePath))
+                return true;
+
+            var choice = MessageBox.Show(
+                "The launcher needs some support files that aren't installed yet.\n\n" +
+                "Do you want to download and install them now?",
+                "Launcher Files Needed",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (choice != MessageBoxResult.Yes)
+                return false;
+
+            IsSyncing = true;
+            StatusMessage = "Downloading launcher files...";
+            try
+            {
+                await _files.DownloadAndInstallAsync(gamePath);
+                OnPropertyChanged(nameof(AreLauncherFilesInstalled));
+                StatusMessage = "Launcher files installed.";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "";
+                MessageBox.Show($"Failed to download launcher files: {ex.Message}", "Launcher",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            finally
+            {
+                IsSyncing = false;
+            }
+        }
+
+        /// <summary>
+        ///     Removes the launcher support files (the dlls in the game bin folder plus the files
+        ///     next to the mod manager exe).
+        /// </summary>
+        public void UninstallLauncherFiles()
+        {
+            string? gamePath = _getGamePath();
+            if (string.IsNullOrEmpty(gamePath))
+            {
+                MessageBox.Show("Set the game path in Settings first.", "Launcher",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                "This will remove the launcher support files from your game folder and the mod manager folder. Continue?",
+                "Uninstall Launcher Files",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            _files.Uninstall(gamePath);
+            OnPropertyChanged(nameof(AreLauncherFilesInstalled));
+            StatusMessage = "Launcher files removed.";
         }
 
         public async Task LaunchGameAsync()

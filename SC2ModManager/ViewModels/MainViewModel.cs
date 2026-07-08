@@ -1618,7 +1618,7 @@ namespace SC2ModManager.ViewModels
         public void Uninstall()
         {
             var confirm = MessageBox.Show(
-                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring the original lua.scd).\n\nAre you sure you want to uninstall?",
+                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring the original lua.scd). The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -1648,6 +1648,14 @@ namespace SC2ModManager.ViewModels
                     }
                     catch { }
                 }
+
+                // Remove the launcher support files too. The dlls in the game's bin folder live
+                // outside our data folder, so wiping the install below wouldn't catch them.
+                try
+                {
+                    new SC2ModManager.Services.LauncherFilesService().Uninstall(GamePath);
+                }
+                catch { }
             }
 
             var installService = new InstallService();
@@ -1667,6 +1675,7 @@ namespace SC2ModManager.ViewModels
         // ================= REPLAYS =================
 
         private readonly ReplayService replayService = new();
+        private readonly ReplayAutoSaveService replayAutoSave = new();
 
         // The replay tools download/install is removed since replays launch directly now with no
         // support files. IsReplayToolsInstalled / IsReplayDownloading / DownloadReplayToolsAsync are
@@ -1724,6 +1733,15 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            // Also block if a game is already running from somewhere else (the Launcher tab, or the
+            // game started on its own). IsReplayRunning only knows about replays we started, so this
+            // shared process check is what actually stops two copies of the game running at once.
+            if (SC2ModManager.Services.DllInjectionService.IsGameRunning())
+            {
+                MessageBox.Show("Supreme Commander 2 is already running. Close it before launching a replay.");
+                return;
+            }
+
             IsReplayRunning = true;
             try
             {
@@ -1747,6 +1765,39 @@ namespace SC2ModManager.ViewModels
             config.ReplayFolderPath = path;
             configService.Save(config);
         }
+
+        // ================= AUTO-SAVE REPLAYS =================
+
+        private bool autoSaveReplays;
+        public bool AutoSaveReplays
+        {
+            get => autoSaveReplays;
+            private set { autoSaveReplays = value; OnPropertyChanged(nameof(AutoSaveReplays)); }
+        }
+
+        /// <summary>
+        ///     Turns auto-save on/off, saves the choice, and starts or stops the watcher. The watcher
+        ///     copies into whatever ReplaysPath is at the time (read live), so changing the folder
+        ///     later just works without restarting anything.
+        /// </summary>
+        public void SetAutoSaveReplays(bool enabled)
+        {
+            AutoSaveReplays = enabled;
+
+            var config = configService.Load();
+            config.AutoSaveReplays = enabled;
+            configService.Save(config);
+
+            if (enabled)
+                replayAutoSave.Start(() => ReplaysPath);
+            else
+                replayAutoSave.Stop();
+        }
+
+        /// <summary>
+        ///     Stops the auto-save watcher. Call this when the app is closing.
+        /// </summary>
+        public void StopAutoSave() => replayAutoSave.Stop();
 
         public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
             => replayService.RenameReplay(entry, newDisplayName);
@@ -1842,10 +1893,16 @@ namespace SC2ModManager.ViewModels
             if (!string.IsNullOrEmpty(config.ReplayFolderPath) && Directory.Exists(config.ReplayFolderPath))
             {
                 ReplaysPath = config.ReplayFolderPath;
-                return;
             }
-            if (Directory.Exists(Globals.DefaultReplaysBasePath))
+            else if (Directory.Exists(Globals.DefaultReplaysBasePath))
+            {
                 ReplaysPath = Globals.DefaultReplaysBasePath;
+            }
+
+            // Pick auto-save back up if it was left on and we have a folder to save into.
+            AutoSaveReplays = config.AutoSaveReplays;
+            if (AutoSaveReplays && !string.IsNullOrEmpty(ReplaysPath))
+                replayAutoSave.Start(() => ReplaysPath);
         }
 
         public void OpenFolder(string path)

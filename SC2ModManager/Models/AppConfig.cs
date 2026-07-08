@@ -64,5 +64,11 @@ namespace SC2ModManager.Models
         ///     When true, the replay launch warning dialog is suppressed.
         /// </summary>
         public bool SuppressReplayWarning { get; set; } = false;
+
+        /// <summary>
+        ///     When true, each finished game's replay is automatically copied into the replays
+        ///     folder (ReplayFolderPath) so it isn't overwritten by the next game.
+        /// </summary>
+        public bool AutoSaveReplays { get; set; } = false;
     }
 }
