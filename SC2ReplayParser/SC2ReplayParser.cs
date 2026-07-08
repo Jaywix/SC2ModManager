@@ -42,9 +42,9 @@ namespace ReplayParser.SC2
             var modsSize = reader.ReadUInt32();
             if (modsSize > 0)
             {
-                // If the declared block size can't fit in the remaining bytes the file is
-                // truncated/corrupt — stop here rather than reading the next fields from
-                // inside the unconsumed payload (everything after would be garbage).
+                // If the block size can't fit in the remaining bytes the file is truncated or
+                // corrupt. Stop here instead of reading the next fields from inside the unread
+                // payload, everything after that would be garbage.
                 if (modsSize > reader.BaseStream.Length - reader.BaseStream.Position)
                     return;
 
@@ -221,9 +221,9 @@ namespace ReplayParser.SC2
                     case DataType.STRING:
                         return ReadNullTerminatedString(reader);
                     case DataType.NIL:
-                        // A NIL marker is followed by one payload byte (see ReplayReader.ReadNil,
-                        // the original Maksing implementation). It must be consumed here or every
-                        // subsequent read is shifted by one byte and parses garbage.
+                        // A NIL marker has one payload byte after it (see ReplayReader.ReadNil from
+                        // Maksing's original code). We have to consume it or every read after this
+                        // is off by one byte and parses garbage.
                         if (reader.BaseStream.Position + 1 <= reader.BaseStream.Length)
                             reader.ReadByte();
                         return null;
@@ -284,7 +284,7 @@ namespace ReplayParser.SC2
                         break;
                     }
 
-                    // Always read the value, even when the key parsed as null (e.g. a NIL key) —
+                    // Always read the value, even when the key parsed as null (e.g. a NIL key) �
                     // the value bytes are present in the stream either way, and skipping them
                     // (the old code blindly skipped 4 bytes instead) misaligns everything after.
                     var value = ReadLuaValueSafe(reader, valueType, depth + 1);

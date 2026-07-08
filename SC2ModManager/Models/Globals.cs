@@ -113,11 +113,10 @@ namespace SC2ModManager.Models
         public const string HotkeyModBackupSuffix = "_Original_MadeBy_HotkeyMod";
 
         /// <summary>
-        ///     Gamedata files owned exclusively by the hotkey mod system. The preset system
-        ///     must never capture, add, or delete these — lua.scd / luo.scd are a coupled pair
-        ///     (see <see cref="Services.HotkeyService"/>) and removing one without restoring the
-        ///     other leaves gamedata in a combination that crashes the game. Hotkey state is
-        ///     toggled only from the Hotkeys tab, independently of presets.
+        ///     Gamedata files that belong to the hotkey mod system. Presets should never save, add, or
+        ///     delete these. lua.scd and luo.scd are a pair (see HotkeyService), removing one without
+        ///     putting the other back breaks the game, so hotkey files only ever get changed from the
+        ///     Hotkeys tab and presets leave them alone.
         /// </summary>
         public static readonly string[] HotkeyManagedGamedataFiles =
         {
@@ -127,7 +126,7 @@ namespace SC2ModManager.Models
         };
 
         /// <summary>
-        ///     True if the given file name or relative path refers to a hotkey-managed gamedata file.
+        ///     True if the file is one of the hotkey mod's gamedata files
         /// </summary>
         public static bool IsHotkeyManagedFile(string fileNameOrRelativePath)
         {
@@ -151,8 +150,8 @@ namespace SC2ModManager.Models
         }
 
         // ================= REPLAY TOOLS (DISABLED) =================
-        // Replays now launch directly with no support files, so these are no longer used.
-        // Kept commented out for possible future revival.
+        // Replays launch directly now and don't need the support files, so none of this is used.
+        // Keeping it commented out in case I ever bring the replay tools back.
         /*
         public static string LuaReplayFileName = "lua.replay";
         public static string ZLuaDlc1ReplayFileName = "z_lua_dlc1.replay";

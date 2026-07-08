@@ -193,9 +193,9 @@ namespace SC2ModManager.ViewModels
 
             InitializeGamePath();
 
-            // Load from disk first — these collections are only populated when the user
-            // visits the Installed screens, so disabling without loading would be a no-op
-            // on empty collections and leave the storage folders out of sync.
+            // Load from disk first. These collections only get populated when the user visits the
+            // Installed screens, so disabling without loading first would do nothing and leave the
+            // storage folders out of sync.
             LoadInstalledMaps();
             LoadInstalledGenericMods();
 
@@ -497,9 +497,9 @@ namespace SC2ModManager.ViewModels
 
                 SaveGenericModsToGamedata();
 
-                // Presets deliberately leave the hotkey files (lua.scd / luo.scd / toc.win.bdf)
-                // untouched, but the gamedata shuffle above could expose a pre-existing bad
-                // combination. Heal it so the game still launches after the switch.
+                // Presets leave the hotkey files (lua.scd / luo.scd / toc.win.bdf) alone, but the
+                // gamedata shuffle above could have uncovered a bad combination that was already
+                // there. Clean it up so the game still launches after the switch.
                 new HotkeyService().ReconcileNormalHotkeyState(Path.Combine(GamePath, "gamedata"));
 
                 MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
@@ -614,7 +614,7 @@ namespace SC2ModManager.ViewModels
                 if (knownMods.Contains(file) || ModStorageService.IsOriginalGameFile(file))
                     continue;
 
-                // Hotkey mod files are managed exclusively by the mod manager — skip them
+                // The hotkey mod files are handled by the mod manager itself so skip them
                 if (string.Equals(file, Globals.NormalHotkeyScdName, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(file, Globals.BuildModeScdName,    StringComparison.OrdinalIgnoreCase))
                     continue;
@@ -1230,8 +1230,8 @@ namespace SC2ModManager.ViewModels
             }
             catch
             {
-                // This is awaited from an async void navigation handler — an unhandled
-                // exception here (e.g. no internet) would crash the whole app.
+                // This gets awaited from an async void navigation handler, so if this throws
+                // (like when there's no internet) it would crash the whole app
                 MessageBox.Show(
                     "Could not connect to the internet to load the mod list.\n\nPlease check your connection and try again.",
                     "Connection Failed",
@@ -1644,9 +1644,9 @@ namespace SC2ModManager.ViewModels
 
         private readonly ReplayService replayService = new();
 
-        // Replay-tools download/install was removed — replays launch directly with no support
-        // files. IsReplayToolsInstalled / IsReplayDownloading / DownloadReplayToolsAsync are
-        // disabled (kept commented for possible future revival).
+        // The replay tools download/install is removed since replays launch directly now with no
+        // support files. IsReplayToolsInstalled / IsReplayDownloading / DownloadReplayToolsAsync are
+        // disabled, keeping them commented out in case I bring the replay tools back someday.
         /*
         public bool IsReplayToolsInstalled => replayService.AreReplayToolsInstalled();
 
@@ -1692,8 +1692,8 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
-            // Hard guard against launching a second game instance while one is running —
-            // the button-disable in the UI is best-effort, this is the actual gate.
+            // Don't let a second game instance launch while one is already running. Disabling the
+            // buttons in the UI helps but this is the actual gate.
             if (IsReplayRunning)
             {
                 MessageBox.Show("A replay is already running. Close the game before launching another one.");
@@ -1703,8 +1703,7 @@ namespace SC2ModManager.ViewModels
             IsReplayRunning = true;
             try
             {
-                // Test path: launch with /replay and no gamedata file swap. If the game plays
-                // the replay with this alone, the replay-tools dependency can be removed.
+                // Launch directly with /replay, no gamedata file swap needed
                 await replayService.LaunchReplayDirectAsync(replay, GamePath);
             }
             catch (Exception ex)
@@ -1728,9 +1727,9 @@ namespace SC2ModManager.ViewModels
         public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
             => replayService.RenameReplay(entry, newDisplayName);
 
-        // Replay backup crash-recovery was tied to the replay-tools file swap, which no longer
-        // runs. Direct launch never creates backups, so there is nothing to restore. Disabled
-        // (kept commented for possible future revival).
+        // The replay backup crash recovery only existed for the replay tools file swap, which
+        // doesn't run anymore. Direct launch never makes backups so there's nothing to restore.
+        // Keeping this commented out in case the replay tools ever come back.
         /*
         public void CheckAndRestoreReplayBackups()
         {

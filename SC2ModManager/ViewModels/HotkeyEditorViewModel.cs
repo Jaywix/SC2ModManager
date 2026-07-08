@@ -240,12 +240,12 @@ namespace SC2ModManager.ViewModels
 
         public void LoadNormalHotkeys(string? gamedataPath = null)
         {
-            // Adopt whatever luo.scd is actually installed in gamedata before loading, so the
-            // editor edits (and later re-applies) the user's real file — not a stale local copy.
+            // Pick up whatever luo.scd is actually installed in gamedata before loading, so the
+            // editor edits (and later re-applies) the user's real file and not a stale local copy
             if (!string.IsNullOrEmpty(gamedataPath))
             {
                 try { _service.SyncLocalFromGamedata(HotkeyModType.NormalHotkey, gamedataPath); }
-                catch { /* sync is best-effort; the editor still works on the local copy */ }
+                catch { /* if the sync fails the editor still works on the local copy */ }
             }
 
             IsNormalModInstalled = _service.IsModInstalled(HotkeyModType.NormalHotkey);
@@ -284,7 +284,7 @@ namespace SC2ModManager.ViewModels
             if (!string.IsNullOrEmpty(gamedataPath))
             {
                 try { _service.SyncLocalFromGamedata(HotkeyModType.BuildModeHotkey, gamedataPath); }
-                catch { /* sync is best-effort; the editor still works on the local copy */ }
+                catch { /* if the sync fails the editor still works on the local copy */ }
             }
 
             IsBuildModeModInstalled = _service.IsModInstalled(HotkeyModType.BuildModeHotkey);

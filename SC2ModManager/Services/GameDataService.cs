@@ -122,7 +122,7 @@ namespace SC2ModManager.Services
                 ValidateZipArchive(zip1Path);
                 ValidateZipArchive(zip2Path);
 
-                // 3. Only now is it safe to wipe the current gamedata
+                // 3. Now it's safe to wipe the current gamedata
                 progressVm.Status = "Deleting current gamedata...";
 
                 if (!Directory.Exists(gameDataPath))
@@ -154,9 +154,9 @@ namespace SC2ModManager.Services
                 ExtractZipToDirectory(zip1Path, gameDataPath);
                 ExtractZipToDirectory(zip2Path, gameDataPath);
 
-                // 5. The restore brings back the original lua.scd, so the hotkey mod is no
-                //    longer active — heal the lua/luo/toc trio (removes an orphaned
-                //    toc.win.bdf from the game root, which would otherwise crash the game).
+                // 5. The restore brings back the original lua.scd, so the hotkey mod isn't active
+                //    anymore. Clean up the lua/luo/toc files, mainly to remove a leftover
+                //    toc.win.bdf from the game root which would break the game.
                 new HotkeyService().ReconcileNormalHotkeyState(gameDataPath);
 
                 await Task.Delay(500);
@@ -176,8 +176,8 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
-        ///     Throws if the file is not a readable, non-empty ZIP archive
-        ///     (e.g. an HTML error page saved by a failed download).
+        ///     Throws if the file isn't a readable zip with stuff in it (like when a failed download
+        ///     saves an html error page instead of the actual zip).
         /// </summary>
         private static void ValidateZipArchive(string zipPath)
         {

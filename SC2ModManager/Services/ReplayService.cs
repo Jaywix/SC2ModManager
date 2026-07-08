@@ -22,10 +22,9 @@ namespace SC2ModManager.Services
     public class ReplayService
     {
         // ============================== Replay tools (DISABLED) ==============================
-        // The replay-tools file swap was removed: replays now launch directly via
-        // LaunchReplayDirectAsync with no gamedata changes, so the patched .replay files are no
-        // longer downloaded or stored. The original logic (local paths, install detection,
-        // download) is kept commented out below in case I decide to bring it back sometime
+        // The replay tools file swap is gone. Replays launch directly through LaunchReplayDirectAsync
+        // now with no gamedata changes, so the patched .replay files don't get downloaded or stored
+        // anymore. Keeping the original logic commented out below in case I decide to bring it back sometime
         /*
         private string ReplayToolsPath => Globals.GetReplayToolsPath();
         private string LocalLuaReplayPath => Path.Combine(ReplayToolsPath, Globals.LuaReplayFileName);
@@ -65,10 +64,9 @@ namespace SC2ModManager.Services
         // ============================== Replay discovery ==============================
 
         /// <summary>
-        ///     Recursively scans the selected folder for .SC2Replay and .SC2ReplayDLC files —
-        ///     replays directly in the folder, in numeric account-ID subfolders (e.g. 72823206),
-        ///     or in any other subdirectory the user organizes them into.
-        ///     Returns them sorted newest-first.
+        ///     Scans the selected folder and everything under it for .SC2Replay and .SC2ReplayDLC
+        ///     files. Replays right in the folder, in the numeric account ID folders (e.g. 72823206),
+        ///     or in any other subfolder the user made all get picked up. Sorted newest first.
         /// </summary>
         public List<ReplayEntry> GetReplays(string baseFolderPath)
         {
@@ -95,8 +93,8 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
-        ///     Walks the folder tree yielding every replay file. Inaccessible subdirectories
-        ///     are skipped instead of failing the whole scan.
+        ///     Walks the whole folder tree returning every replay file. Folders we can't access just
+        ///     get skipped instead of failing the whole scan.
         /// </summary>
         private static IEnumerable<string> EnumerateReplayFilesSafe(string root)
         {
@@ -116,7 +114,7 @@ namespace SC2ModManager.Services
                 }
                 catch
                 {
-                    continue; // no access — skip this folder
+                    continue; // no access, skip it
                 }
 
                 foreach (string sub in subDirs)
@@ -324,8 +322,8 @@ namespace SC2ModManager.Services
         }
 
         // ============================== Backup / restore + crash recovery (DISABLED) ==============================
-        // Tied to the replay-tools file swap, which no longer runs. Direct launch never creates
-        // backups, so there is nothing to restore. Kept commented out for possible future revival.
+        // This only existed for the replay tools file swap which doesn't run anymore. Direct launch
+        // never makes backups so there's nothing to restore. Keeping it in case the tools come back.
         /*
         private static string GetLuaBackupPath(string gamedataPath) =>
             Path.Combine(gamedataPath,
@@ -372,13 +370,10 @@ namespace SC2ModManager.Services
         // ============================== Launch replay ==============================
 
         /// <summary>
-        ///     Launches the replay WITHOUT touching any gamedata files — no backup, no .replay
-        ///     swap, no restore. Just runs the game with the /replay flag against whatever lua
-        ///     is currently in gamedata, waits for it to exit.
-        ///
-        ///     This is now the only launch path. The old swap-based approach (and the whole
-        ///     replay-tools download/backup/restore machinery) is disabled — see the commented-out
-        ///     regions in this file.
+        ///     Launches the replay without touching any gamedata files. No backup, no .replay swap,
+        ///     no restore. Just runs the game with the /replay flag against whatever lua is currently
+        ///     in gamedata and waits for it to exit. This is the only launch path now, the old swap
+        ///     based stuff is disabled in the commented out sections in this file.
         /// </summary>
         public async Task LaunchReplayDirectAsync(ReplayEntry replay, string gamePath)
         {
@@ -386,11 +381,11 @@ namespace SC2ModManager.Services
             if (!File.Exists(exePath))
                 throw new FileNotFoundException($"Game executable not found: {exePath}");
 
-            // DIAGNOSTIC (temporary): a before/after snapshot can't see a file that is created and
-            // then deleted within the session. So in addition to the snapshot, watch the gamedata
-            // and profile folders LIVE and log every create/delete/change/rename as it happens,
-            // and log the real game process name(s) to confirm we're tracking the right process.
-            // Remove all of this once we've identified what poisons the replay state.
+            // DEBUG STUFF (temporary): a before/after snapshot can't see a file that gets created
+            // and then deleted during the session, so we also watch the gamedata and profile folders
+            // live and log every create/delete/change/rename as it happens. Also logs the game
+            // process name(s) so we know we're tracking the right process. Delete all of this once
+            // we figure out what's breaking the replay state.
             string gamedataPath = Path.Combine(gamePath, "gamedata");
             string profilePath = GetGameProfileFolder(replay.FilePath);
             string logPath = Path.Combine(Globals.GetDataPath(), "replay_gamedata_diff.log");
@@ -577,9 +572,9 @@ namespace SC2ModManager.Services
         }
 
         // ============================== Swap-based launch (DISABLED) ==============================
-        // The original launch backed up lua.scd / z_lua_dlc1.scd, copied the patched .replay
-        // files over them, launched, then restored. Replaced by LaunchReplayDirectAsync (above).
-        // Kept commented out for possible future revival.
+        // The original launch backed up lua.scd / z_lua_dlc1.scd, copied the patched .replay files
+        // over them, launched, then restored everything after. Replaced by LaunchReplayDirectAsync
+        // above. Keeping it around in case the replay tools ever come back.
         /*
         /// <summary>
         ///     Backs up the .scd files, copies the .replay files over them, launches the game

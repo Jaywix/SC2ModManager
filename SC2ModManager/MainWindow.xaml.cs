@@ -168,8 +168,8 @@ namespace SC2ModManager
 
         private void GoToHotkeyEditor(object sender, RoutedEventArgs e)
         {
-            // Pass the gamedata path so the editor adopts the installed .scd files as the
-            // source of truth (protects user-customized luo.scd from being clobbered).
+            // Pass the gamedata path so the editor picks up the installed .scd files as the source
+            // of truth. This keeps a custom luo.scd from getting overwritten by our local copy.
             string? gamedataPath = string.IsNullOrEmpty(vm.GamePath)
                 ? null
                 : System.IO.Path.Combine(vm.GamePath, "gamedata");
@@ -486,8 +486,8 @@ namespace SC2ModManager
 
         private void PopulateReplayView()
         {
-            // Replays launch directly with no support files, so there is no "tools installed"
-            // gate anymore — the replay list is always available.
+            // Replays launch directly with no support files now, so there's no "tools installed"
+            // check anymore. The replay list is always available.
             ReplayContentPanel.Visibility = Visibility.Visible;
 
             UpdateReplayFilterButtonStyles();
@@ -1002,8 +1002,7 @@ namespace SC2ModManager
             if (sender is not System.Windows.Controls.Button btn || btn.Tag is not SC2ModManager.Models.ReplayEntry replay)
                 return;
 
-            // Direct launch no longer modifies any game files, so the old "your files will be
-            // temporarily changed" warning dialog was removed.
+            // Direct launch doesn't touch any game files anymore so the old warning dialog is gone
 
             // Disable all launch buttons while running
             SetReplayLaunchButtonsEnabled(false);
@@ -1022,9 +1021,9 @@ namespace SC2ModManager
 
         private void SetReplayLaunchButtonsEnabled(bool enabled)
         {
-            // The buttons live inside a StackPanel within the card's grid (see BuildReplayCard),
-            // not directly in the grid — the old code searched one level too shallow and
-            // never disabled anything.
+            // The buttons are inside a StackPanel inside the card's grid (see BuildReplayCard), not
+            // directly in the grid. The old code searched one level too shallow and never disabled
+            // anything.
             foreach (var child in ReplayListPanel.Children.OfType<System.Windows.Controls.Border>())
             {
                 if (child.Child is not System.Windows.Controls.Grid grid) continue;

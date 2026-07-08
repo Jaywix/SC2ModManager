@@ -49,10 +49,9 @@ namespace SC2ModManager.Services
 
             var files = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
                 .Select(f => Path.GetRelativePath(gameDataPath, f))
-                // Hotkey files (lua.scd / luo.scd / BuildmodeHotkeys.scd) are managed
-                // exclusively by the hotkey mod system. Capturing them here would make a
-                // preset try to add/remove them on apply, which can leave gamedata in a
-                // combination that crashes the game. Keep presets agnostic to hotkey state.
+                // Don't include the hotkey files (lua.scd / luo.scd / BuildmodeHotkeys.scd) in presets.
+                // Those belong to the hotkey mod system, and if a preset tries to add or remove them
+                // on apply the gamedata can end up in a combination that breaks the game.
                 .Where(f => !Globals.IsHotkeyManagedFile(f))
                 .OrderBy(f => f)
                 .ToList();
@@ -77,7 +76,7 @@ namespace SC2ModManager.Services
             {
                 Name = name,
                 CreatedAt = DateTime.Now,
-                // Never let hotkey-managed files into a preset (see SavePreset).
+                // Keep the hotkey files out of presets here too, same reason as SavePreset
                 Files = files.Where(f => !Globals.IsHotkeyManagedFile(f)).ToList()
             };
 
@@ -151,10 +150,10 @@ namespace SC2ModManager.Services
             {
                 string relative = Path.GetRelativePath(gameDataPath, file);
 
-                // Never delete hotkey-managed files (lua.scd / luo.scd / BuildmodeHotkeys.scd).
-                // Their state is owned by the hotkey mod and must survive preset switches —
-                // deleting one half of the lua/luo pair crashes the game. This also protects
-                // against legacy presets saved before hotkey files were excluded.
+                // Never delete the hotkey files (lua.scd / luo.scd / BuildmodeHotkeys.scd). The hotkey
+                // mod owns those and they need to survive preset switches, deleting one half of the
+                // lua/luo pair breaks the game. This also covers old presets that were saved back
+                // when hotkey files still got included in them.
                 if (Globals.IsHotkeyManagedFile(relative))
                     continue;
 
