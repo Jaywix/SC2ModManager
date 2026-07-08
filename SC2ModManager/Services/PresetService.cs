@@ -49,6 +49,10 @@ namespace SC2ModManager.Services
 
             var files = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories)
                 .Select(f => Path.GetRelativePath(gameDataPath, f))
+                // Don't include the hotkey files (lua.scd / luo.scd / BuildmodeHotkeys.scd) in presets.
+                // Those belong to the hotkey mod system, and if a preset tries to add or remove them
+                // on apply the gamedata can end up in a combination that breaks the game.
+                .Where(f => !Globals.IsHotkeyManagedFile(f))
                 .OrderBy(f => f)
                 .ToList();
 
@@ -72,7 +76,8 @@ namespace SC2ModManager.Services
             {
                 Name = name,
                 CreatedAt = DateTime.Now,
-                Files = files
+                // Keep the hotkey files out of presets here too, same reason as SavePreset
+                Files = files.Where(f => !Globals.IsHotkeyManagedFile(f)).ToList()
             };
 
             string safeName = MakeSafeFileName(name);
@@ -144,6 +149,14 @@ namespace SC2ModManager.Services
             foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
             {
                 string relative = Path.GetRelativePath(gameDataPath, file);
+
+                // Never delete the hotkey files (lua.scd / luo.scd / BuildmodeHotkeys.scd). The hotkey
+                // mod owns those and they need to survive preset switches, deleting one half of the
+                // lua/luo pair breaks the game. This also covers old presets that were saved back
+                // when hotkey files still got included in them.
+                if (Globals.IsHotkeyManagedFile(relative))
+                    continue;
+
                 if (!presetFiles.Contains(relative))
                     File.Delete(file);
             }

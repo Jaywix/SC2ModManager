@@ -59,6 +59,55 @@ namespace SC2ModManager.Services
         }
 
         /// <summary>
+        ///     Copies the .scd that is actually installed in gamedata over our local copy if they are
+        ///     different. The hotkey editor edits the local copy and ApplyToGamedata copies it back over
+        ///     gamedata, so if someone put their own luo.scd in gamedata, saving hotkeys would wipe out
+        ///     their version with our old copy. Syncing gamedata to local first means we always edit
+        ///     whatever is actually installed. Call this before loading the editor. Does nothing if the
+        ///     mod isn't installed.
+        /// </summary>
+        public void SyncLocalFromGamedata(HotkeyModType modType, string gamedataPath)
+        {
+            if (string.IsNullOrEmpty(gamedataPath) || !Directory.Exists(gamedataPath))
+                return;
+
+            string scdName = modType == HotkeyModType.NormalHotkey
+                ? Globals.NormalHotkeyScdName
+                : Globals.BuildModeScdName;
+
+            string installedPath = Path.Combine(gamedataPath, scdName);
+            if (!File.Exists(installedPath))
+                return;
+
+            string localPath = GetLocalScdPath(modType);
+
+            if (File.Exists(localPath))
+            {
+                var installed = new FileInfo(installedPath);
+                var local = new FileInfo(localPath);
+
+                // File.Copy keeps the size and write time the same, so if these don't match
+                // then the file in gamedata was changed outside the mod manager
+                if (installed.Length == local.Length &&
+                    installed.LastWriteTimeUtc == local.LastWriteTimeUtc)
+                    return;
+
+                // Back up our current copy first so Restore Originals still goes back to the downloaded version
+                CreateBackupsIfAbsent(modType);
+            }
+            else
+            {
+                Directory.CreateDirectory(Globals.GetHotkeyModsPath());
+            }
+
+            File.Copy(installedPath, localPath, overwrite: true);
+
+            // If there was never a backup (the file never came through the manager), the file we just
+            // took becomes its own original. Does nothing if a backup already exists.
+            CreateBackupsIfAbsent(modType);
+        }
+
+        /// <summary>
         ///     Applies the local mod file to the game.
         ///     Normal mod: backs up and deletes lua.scd, then places luo.scd and toc.win.bdf.
         ///     Build mode mod: places BuildmodeHotkeys.scd in gamedata.
@@ -185,7 +234,72 @@ namespace SC2ModManager.Services
             if (File.Exists(backupScd)) File.Delete(backupScd);
         }
 
-        // ======================  Normal Hotkey Parsing ====================== 
+        // ======================  State Reconciliation ======================
+
+        /// <summary>
+        ///     Makes sure the hotkey files are in a combination the game can actually run with.
+        ///     There should only ever be ONE of lua.scd/luo.scd in gamedata, and toc.win.bdf (which
+        ///     goes in the game root next to the gamedata folder, not inside it) should only exist
+        ///     when luo.scd does. The game breaks if both lua files are there, if neither is there,
+        ///     or if the toc file gets left behind without luo.scd.
+        ///     Call this after anything that moves gamedata files around (like presets) and it will
+        ///     clean up whatever it finds. Safe to call whenever.
+        /// </summary>
+        public void ReconcileNormalHotkeyState(string gamedataPath)
+        {
+            if (string.IsNullOrEmpty(gamedataPath) || !Directory.Exists(gamedataPath))
+                return;
+
+            string gameRoot = Path.GetDirectoryName(gamedataPath)!;
+            string luaPath = Path.Combine(gamedataPath, Globals.LuaScdName);
+            string luoPath = Path.Combine(gamedataPath, Globals.NormalHotkeyScdName);
+            string tocPath = Path.Combine(gameRoot, Globals.TocWinBdfName);
+
+            bool luoPresent = File.Exists(luoPath);
+            bool luaPresent = File.Exists(luaPath);
+
+            if (luoPresent)
+            {
+                // Hotkey mod is active. lua.scd can't be in gamedata at the same time as luo.scd,
+                // so back it up (don't overwrite an existing backup) and delete it.
+                if (luaPresent)
+                {
+                    string backupDir = Globals.GetHotkeyModsBackupPath();
+                    Directory.CreateDirectory(backupDir);
+
+                    string luaBackup = GetLuaScdBackupPath();
+                    if (!File.Exists(luaBackup))
+                        File.Copy(luaPath, luaBackup);
+
+                    File.Delete(luaPath);
+                }
+
+                // luo.scd needs toc.win.bdf in the game root to load
+                if (!File.Exists(tocPath))
+                {
+                    string localBdf = Globals.GetLocalTocBdfPath();
+                    if (File.Exists(localBdf))
+                        File.Copy(localBdf, tocPath, overwrite: true);
+                }
+            }
+            else
+            {
+                // Hotkey mod is not active. Don't leave the toc file behind without luo.scd,
+                // it points the game at a file that isn't there anymore and that breaks it.
+                if (File.Exists(tocPath))
+                    File.Delete(tocPath);
+
+                // The game still needs its keymap, so restore the original lua.scd if it's gone.
+                if (!luaPresent)
+                {
+                    string luaBackup = GetLuaScdBackupPath();
+                    if (File.Exists(luaBackup))
+                        File.Copy(luaBackup, luaPath, overwrite: true);
+                }
+            }
+        }
+
+        // ======================  Normal Hotkey Parsing ======================
 
         /// <summary>
         ///     Parses defaultKeyMap.lua from luo.scd and returns all hotkey entries across all three
@@ -284,21 +398,20 @@ namespace SC2ModManager.Services
             {
                 string line = rawLine.TrimEnd();
 
-                // Comment lines must not drive section transitions — a comment containing
-                // "defaultKeyMap" would otherwise flip the current section back to Main
-                // mid-Tooltip/Debug, silently misclassifying the entries that follow.
+                // Skip comment lines completely. If we don't, a comment that mentions "defaultKeyMap"
+                // can flip the section back to Main, and commented out bindings like
+                // --['Tab'] = 'next_cam_position' get picked up as real hotkeys. The mod has a bunch
+                // of disabled bindings like that and they were showing up in the editor.
                 bool isComment = line.TrimStart().StartsWith("--");
+                if (isComment) continue;
 
-                if (!isComment)
-                {
-                    // Detect section transitions
-                    if (line.Contains("keymapTooltipHotkeys"))
-                        currentSection = HotkeySection.Tooltip;
-                    else if (line.Contains("debugKeyMap"))
-                        currentSection = HotkeySection.Debug;
-                    else if (line.Contains("defaultKeyMap"))
-                        currentSection = HotkeySection.Main;
-                }
+                // Detect section transitions
+                if (line.Contains("keymapTooltipHotkeys"))
+                    currentSection = HotkeySection.Tooltip;
+                else if (line.Contains("debugKeyMap"))
+                    currentSection = HotkeySection.Debug;
+                else if (line.Contains("defaultKeyMap"))
+                    currentSection = HotkeySection.Main;
 
                 var m = entryRegex.Match(line);
                 if (!m.Success) continue;
@@ -322,11 +435,10 @@ namespace SC2ModManager.Services
 
         private static string RebuildDefaultKeyMap(string originalLua, List<HotkeyEntry> entries)
         {
-            // Build lookup: (originalKey, command, section) → new keycombo.
-            // Keying by the original key (not just command) lets us correctly handle
-            // files where the same command has multiple bindings in the same section
-            // (e.g. ['B'] = 'build' and ['Shift-B'] = 'build').  A command-only key
-            // would use last-write-wins and silently corrupt the first binding on save.
+            // Lookup is (originalKey, command, section) -> new keycombo. We key by the original key
+            // and not just the command because the same command can have multiple bindings in the
+            // same section (like ['B'] = 'build' and ['Shift-B'] = 'build'). If we only keyed by
+            // command then the last one would win and the first binding would get messed up on save.
             var lookup = new Dictionary<(string origKey, string command, HotkeySection section), string>();
             foreach (var e in entries)
                 lookup[(e.OriginalKeyCombo, e.Command, e.Section)] = e.KeyCombo;
@@ -342,7 +454,7 @@ namespace SC2ModManager.Services
             {
                 string line = rawLine.TrimEnd('\r');
 
-                // Leave comment lines untouched — don't update section state or rewrite keys
+                // Leave comment lines alone, don't update section state or rewrite keys on them
                 if (!line.TrimStart().StartsWith("--"))
                 {
                     if (line.Contains("keymapTooltipHotkeys"))
@@ -513,7 +625,8 @@ namespace SC2ModManager.Services
             // it sees size = 0 and treats the entry as empty, causing the game to silently fail.
             //
             // Fix: build the ZIP manually so every local file header contains the correct
-            // CRC and sizes up front (bit 3 clear), exactly as WinRAR / 7-Zip produce.
+            // CRC and sizes up front (bit 3 clear), exactly as WinRAR / 7-Zip produce, which work
+            // when editing the files manually
 
             string normalised = internalPath.Replace('\\', '/');
             byte[] newBytes = new UTF8Encoding(false).GetBytes(content); // no BOM

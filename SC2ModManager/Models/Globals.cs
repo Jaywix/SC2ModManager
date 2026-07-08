@@ -112,6 +112,28 @@ namespace SC2ModManager.Models
         // Suffix appended to backup lua files so we how they were made. This may come in handy when I implement the balance mods or any other mod that changes original files
         public const string HotkeyModBackupSuffix = "_Original_MadeBy_HotkeyMod";
 
+        /// <summary>
+        ///     Gamedata files that belong to the hotkey mod system. Presets should never save, add, or
+        ///     delete these. lua.scd and luo.scd are a pair (see HotkeyService), removing one without
+        ///     putting the other back breaks the game, so hotkey files only ever get changed from the
+        ///     Hotkeys tab and presets leave them alone.
+        /// </summary>
+        public static readonly string[] HotkeyManagedGamedataFiles =
+        {
+            LuaScdName,           // lua.scd  (original keymap)
+            NormalHotkeyScdName,  // luo.scd  (modified keymap)
+            BuildModeScdName      // BuildmodeHotkeys.scd
+        };
+
+        /// <summary>
+        ///     True if the file is one of the hotkey mod's gamedata files
+        /// </summary>
+        public static bool IsHotkeyManagedFile(string fileNameOrRelativePath)
+        {
+            string name = Path.GetFileName(fileNameOrRelativePath);
+            return HotkeyManagedGamedataFiles.Any(f => string.Equals(f, name, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static string GetHotkeyModsPath()
         {
             return Path.Combine(GetDataPath(), "HotkeyMods");
@@ -126,6 +148,30 @@ namespace SC2ModManager.Models
         {
             return Path.Combine(GetHotkeyModsPath(), "Backups");
         }
+
+        // ================= REPLAY TOOLS (DISABLED) =================
+        // Replays launch directly now and don't need the support files, so none of this is used.
+        // Keeping it commented out in case I ever bring the replay tools back.
+        /*
+        public static string LuaReplayFileName = "lua.replay";
+        public static string ZLuaDlc1ReplayFileName = "z_lua_dlc1.replay";
+        public static string ZLuaDlc1ScdName = "z_lua_dlc1.scd";
+        public const string ReplayBackupSuffix = "_replaybackup.bkup";
+
+        public static string ReplayToolsLuaReplayDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/ReplayTools_v1.0.0/lua.replay";
+        public static string ReplayToolsZLuaDlc1ReplayDownloadUrl = "https://github.com/Jaywix/SC2Mods/releases/download/ReplayTools_v1.0.0/z_lua_dlc1.replay";
+
+        public static string GetReplayToolsPath()
+        {
+            return Path.Combine(GetDataPath(), "replaytools");
+        }
+        */
+
+        public static string DefaultReplaysBasePath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "My Games", "SquareEnix", "Supreme Commander 2", "replays"
+            );
     }
 
 

@@ -1,0 +1,58 @@
+<Window x:Class="SC2ModManager.Views.ReplayWarningDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Launch Replay"
+        Width="460"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#0D1117"
+        Foreground="White"
+        FontFamily="Segoe UI">
+
+    <StackPanel Margin="24,20,24,20">
+
+        <!-- Warning icon + title -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+            <TextBlock Text="⚠" FontSize="22" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBlock Text="Before You Launch a Replay"
+                       FontSize="17" FontWeight="SemiBold" Foreground="White"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Warning text -->
+        <Border Background="#1C1600" BorderBrush="#856404" BorderThickness="1" CornerRadius="4"
+                Padding="14,10" Margin="0,0,0,16">
+            <TextBlock Foreground="#E3B341" FontSize="13" TextWrapping="Wrap" LineHeight="20">
+                <Run Text="After watching a replay, you "/>
+                <Run Text="must close the game" FontWeight="Bold"/>
+                <Run Text=" before playing multiplayer. The mod manager will automatically restore your game files once the game is closed, but multiplayer may not work correctly until that happens."/>
+            </TextBlock>
+        </Border>
+
+        <!-- Don't show again checkbox -->
+        <CheckBox x:Name="DontShowAgainCheckBox"
+                  Content="Don't show this warning again"
+                  Foreground="#AAAAAA"
+                  FontSize="13"
+                  Margin="0,0,0,20"/>
+
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel"
+                    Width="90" Height="32" Margin="0,0,8,0"
+                    Background="#2D333B" Foreground="White"
+                    BorderBrush="#444C56" BorderThickness="1"
+                    Cursor="Hand"
+                    Click="Cancel_Click"/>
+            <Button Content="▶  Launch Replay"
+                    Width="140" Height="32"
+                    Background="#1E90FF" Foreground="White"
+                    BorderThickness="0"
+                    FontWeight="SemiBold"
+                    Cursor="Hand"
+                    Click="Launch_Click"/>
+        </StackPanel>
+
+    </StackPanel>
+</Window>

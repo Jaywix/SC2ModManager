@@ -194,6 +194,12 @@ namespace SC2ModManager.ViewModels
 
             InitializeGamePath();
 
+            // Load from disk first. These collections only get populated when the user visits the
+            // Installed screens, so disabling without loading first would do nothing and leave the
+            // storage folders out of sync.
+            LoadInstalledMaps();
+            LoadInstalledGenericMods();
+
             this.DisableAllGenericMods();
             this.DisableAllMaps();
         }
@@ -235,6 +241,7 @@ namespace SC2ModManager.ViewModels
                 () => GamePath);
 
             InitializeGamePath();
+            InitializeReplayPath();
             _ = CheckForUpdatesAsync();
             _ = LoadNewsAsync();
         }
@@ -344,6 +351,14 @@ namespace SC2ModManager.ViewModels
 
                 // Snapshot the original files list after a clean restore
                 presetService.SaveOriginalFilesList(GamePath + "\\gamedata");
+
+                // Load the installed collections from disk BEFORE disabling. They are only
+                // populated when the user visits the Installed screens — if the user came
+                // straight here, DisableAll* would run on empty collections and the state
+                // save below would overwrite maps_state/generic mods state with nothing,
+                // wiping all saved mod metadata.
+                LoadInstalledMaps();
+                LoadInstalledGenericMods();
 
                 // Mark all maps and generic mods as disabled since gamedata was wiped
                 DisableAllMaps();
@@ -506,6 +521,11 @@ namespace SC2ModManager.ViewModels
 
                 SaveGenericModsToGamedata();
 
+                // Presets leave the hotkey files (lua.scd / luo.scd / toc.win.bdf) alone, but the
+                // gamedata shuffle above could have uncovered a bad combination that was already
+                // there. Clean it up so the game still launches after the switch.
+                new HotkeyService().ReconcileNormalHotkeyState(Path.Combine(GamePath, "gamedata"));
+
                 MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
             }
             catch (Exception ex)
@@ -618,7 +638,7 @@ namespace SC2ModManager.ViewModels
                 if (knownMods.Contains(file) || ModStorageService.IsOriginalGameFile(file))
                     continue;
 
-                // Hotkey mod files are managed exclusively by the mod manager — skip them
+                // The hotkey mod files are handled by the mod manager itself so skip them
                 if (string.Equals(file, Globals.NormalHotkeyScdName, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(file, Globals.BuildModeScdName,    StringComparison.OrdinalIgnoreCase))
                     continue;
@@ -1218,17 +1238,30 @@ namespace SC2ModManager.ViewModels
 
         public async Task LoadDownloadableGenericModsAsync()
         {
-            var all = await storageService.GetDownloadableGenericModsAsync();
-            var installed = storageService.GetInstalledGenericMods();
-            var fileNames = installed.Select(m => m.FileName).ToHashSet();
+            try
+            {
+                var all = await storageService.GetDownloadableGenericModsAsync();
+                var installed = storageService.GetInstalledGenericMods();
+                var fileNames = installed.Select(m => m.FileName).ToHashSet();
 
-            foreach (var mod in all)
-                mod.IsDownloaded = fileNames.Contains(mod.FileName);
+                foreach (var mod in all)
+                    mod.IsDownloaded = fileNames.Contains(mod.FileName);
 
-            DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
-            OnPropertyChanged(nameof(DownloadableGenericMods));
+                DownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(all);
+                OnPropertyChanged(nameof(DownloadableGenericMods));
 
-            RefreshDownloadGenericModSort();
+                RefreshDownloadGenericModSort();
+            }
+            catch
+            {
+                // This gets awaited from an async void navigation handler, so if this throws
+                // (like when there's no internet) it would crash the whole app
+                MessageBox.Show(
+                    "Could not connect to the internet to load the mod list.\n\nPlease check your connection and try again.",
+                    "Connection Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
@@ -1631,6 +1664,127 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // ================= REPLAYS =================
+
+        private readonly ReplayService replayService = new();
+
+        // The replay tools download/install is removed since replays launch directly now with no
+        // support files. IsReplayToolsInstalled / IsReplayDownloading / DownloadReplayToolsAsync are
+        // disabled, keeping them commented out in case I bring the replay tools back someday.
+        /*
+        public bool IsReplayToolsInstalled => replayService.AreReplayToolsInstalled();
+
+        private bool isReplayDownloading;
+        public bool IsReplayDownloading
+        {
+            get => isReplayDownloading;
+            set { isReplayDownloading = value; OnPropertyChanged(nameof(IsReplayDownloading)); }
+        }
+
+        public async Task DownloadReplayToolsAsync()
+        {
+            IsReplayDownloading = true;
+            try
+            {
+                await replayService.DownloadReplayToolsAsync();
+                OnPropertyChanged(nameof(IsReplayToolsInstalled));
+            }
+            finally
+            {
+                IsReplayDownloading = false;
+            }
+        }
+        */
+
+        private bool isReplayRunning;
+        public bool IsReplayRunning
+        {
+            get => isReplayRunning;
+            set { isReplayRunning = value; OnPropertyChanged(nameof(IsReplayRunning)); }
+        }
+
+        public List<Models.ReplayEntry> GetReplays()
+        {
+            return replayService.GetReplays(ReplaysPath);
+        }
+
+        public async Task LaunchReplayAsync(Models.ReplayEntry replay)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set. Please configure it in Settings first.");
+                return;
+            }
+
+            // Don't let a second game instance launch while one is already running. Disabling the
+            // buttons in the UI helps but this is the actual gate.
+            if (IsReplayRunning)
+            {
+                MessageBox.Show("A replay is already running. Close the game before launching another one.");
+                return;
+            }
+
+            IsReplayRunning = true;
+            try
+            {
+                // Launch directly with /replay, no gamedata file swap needed
+                await replayService.LaunchReplayDirectAsync(replay, GamePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch replay: {ex.Message}");
+            }
+            finally
+            {
+                IsReplayRunning = false;
+            }
+        }
+
+        public void SaveReplayFolderPath(string path)
+        {
+            ReplaysPath = path;
+            var config = configService.Load();
+            config.ReplayFolderPath = path;
+            configService.Save(config);
+        }
+
+        public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
+            => replayService.RenameReplay(entry, newDisplayName);
+
+        // The replay backup crash recovery only existed for the replay tools file swap, which
+        // doesn't run anymore. Direct launch never makes backups so there's nothing to restore.
+        // Keeping this commented out in case the replay tools ever come back.
+        /*
+        public void CheckAndRestoreReplayBackups()
+        {
+            if (string.IsNullOrEmpty(GamePath)) return;
+
+            string gamedataPath = Path.Combine(GamePath, "gamedata");
+            if (!Directory.Exists(gamedataPath)) return;
+            if (!replayService.HasOrphanedBackups(gamedataPath)) return;
+
+            try
+            {
+                replayService.RestoreOrphanedBackups(gamedataPath);
+                MessageBox.Show(
+                    "Replay backup files were found from a previous session.\n\n" +
+                    "They have been automatically restored. Your game files should now be intact.",
+                    "Replay Files Restored",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Replay backup files were found but could not be fully restored: {ex.Message}\n\n" +
+                    "Your multiplayer may be affected. Please check your gamedata folder manually.",
+                    "Restore Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        */
+
         // ================= FILE LOCATIONS =================
 
         private string replaysPath;
@@ -1654,12 +1808,16 @@ namespace SC2ModManager.ViewModels
 
         public void InitializeFileLocations()
         {
-            // Replays
-            string defaultReplays = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "My Games", "SquareEnix", "Supreme Commander 2", "replays"
-            );
-            ReplaysPath = Directory.Exists(defaultReplays) ? defaultReplays : null;
+            // Replays — load from config first, then fall back to default detection
+            var config = configService.Load();
+            if (!string.IsNullOrEmpty(config.ReplayFolderPath) && Directory.Exists(config.ReplayFolderPath))
+            {
+                ReplaysPath = config.ReplayFolderPath;
+            }
+            else
+            {
+                ReplaysPath = Directory.Exists(Globals.DefaultReplaysBasePath) ? Globals.DefaultReplaysBasePath : null;
+            }
 
             // Game.prefs
             string defaultPrefsFolder = Path.Combine(
@@ -1672,6 +1830,22 @@ namespace SC2ModManager.ViewModels
 
             OnPropertyChanged(nameof(GameDataPath));
             OnPropertyChanged(nameof(GameDataFound));
+        }
+
+        /// <summary>
+        ///     Loads the replay folder path from config (or detects the default) without
+        ///     touching the other file-location properties. Called at startup.
+        /// </summary>
+        public void InitializeReplayPath()
+        {
+            var config = configService.Load();
+            if (!string.IsNullOrEmpty(config.ReplayFolderPath) && Directory.Exists(config.ReplayFolderPath))
+            {
+                ReplaysPath = config.ReplayFolderPath;
+                return;
+            }
+            if (Directory.Exists(Globals.DefaultReplaysBasePath))
+                ReplaysPath = Globals.DefaultReplaysBasePath;
         }
 
         public void OpenFolder(string path)
