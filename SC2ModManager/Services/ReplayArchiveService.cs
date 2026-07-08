@@ -294,7 +294,7 @@ namespace SC2ModManager.Services
 
             File.Copy(sourceReplay.FullName, replayTarget, overwrite: false);
 
-            var meta = new ReplayMetadata
+            var meta = new ReplayArchiveMetadata
             {
                 CapturedAtLocal = DateTime.Now,
                 SourceReplayPath = sourceReplay.FullName,
@@ -565,7 +565,10 @@ namespace SC2ModManager.Services
         public List<string> EnabledMaps { get; set; } = new();
     }
 
-    public class ReplayMetadata
+    // Named ReplayArchiveMetadata and not ReplayMetadata because Models already has a
+    // ReplayMetadata for the parsed replay header info. This one is just the info we
+    // save alongside an archived replay.
+    public class ReplayArchiveMetadata
     {
         public DateTime CapturedAtLocal { get; set; }
         public string SourceReplayPath { get; set; } = "";
