@@ -14,6 +14,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
@@ -78,6 +79,165 @@ namespace SC2ModManager.Services
 
             if (File.Exists(path))
                 File.Delete(path);
+        }
+
+        // ================= FULL GAMEDATA BACKUP =================
+        // One-slot backup of the exact gamedata state (plus whether toc.win.bdf was in the game
+        // root), taken right before Restore Original Game Files so the user can undo it. This is a
+        // dumb file copy on purpose — it does not know or care about the hotkey mod, presets, or
+        // anything else. Restoring it puts back exactly what was there, byte for byte.
+
+        public class FullBackupInfo
+        {
+            public DateTime CreatedAt { get; set; }
+            public bool TocWasPresent { get; set; }
+        }
+
+        private static string GetFullBackupDir() => Path.Combine(Globals.GetDataPath(), "FullGamedataBackup");
+        private static string GetFullBackupGamedataDir() => Path.Combine(GetFullBackupDir(), "gamedata");
+        private static string GetFullBackupInfoPath() => Path.Combine(GetFullBackupDir(), "backup_info.json");
+        private static string GetFullBackupTocPath() => Path.Combine(GetFullBackupDir(), Globals.TocWinBdfName);
+
+        /// <summary>
+        ///     True if a complete full backup exists. The info file is written last during creation,
+        ///     so if it's there the backup finished.
+        /// </summary>
+        public bool HasFullBackup() => File.Exists(GetFullBackupInfoPath());
+
+        public FullBackupInfo? GetFullBackupInfo()
+        {
+            if (!HasFullBackup()) return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<FullBackupInfo>(File.ReadAllText(GetFullBackupInfoPath()));
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     Copies the entire gamedata folder (and toc.win.bdf from the game root if present) into
+        ///     the backup slot. Replaces any previous full backup — there is only ever one.
+        /// </summary>
+        public async Task CreateFullBackupAsync(string gameDataPath)
+        {
+            var progressVm = new ProgressViewModel { Status = "Backing up gamedata..." };
+            var progressWindow = new ProgressWindow { DataContext = progressVm };
+
+            progressWindow.Show();
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    string backupDir = GetFullBackupDir();
+                    string backupGamedataDir = GetFullBackupGamedataDir();
+
+                    // Only one full backup at a time, so a new one replaces the old
+                    if (Directory.Exists(backupDir))
+                        Directory.Delete(backupDir, true);
+
+                    Directory.CreateDirectory(backupGamedataDir);
+
+                    var files = Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories);
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        string relative = Path.GetRelativePath(gameDataPath, files[i]);
+                        string dest = Path.Combine(backupGamedataDir, relative);
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                        File.Copy(files[i], dest);
+
+                        progressVm.Progress = (int)((i + 1) * 100L / files.Length);
+                        progressVm.Status = $"Backing up gamedata... {progressVm.Progress}%";
+                    }
+
+                    // Remember the toc.win.bdf state too, it lives in the game root next to gamedata
+                    string gameRoot = Path.GetDirectoryName(gameDataPath)!;
+                    string tocPath = Path.Combine(gameRoot, Globals.TocWinBdfName);
+                    bool tocPresent = File.Exists(tocPath);
+
+                    if (tocPresent)
+                        File.Copy(tocPath, GetFullBackupTocPath());
+
+                    // Written last — this file existing is what marks the backup as complete
+                    var info = new FullBackupInfo { CreatedAt = DateTime.Now, TocWasPresent = tocPresent };
+                    File.WriteAllText(GetFullBackupInfoPath(),
+                        JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }));
+                });
+            }
+            finally
+            {
+                progressWindow.Close();
+            }
+        }
+
+        /// <summary>
+        ///     Puts gamedata (and the toc.win.bdf state) back exactly how it was when the full backup
+        ///     was taken. The backup is kept afterwards so this can be done again if needed.
+        /// </summary>
+        public async Task RestoreFullBackupAsync(string gameDataPath)
+        {
+            var info = GetFullBackupInfo()
+                ?? throw new InvalidOperationException("No full gamedata backup exists.");
+
+            var progressVm = new ProgressViewModel { Status = "Restoring backup..." };
+            var progressWindow = new ProgressWindow { DataContext = progressVm };
+
+            progressWindow.Show();
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    string backupGamedataDir = GetFullBackupGamedataDir();
+
+                    // Wipe the current gamedata, then copy the backed up files back in
+                    if (!Directory.Exists(gameDataPath))
+                        Directory.CreateDirectory(gameDataPath);
+
+                    foreach (var file in Directory.GetFiles(gameDataPath, "*", SearchOption.AllDirectories))
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                    }
+
+                    foreach (var dir in Directory.GetDirectories(gameDataPath, "*", SearchOption.AllDirectories))
+                    {
+                        try { Directory.Delete(dir, false); }
+                        catch { }
+                    }
+
+                    var files = Directory.GetFiles(backupGamedataDir, "*", SearchOption.AllDirectories);
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        string relative = Path.GetRelativePath(backupGamedataDir, files[i]);
+                        string dest = Path.Combine(gameDataPath, relative);
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                        File.Copy(files[i], dest, overwrite: true);
+
+                        progressVm.Progress = (int)((i + 1) * 100L / files.Length);
+                        progressVm.Status = $"Restoring backup... {progressVm.Progress}%";
+                    }
+
+                    // Put toc.win.bdf back in the exact state it was in — present or not
+                    string gameRoot = Path.GetDirectoryName(gameDataPath)!;
+                    string tocPath = Path.Combine(gameRoot, Globals.TocWinBdfName);
+
+                    if (info.TocWasPresent && File.Exists(GetFullBackupTocPath()))
+                        File.Copy(GetFullBackupTocPath(), tocPath, overwrite: true);
+                    else if (!info.TocWasPresent && File.Exists(tocPath))
+                        File.Delete(tocPath);
+                });
+            }
+            finally
+            {
+                progressWindow.Close();
+            }
         }
 
         // ================= RESTORE =================

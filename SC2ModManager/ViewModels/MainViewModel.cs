@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using SC2ModManager.Models;
 using SC2ModManager.Services;
 using SC2ModManager.ViewModels;
+using SC2ModManager.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -335,18 +336,35 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
-            var confirm = MessageBox.Show(
-                    "This will delete everything currently in your gamedata folder and replace it with the original game files downloaded from GitHub.\n\n" +
-                    "Any mods you have enabled will be removed from gamedata (your installed mod files in the mod manager will not be deleted).\n\n" +
-                    "Are you sure you want to continue?",
-                    "Restore Original Game Files",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+            // Three-way choice: cancel, restore, or take a full backup of the current gamedata
+            // state first so the restore can be undone from the Backups screen
+            var dialog = new RestoreGamedataDialog(gamedataService.HasFullBackup())
+            {
+                Owner = Application.Current.MainWindow
+            };
+            dialog.ShowDialog();
 
-            if (confirm != MessageBoxResult.Yes) return;
+            if (dialog.Choice == RestoreGamedataChoice.Cancel) return;
 
             try
             {
+                if (dialog.Choice == RestoreGamedataChoice.BackupFirstThenRestore)
+                {
+                    try
+                    {
+                        await gamedataService.CreateFullBackupAsync(GamePath + "\\gamedata");
+                        RefreshFullBackupInfo();
+                    }
+                    catch (Exception ex)
+                    {
+                        // If the backup didn't finish, don't go wiping gamedata — that's the whole
+                        // point of asking for a backup first
+                        MessageBox.Show($"Backup failed, so the restore was cancelled: {ex.Message}",
+                            "Backup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
                 await gamedataService.RestoreOriginalGamedataAsync(GamePath + "\\gamedata");
 
                 // Snapshot the original files list after a clean restore
@@ -372,6 +390,67 @@ namespace SC2ModManager.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to restore gamedata: {ex.Message}");
+            }
+        }
+
+        // ================= FULL GAMEDATA BACKUP =================
+
+        public bool HasFullGamedataBackup => gamedataService.HasFullBackup();
+
+        private string fullGamedataBackupLabel = string.Empty;
+        public string FullGamedataBackupLabel
+        {
+            get => fullGamedataBackupLabel;
+            private set { fullGamedataBackupLabel = value; OnPropertyChanged(nameof(FullGamedataBackupLabel)); }
+        }
+
+        public void RefreshFullBackupInfo()
+        {
+            var info = gamedataService.GetFullBackupInfo();
+
+            FullGamedataBackupLabel = info == null
+                ? string.Empty
+                : $"Backup Before Restoring Original Game Files — {info.CreatedAt:M/d/yyyy h:mm tt}";
+
+            OnPropertyChanged(nameof(HasFullGamedataBackup));
+        }
+
+        /// <summary>
+        ///     Puts gamedata back exactly how it was when the full backup was taken (the one made
+        ///     right before Restore Original Game Files). This is a dumb byte-for-byte restore that
+        ///     doesn't consider the hotkey mod, presets, or anything else — the toc.win.bdf state is
+        ///     part of the backup so the lua/luo invariant comes back exactly as it was.
+        /// </summary>
+        public async Task RestoreFullGamedataBackupAsync()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show("Game path not set.");
+                return;
+            }
+
+            if (!gamedataService.HasFullBackup())
+            {
+                MessageBox.Show("No full gamedata backup exists.");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                "This will replace everything currently in your gamedata folder with the backup you made before restoring the original game files.\n\nContinue?",
+                "Restore Backup",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                await gamedataService.RestoreFullBackupAsync(Path.Combine(GamePath, "gamedata"));
+                MessageBox.Show("Backup restored. Your gamedata folder is exactly how it was when the backup was made.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to restore backup: {ex.Message}");
             }
         }
 
@@ -1618,14 +1697,14 @@ namespace SC2ModManager.ViewModels
         public void Uninstall()
         {
             var confirm = MessageBox.Show(
-                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring the original lua.scd). The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
+                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring your original game files). You will be asked whether you want to keep your installed maps and mods in the game folder. The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes) return;
 
-            // Uninstall hotkey mods first so lua.scd is restored before we wipe the data folder
+            // Uninstall hotkey mods first so the game's keymap files are restored before we wipe the data folder
             if (!string.IsNullOrEmpty(GamePath))
             {
                 string gamedataPath = Path.Combine(GamePath, "gamedata");
@@ -1637,7 +1716,17 @@ namespace SC2ModManager.ViewModels
                     {
                         hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // If the keymap files couldn't be restored, wiping the data folder below would
+                        // delete the backups and the game could be left permanently broken. Bail out.
+                        MessageBox.Show(
+                            $"Couldn't restore the game's original hotkey files, so the uninstall was cancelled: {ex.Message}\n\nMake sure the game is closed and try again.",
+                            "Uninstall Cancelled",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        return;
+                    }
                 }
 
                 if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.BuildModeHotkey))
@@ -1645,6 +1734,34 @@ namespace SC2ModManager.ViewModels
                     try
                     {
                         hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.BuildModeHotkey, gamedataPath);
+                    }
+                    catch { }
+                }
+
+                // Maps and generic mods are additive files, so keeping them is harmless — let the
+                // user pick. Hotkeys are never kept; they were already uninstalled above.
+                var keepMaps = MessageBox.Show(
+                    "Do you want to keep your installed maps and mods in the game's gamedata folder?\n\n" +
+                    "Yes — leave them in place, they will keep working in game\n" +
+                    "No — remove them so the game goes back to its original files",
+                    "Keep Maps & Mods?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (keepMaps == MessageBoxResult.No)
+                {
+                    try
+                    {
+                        // Load from disk first — the collections are only populated if the user
+                        // visited the Installed screens this session
+                        LoadInstalledMaps();
+                        LoadInstalledGenericMods();
+
+                        foreach (var map in EnabledMaps.Concat(DisabledMaps))
+                            gamedataService.DisableMap(map, gamedataPath);
+
+                        foreach (var mod in EnabledGenericMods.Concat(DisabledGenericMods))
+                            gamedataService.DisableGenericMod(mod, gamedataPath);
                     }
                     catch { }
                 }

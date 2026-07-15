@@ -1257,6 +1257,12 @@
                             <Button Content="💾  Save Current State as Preset" Margin="0,0,0,6" Click="GoToPresets"/>
                             <Button Content="🔍  Compare Presets"              Margin="0,0,0,6" Click="GoToComparePresets"/>
                             <Button Content="🔄  Restore Original Game Files"  Margin="0,0,0,6" Click="RestoreOriginalGameData_Click"/>
+                            <!-- Only shows once a full backup was made from the Restore Original Game Files dialog -->
+                            <StackPanel Visibility="{Binding HasFullGamedataBackup, Converter={StaticResource BoolToVisConverter}}">
+                                <Button Content="{Binding FullGamedataBackupLabel}" Margin="0,0,0,2" Click="RestoreFullGamedataBackup_Click"/>
+                                <TextBlock Text="Restores your gamedata folder to the exact state it was in when this backup was made."
+                                           FontSize="12" Foreground="#AAAAAA" Margin="4,0,0,6" TextWrapping="Wrap"/>
+                            </StackPanel>
                             <Separator Style="{StaticResource HRule}"/>
                             <Button Content="← Back" Click="GoToMods" HorizontalAlignment="Left" Width="80"/>
                         </StackPanel>

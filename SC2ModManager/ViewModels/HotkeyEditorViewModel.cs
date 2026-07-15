@@ -460,7 +460,7 @@ namespace SC2ModManager.ViewModels
         public void UninstallNormalMod(string gamedataPath)
         {
             var confirm = MessageBox.Show(
-                "Uninstall the hotkey mod?\n\nThis will:\n\u2022 Delete luo.scd from the game's gamedata folder\n\u2022 Restore the original lua.scd to the game's gamedata folder\n\u2022 Remove toc.win.bdf from the game root directory\n\u2022 Delete your local copy and backup",
+                "Uninstall the hotkey mod?\n\nThis will:\n\u2022 Restore your game's keymap files to how they were before the mod was installed through the mod manager (the original lua.scd, or your own luo.scd if you had the mod before using the mod manager)\n\u2022 Delete the mod manager's local copy and backup",
                 "Uninstall Hotkey Mod", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             
             if (confirm != MessageBoxResult.Yes) 
@@ -546,6 +546,18 @@ namespace SC2ModManager.ViewModels
 
         public async Task DownloadAndInstallNormalMod(string gamedataPath)
         {
+            // Make sure the user knows this touches files the game needs before anything downloads
+            var confirm = MessageBox.Show(
+                "Installing the hotkey mod edits game files that are required to run the game:\n\n" +
+                "• lua.scd is backed up and replaced with luo.scd\n" +
+                "• toc.win.bdf is added to the game folder\n\n" +
+                "If you ever want the original files back, uninstall the hotkey mod from this screen and they will be restored. " +
+                "Uninstalling the mod manager from Settings will also restore them.\n\nContinue?",
+                "Install Hotkey Mod", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.OK)
+                return;
+
             IsNormalDownloading = true;
             try
             {
@@ -588,7 +600,7 @@ namespace SC2ModManager.ViewModels
             }
         }
 
-        public async Task DownloadAndInstallBuildModeMod()
+        public async Task DownloadAndInstallBuildModeMod(string gamedataPath)
         {
             IsBuildModeDownloading = true;
             try
@@ -607,6 +619,9 @@ namespace SC2ModManager.ViewModels
                 });
 
                 _service.CreateBackupsIfAbsent(HotkeyModType.BuildModeHotkey);
+                // Actually place the .scd in gamedata — without this the mod only exists in the data
+                // folder and the game never sees it until the user happens to save an edit
+                _service.ApplyToGamedata(HotkeyModType.BuildModeHotkey, gamedataPath);
                 LoadBuildModeHotkeys();
                 MessageBox.Show("Build mode hotkey mod downloaded and installed successfully.", "Done",
                     MessageBoxButton.OK, MessageBoxImage.Information);

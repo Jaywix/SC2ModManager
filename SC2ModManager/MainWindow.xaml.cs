@@ -211,7 +211,12 @@ namespace SC2ModManager
         private async void LauncherHostTags_Click(object sender, RoutedEventArgs e)
             => await vm.Launcher.PushHostTagsAsync();
         private void GoToSettings(object sender, RoutedEventArgs e) => ShowView("Settings");
-        private void GoToBackups(object sender, RoutedEventArgs e) => ShowView("Backups");
+        private void GoToBackups(object sender, RoutedEventArgs e)
+        {
+            // Refresh so the full gamedata backup button and its date stay accurate
+            vm.RefreshFullBackupInfo();
+            ShowView("Backups");
+        }
         private void GoToInstalledMods(object sender, RoutedEventArgs e) => ShowView("InstalledMods");
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
         private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
@@ -1135,7 +1140,13 @@ namespace SC2ModManager
         // ================= BACKUPS =================
 
         private async void RestoreOriginalGameData_Click(object sender, RoutedEventArgs e)
-            => await vm.RestoreOriginalGamedataAsync();
+        {
+            await vm.RestoreOriginalGamedataAsync();
+            vm.RefreshFullBackupInfo();
+        }
+
+        private async void RestoreFullGamedataBackup_Click(object sender, RoutedEventArgs e)
+            => await vm.RestoreFullGamedataBackupAsync();
 
         // ================= PRESETS =================
 
@@ -1694,7 +1705,11 @@ namespace SC2ModManager
         }
 
         private async void DownloadAndInstallBuildModeHotkey_Click(object sender, RoutedEventArgs e)
-            => await vm.HotkeyEditor.DownloadAndInstallBuildModeMod();
+        {
+            string gamedataPath = GetGamedataPath();
+            if (gamedataPath == null) return;
+            await vm.HotkeyEditor.DownloadAndInstallBuildModeMod(gamedataPath);
+        }
 
         private void SaveNormalHotkeys_Click(object sender, RoutedEventArgs e)
         {

@@ -15,7 +15,7 @@
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 		<PublishReadyToRun>true</PublishReadyToRun>
 
-		<EnableLauncher>true</EnableLauncher>
+		<EnableLauncher>false</EnableLauncher>
 	</PropertyGroup>
 
 	<!-- Turn the EnableLauncher flag above into an ENABLE_LAUNCHER compile constant the code uses. -->

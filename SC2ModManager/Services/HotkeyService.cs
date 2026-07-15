@@ -192,8 +192,14 @@ namespace SC2ModManager.Services
         // ====================== Uninstall ====================== 
 
         /// <summary>
-        ///     Uninstalls the mod:
-        ///     Normal mod: deletes luo.scd from gamedata, restores lua.scd, deletes toc.win.bdf from game root.
+        ///     Uninstalls the mod, putting the game files back how they were before the mod manager
+        ///     touched them:
+        ///     Normal mod, if we have a lua.scd backup: deletes luo.scd, restores lua.scd, deletes
+        ///     toc.win.bdf — the user was on the original keymap before, so that's what comes back.
+        ///     Normal mod, if we have NO lua.scd backup: the user already had luo.scd before the mod
+        ///     manager (manual install), so their original luo.scd is restored from the backup we took
+        ///     when we first adopted it, and toc.win.bdf stays — deleting luo with no lua to put back
+        ///     would leave the game with no keymap at all and it wouldn't launch.
         ///     Build mode mod: deletes BuildmodeHotkeys.scd from gamedata.
         ///     Both: deletes local copy and backup.
         /// </summary>
@@ -201,23 +207,35 @@ namespace SC2ModManager.Services
         {
             if (modType == HotkeyModType.NormalHotkey)
             {
-                // 1. Delete luo.scd from gamedata
                 string luoPath = Path.Combine(gamedataPath, Globals.NormalHotkeyScdName);
-                if (File.Exists(luoPath)) File.Delete(luoPath);
-
-                // 2. Restore original lua.scd from backup
                 string luaBackup = GetLuaScdBackupPath();
+                string gameRoot = Path.GetDirectoryName(gamedataPath)!;
+                string bdfFile = Path.Combine(gameRoot, Globals.TocWinBdfName);
+
                 if (File.Exists(luaBackup))
                 {
+                    // They had lua.scd before the mod: delete luo, put lua back, remove the toc file
+                    if (File.Exists(luoPath)) File.Delete(luoPath);
+
                     Directory.CreateDirectory(gamedataPath);
                     File.Copy(luaBackup, Path.Combine(gamedataPath, Globals.LuaScdName), overwrite: true);
                     File.Delete(luaBackup);
-                }
 
-                // 3. Delete toc.win.bdf from game root
-                string gameRoot = Path.GetDirectoryName(gamedataPath)!;
-                string bdfFile = Path.Combine(gameRoot, Globals.TocWinBdfName);
-                if (File.Exists(bdfFile)) File.Delete(bdfFile);
+                    if (File.Exists(bdfFile)) File.Delete(bdfFile);
+                }
+                else
+                {
+                    // They had luo.scd before the mod manager: put their original (unedited by mod manager)
+                    // luo.scd back and leave toc.win.bdf alone since luo still needs it to load
+                    string luoBackup = GetBackupScdPath(modType);
+                    if (File.Exists(luoBackup))
+                    {
+                        Directory.CreateDirectory(gamedataPath);
+                        File.Copy(luoBackup, luoPath, overwrite: true);
+                    }
+                    // No backup of either file: leave gamedata exactly as it is. Anything we delete
+                    // here can't be put back, and removing luo.scd would break the game.
+                }
             }
             else
             {
