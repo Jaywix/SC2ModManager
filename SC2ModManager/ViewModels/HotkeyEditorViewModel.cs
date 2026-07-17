@@ -459,16 +459,23 @@ namespace SC2ModManager.ViewModels
 
         public void UninstallNormalMod(string gamedataPath)
         {
+            // Advanced setting for modders: leave luo.scd / toc.win.bdf in the game untouched
+            bool keepLuo = new ConfigService().Load()?.KeepLuoOnUninstall ?? false;
+
+            string message = keepLuo
+                ? "Uninstall the hotkey mod?\n\n'Keep hotkey mod game files' is enabled, so this will:\n\u2022 Leave luo.scd and toc.win.bdf in your game exactly as they are (the original lua.scd will NOT be restored)\n\u2022 Delete the mod manager's local copy and backups\n\nYour game files stay altered and are yours to maintain."
+                : "Uninstall the hotkey mod?\n\nThis will:\n\u2022 Restore your game's keymap files to how they were before the mod was installed through the mod manager (the original lua.scd, or your own luo.scd if you had the mod before using the mod manager)\n\u2022 Delete the mod manager's local copy and backup";
+
             var confirm = MessageBox.Show(
-                "Uninstall the hotkey mod?\n\nThis will:\n\u2022 Restore your game's keymap files to how they were before the mod was installed through the mod manager (the original lua.scd, or your own luo.scd if you had the mod before using the mod manager)\n\u2022 Delete the mod manager's local copy and backup",
+                message,
                 "Uninstall Hotkey Mod", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            
-            if (confirm != MessageBoxResult.Yes) 
+
+            if (confirm != MessageBoxResult.Yes)
                 return;
 
             try
             {
-                _service.UninstallMod(HotkeyModType.NormalHotkey, gamedataPath);
+                _service.UninstallMod(HotkeyModType.NormalHotkey, gamedataPath, keepLuo);
                 MainHotkeys.Clear();
                 TooltipHotkeys.Clear();
                 DebugHotkeys.Clear();

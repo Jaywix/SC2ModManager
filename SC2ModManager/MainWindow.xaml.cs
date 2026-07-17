@@ -124,6 +124,7 @@ namespace SC2ModManager
             HomeView.Visibility = Visibility.Collapsed;
             ModsView.Visibility = Visibility.Collapsed;
             SettingsView.Visibility = Visibility.Collapsed;
+            AdvancedSettingsView.Visibility = Visibility.Collapsed;
             BackupsView.Visibility = Visibility.Collapsed;
             PresetsView.Visibility = Visibility.Collapsed;
             ComparePresetsView.Visibility = Visibility.Collapsed;
@@ -147,6 +148,7 @@ namespace SC2ModManager
                 case "Home": HomeView.Visibility = Visibility.Visible; break;
                 case "Mods": ModsView.Visibility = Visibility.Visible; break;
                 case "Settings": SettingsView.Visibility = Visibility.Visible; break;
+                case "AdvancedSettings": AdvancedSettingsView.Visibility = Visibility.Visible; break;
                 case "Backups": BackupsView.Visibility = Visibility.Visible; break;
                 case "Presets": PresetsView.Visibility = Visibility.Visible; break;
                 case "ComparePresets": ComparePresetsView.Visibility = Visibility.Visible; break;
@@ -211,6 +213,39 @@ namespace SC2ModManager
         private async void LauncherHostTags_Click(object sender, RoutedEventArgs e)
             => await vm.Launcher.PushHostTagsAsync();
         private void GoToSettings(object sender, RoutedEventArgs e) => ShowView("Settings");
+
+        private void GoToAdvancedSettings(object sender, RoutedEventArgs e)
+        {
+            // Reflect the saved advanced settings on their toggles
+            KeepLuoCheckBox.IsChecked = vm.KeepLuoOnUninstall;
+            ShowView("AdvancedSettings");
+        }
+
+        private void KeepLuoOnUninstall_Click(object sender, RoutedEventArgs e)
+        {
+            // Turning it ON needs an explicit, scary confirmation. Turning it off is always fine.
+            if (KeepLuoCheckBox.IsChecked == true)
+            {
+                var confirm = MessageBox.Show(
+                    "Are you sure you want to keep the hotkey mod files on uninstall?\n\n" +
+                    "This means your game files will STAY ALTERED after uninstalling the hotkey mod or the mod manager — " +
+                    "luo.scd and toc.win.bdf will be left in the game, and the original lua.scd will NOT be restored.\n\n" +
+                    "Altered game files can cause issues with multiplayer and with running the game in general. " +
+                    "Only enable this if you feel confident in your ability to maintain your own game files.\n\n" +
+                    "It is highly advised NOT to do this. Enable anyway?",
+                    "Keep Hotkey Mod Game Files?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (confirm != MessageBoxResult.Yes)
+                {
+                    KeepLuoCheckBox.IsChecked = false;
+                    return;
+                }
+            }
+
+            vm.SetKeepLuoOnUninstall(KeepLuoCheckBox.IsChecked == true);
+        }
         private void GoToBackups(object sender, RoutedEventArgs e)
         {
             // Refresh so the full gamedata backup button and its date stay accurate

@@ -1694,10 +1694,30 @@ namespace SC2ModManager.ViewModels
         }
 
         // ================= SETTINGS =================
+
+        /// <summary>
+        ///     Advanced setting: leave luo.scd / toc.win.bdf in the game when uninstalling the hotkey
+        ///     mod or the mod manager. For modders who maintain their own game files.
+        /// </summary>
+        public bool KeepLuoOnUninstall => configService.Load()?.KeepLuoOnUninstall ?? false;
+
+        public void SetKeepLuoOnUninstall(bool enabled)
+        {
+            var config = configService.Load();
+            config.KeepLuoOnUninstall = enabled;
+            configService.Save(config);
+        }
+
         public void Uninstall()
         {
+            bool keepLuo = KeepLuoOnUninstall;
+
+            string hotkeyNote = keepLuo
+                ? "Note: 'Keep hotkey mod game files' is enabled, so luo.scd and toc.win.bdf will be LEFT IN PLACE and the original lua.scd will not be restored — your game files stay altered and are yours to maintain."
+                : "Note: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring your original game files).";
+
             var confirm = MessageBox.Show(
-                "This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\nNote: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring your original game files). You will be asked whether you want to keep your installed maps and mods in the game folder. The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
+                $"This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\n{hotkeyNote} You will be asked whether you want to keep your installed maps and mods in the game folder. The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -1714,7 +1734,7 @@ namespace SC2ModManager.ViewModels
                 {
                     try
                     {
-                        hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath);
+                        hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath, keepLuo);
                     }
                     catch (Exception ex)
                     {

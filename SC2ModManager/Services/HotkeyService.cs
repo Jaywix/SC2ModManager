@@ -202,10 +202,19 @@ namespace SC2ModManager.Services
         ///     would leave the game with no keymap at all and it wouldn't launch.
         ///     Build mode mod: deletes BuildmodeHotkeys.scd from gamedata.
         ///     Both: deletes local copy and backup.
+        ///     keepGameFiles (advanced setting for modders): leaves luo.scd and toc.win.bdf in the
+        ///     game untouched and only deletes the mod manager's local copy and backups. lua.scd is
+        ///     NOT restored in that case — both lua files in gamedata at once breaks the game.
         /// </summary>
-        public void UninstallMod(HotkeyModType modType, string gamedataPath)
+        public void UninstallMod(HotkeyModType modType, string gamedataPath, bool keepGameFiles = false)
         {
-            if (modType == HotkeyModType.NormalHotkey)
+            if (modType == HotkeyModType.NormalHotkey && keepGameFiles)
+            {
+                // The user opted to maintain their own game files: leave gamedata and the toc file
+                // exactly as they are and just forget about the mod. The lua.scd backup still gets
+                // deleted below, so from here on the game files are entirely theirs to manage.
+            }
+            else if (modType == HotkeyModType.NormalHotkey)
             {
                 string luoPath = Path.Combine(gamedataPath, Globals.NormalHotkeyScdName);
                 string luaBackup = GetLuaScdBackupPath();

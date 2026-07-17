@@ -70,5 +70,12 @@ namespace SC2ModManager.Models
         ///     folder (ReplayFolderPath) so it isn't overwritten by the next game.
         /// </summary>
         public bool AutoSaveReplays { get; set; } = false;
+
+        /// <summary>
+        ///     Advanced setting for modders: when true, uninstalling the hotkey mod (or the mod
+        ///     manager) leaves luo.scd and toc.win.bdf in place instead of restoring the original
+        ///     game files. The game files stay altered, which is on the user to maintain.
+        /// </summary>
+        public bool KeepLuoOnUninstall { get; set; } = false;
     }
 }
