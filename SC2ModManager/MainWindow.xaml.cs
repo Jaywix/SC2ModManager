@@ -724,6 +724,19 @@ namespace SC2ModManager
                 });
             }
 
+            // Match length + file size. Length is best-effort from the replay body, so only show
+            // it when we actually got one; size is always there.
+            string lengthPart = string.IsNullOrEmpty(replay.Metadata?.DurationDisplay)
+                ? string.Empty
+                : $"Length: {replay.Metadata.DurationDisplay}   •   ";
+            leftStack.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = $"{lengthPart}Size: {replay.FileSizeDisplay}",
+                FontSize = 11,
+                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                Margin = new System.Windows.Thickness(0, 2, 0, 0)
+            });
+
             // Date
             leftStack.Children.Add(new System.Windows.Controls.TextBlock
             {
@@ -754,6 +767,16 @@ namespace SC2ModManager
             };
             renameBtn.Click += RenameReplay_Click;
 
+            var deleteBtn = new System.Windows.Controls.Button
+            {
+                Content = "🗑",
+                Tag = replay,
+                Style = (System.Windows.Style)TryFindResource("DangerButton"),
+                Width = 36,
+                ToolTip = "Delete"
+            };
+            deleteBtn.Click += DeleteReplay_Click;
+
             var detailsBtn = new System.Windows.Controls.Button
             {
                 Content = "Details →",
@@ -773,13 +796,15 @@ namespace SC2ModManager
                 Content = "▶  Launch",
                 Tag = replay,
                 Style = (System.Windows.Style)TryFindResource("PrimaryButton"),
-                MinWidth = 110
+                MinWidth = 110,
+                Margin = new System.Windows.Thickness(0, 0, 6, 0)
             };
             launchBtn.Click += LaunchReplay_Click;
 
-            btnStack.Children.Add(renameBtn);
-            btnStack.Children.Add(detailsBtn);
             btnStack.Children.Add(launchBtn);
+            btnStack.Children.Add(detailsBtn);
+            btnStack.Children.Add(renameBtn);
+            btnStack.Children.Add(deleteBtn);
             System.Windows.Controls.Grid.SetColumn(btnStack, 1);
 
             grid.Children.Add(leftStack);
@@ -979,6 +1004,32 @@ namespace SC2ModManager
         }
 
         // ── Rename ────────────────────────────────────────────────────────────
+
+        private void DeleteReplay_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn ||
+                btn.Tag is not SC2ModManager.Models.ReplayEntry replay)
+                return;
+
+            var confirm = MessageBox.Show(
+                $"Are you sure you want to delete '{replay.DisplayName}'?\n\nThe replay file will be permanently deleted. It is not recoverable.",
+                "Delete Replay",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                vm.DeleteReplay(replay);
+                RefreshReplayList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to delete replay: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void RenameReplay_Click(object sender, RoutedEventArgs e)
         {

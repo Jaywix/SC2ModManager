@@ -20,8 +20,59 @@ namespace ReplayParser.SC2
             using var reader = new BinaryReader(stream);
             
             ParseHeader(reader, data);
-            
+
+            // Only scan the body if the header parsed cleanly — an early bail-out leaves the
+            // stream position somewhere mid-header and the command stream wouldn't line up.
+            if (data.HeaderComplete)
+                ParseBodyTicks(reader, data);
+
             return data;
+        }
+
+        /// <summary>
+        ///     After the header comes the command stream: [type byte][ushort size][payload], where
+        ///     size includes the 3 header bytes. Type 0 is "advance simulation" and carries an int
+        ///     tick delta — summing them gives the total sim ticks of the match.
+        /// </summary>
+        private static void ParseBodyTicks(BinaryReader reader, SC2ReplayData data)
+        {
+            long ticks = 0;
+            var s = reader.BaseStream;
+
+            try
+            {
+                while (s.Position + 3 <= s.Length)
+                {
+                    byte cmdType = reader.ReadByte();
+                    int size = reader.ReadUInt16();
+                    int payload = size - 3;
+
+                    // Malformed or truncated command — stop and keep whatever we counted so far.
+                    // A replay from a game that crashed mid-match ends abruptly like this.
+                    if (payload < 0 || s.Position + payload > s.Length)
+                        break;
+
+                    if (cmdType == 0 && payload >= 4)
+                    {
+                        int advance = reader.ReadInt32();
+                        if (advance < 0 || advance > 36000)
+                            break; // a single step over an hour of sim time means we misparsed
+                        ticks += advance;
+                        if (payload > 4)
+                            reader.ReadBytes(payload - 4);
+                    }
+                    else
+                    {
+                        reader.ReadBytes(payload);
+                    }
+                }
+            }
+            catch
+            {
+                // best effort — a partial count still beats nothing
+            }
+
+            data.SimTicks = ticks;
         }
 
         private static void ParseHeader(BinaryReader reader, SC2ReplayData data)
@@ -117,6 +168,10 @@ namespace ReplayParser.SC2
             
             if (reader.BaseStream.Position < reader.BaseStream.Length)
                 data.GameOptions["RandomSeed"] = reader.ReadUInt32();
+
+            // Made it through the whole header — the stream is now positioned at the command
+            // stream, so the body scan (match length) is safe to run.
+            data.HeaderComplete = true;
         }
 
         private static void ParsePlayerInfo(Dictionary<object, object> playerData, SC2Player player)
@@ -284,7 +339,7 @@ namespace ReplayParser.SC2
                         break;
                     }
 
-                    // Always read the value, even when the key parsed as null (e.g. a NIL key) �
+                    // Always read the value, even when the key parsed as null (e.g. a NIL key) �
                     // the value bytes are present in the stream either way, and skipping them
                     // (the old code blindly skipped 4 bytes instead) misaligns everything after.
                     var value = ReadLuaValueSafe(reader, valueType, depth + 1);

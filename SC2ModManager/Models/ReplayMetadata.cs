@@ -39,6 +39,22 @@ namespace SC2ModManager.Models
         public List<string> Exclusions { get; set; } = new();
         public bool HasExclusions => Exclusions.Count > 0;
 
+        /// <summary>Match length in seconds, computed from the replay body's sim ticks. 0 = unknown.</summary>
+        public double DurationSeconds { get; set; }
+
+        /// <summary>Match length as m:ss (or h:mm:ss for long games). Empty when unknown.</summary>
+        public string DurationDisplay
+        {
+            get
+            {
+                if (DurationSeconds <= 0) return string.Empty;
+                var t = System.TimeSpan.FromSeconds(DurationSeconds);
+                return t.TotalHours >= 1
+                    ? $"{(int)t.TotalHours}:{t.Minutes:D2}:{t.Seconds:D2}"
+                    : $"{t.Minutes}:{t.Seconds:D2}";
+            }
+        }
+
         public bool ParseFailed { get; set; }
         public string ParseError { get; set; }
     }

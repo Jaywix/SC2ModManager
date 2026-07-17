@@ -1943,6 +1943,9 @@ namespace SC2ModManager.ViewModels
         public Models.ReplayEntry RenameReplay(Models.ReplayEntry entry, string newDisplayName)
             => replayService.RenameReplay(entry, newDisplayName);
 
+        public void DeleteReplay(Models.ReplayEntry entry)
+            => replayService.DeleteReplay(entry);
+
         // The replay backup crash recovery only existed for the replay tools file swap, which
         // doesn't run anymore. Direct launch never makes backups so there's nothing to restore.
         // Keeping this commented out in case the replay tools ever come back.

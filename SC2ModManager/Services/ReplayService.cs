@@ -83,7 +83,8 @@ namespace SC2ModManager.Services
                 {
                     FilePath = file,
                     FolderName = relativeDir == "." ? string.Empty : relativeDir,
-                    LastModified = File.GetLastWriteTime(file)
+                    LastModified = File.GetLastWriteTime(file),
+                    FileSizeBytes = new FileInfo(file).Length
                 };
                 entry.Metadata = ParseReplayMetadata(file);
                 result.Add(entry);
@@ -164,6 +165,16 @@ namespace SC2ModManager.Services
             { "SLOW_RESEARCH",     "Slow Research (No Research Stations)" }
         };
 
+        /// <summary>
+        ///     Permanently deletes the replay file. No recycle bin — gone is gone, which is why the
+        ///     UI confirms first.
+        /// </summary>
+        public void DeleteReplay(ReplayEntry entry)
+        {
+            if (File.Exists(entry.FilePath))
+                File.Delete(entry.FilePath);
+        }
+
         public ReplayMetadata ParseReplayMetadata(string filePath)
         {
             var meta = new ReplayMetadata();
@@ -174,6 +185,9 @@ namespace SC2ModManager.Services
                 meta.MapRawPath = data.MapName;
                 meta.GameVersion = data.Version;
                 meta.ReplayVersion = data.ReplayVersion;
+
+                // Match length: the body scan counts sim ticks, which run at 10 per second
+                meta.DurationSeconds = data.SimTicks / 10.0;
 
                 // Extract readable map name from GameOptions["name"], stripping <LOC ...> prefix, the map name at the top is not the correct map name
                 if (data.GameOptions.TryGetValue("name", out var rawName) && rawName != null)

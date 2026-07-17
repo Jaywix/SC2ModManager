@@ -13,6 +13,12 @@ namespace ReplayParser.SC2
         public Dictionary<string, object> ScenarioData { get; set; } = new();
         public Dictionary<string, object> ExtraData { get; set; } = new();
         public byte[] RawData { get; set; }
+
+        /// <summary>True when the header parsed all the way through — the body scan only runs then.</summary>
+        public bool HeaderComplete { get; set; }
+
+        /// <summary>Total simulation ticks summed from the body's advance commands. 10 ticks = 1 second.</summary>
+        public long SimTicks { get; set; }
     }
 
     public class SC2Player

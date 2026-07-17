@@ -19,6 +19,14 @@ namespace SC2ModManager.Models
         public DateTime LastModified { get; set; }
         public string DisplayName => Path.GetFileNameWithoutExtension(FilePath);
 
+        public long FileSizeBytes { get; set; }
+
+        /// <summary>File size as "1.4 MB" / "312 KB".</summary>
+        public string FileSizeDisplay =>
+            FileSizeBytes >= 1024 * 1024
+                ? $"{FileSizeBytes / (1024.0 * 1024.0):0.0} MB"
+                : $"{Math.Max(1, FileSizeBytes / 1024)} KB";
+
         public ReplayMetadata Metadata { get; set; }
     }
 }
