@@ -303,6 +303,10 @@ namespace SC2ModManager.ViewModels
                 Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
             };
 
+            // Start in the current game path if we have one
+            if (!string.IsNullOrEmpty(GamePath) && Directory.Exists(GamePath))
+                dialog.InitialDirectory = GamePath;
+
             if (dialog.ShowDialog() != true) return;
 
             var path = Path.GetDirectoryName(dialog.FileName);

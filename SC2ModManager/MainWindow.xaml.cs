@@ -351,6 +351,10 @@ namespace SC2ModManager
                 Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
             };
 
+            // Start in the current game path if we have one
+            if (!string.IsNullOrEmpty(vm.GamePath) && System.IO.Directory.Exists(vm.GamePath))
+                dialog.InitialDirectory = vm.GamePath;
+
             if (dialog.ShowDialog() != true) return;
             GamePathInput.Text = System.IO.Path.GetDirectoryName(dialog.FileName);
         }
@@ -555,6 +559,10 @@ namespace SC2ModManager
             {
                 Title = "Select the folder containing Game.prefs"
             };
+
+            // Start in the current Game.prefs folder if we know it
+            if (!string.IsNullOrEmpty(vm.GamePrefsFolder) && System.IO.Directory.Exists(vm.GamePrefsFolder))
+                dialog.InitialDirectory = vm.GamePrefsFolder;
 
             if (dialog.ShowDialog() != true) return;
 
@@ -1128,9 +1136,12 @@ namespace SC2ModManager
         {
             var dialog = new OpenFolderDialog { Title = "Select your Supreme Commander 2 Replays folder" };
 
-            // Start in the folder currently shown on the side, if it's set and exists.
+            // Always start in the folder the user set, falling back to the standard replays
+            // location if they never changed it (or their saved folder is gone).
             if (!string.IsNullOrEmpty(vm.ReplaysPath) && System.IO.Directory.Exists(vm.ReplaysPath))
                 dialog.InitialDirectory = vm.ReplaysPath;
+            else if (System.IO.Directory.Exists(SC2ModManager.Models.Globals.DefaultReplaysBasePath))
+                dialog.InitialDirectory = SC2ModManager.Models.Globals.DefaultReplaysBasePath;
 
             if (dialog.ShowDialog() != true) return;
 
@@ -1154,6 +1165,10 @@ namespace SC2ModManager
                 if (string.IsNullOrEmpty(vm.ReplaysPath) || !System.IO.Directory.Exists(vm.ReplaysPath))
                 {
                     var dialog = new OpenFolderDialog { Title = "Select the folder to auto-save replays into" };
+
+                    if (System.IO.Directory.Exists(SC2ModManager.Models.Globals.DefaultReplaysBasePath))
+                        dialog.InitialDirectory = SC2ModManager.Models.Globals.DefaultReplaysBasePath;
+
                     if (dialog.ShowDialog() != true)
                     {
                         cb.IsChecked = false;   // user cancelled — leave auto-save off

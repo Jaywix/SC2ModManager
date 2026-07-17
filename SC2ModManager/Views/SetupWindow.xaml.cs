@@ -170,6 +170,15 @@ namespace SC2ModManager
         private void BrowseGamePath_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog { Title = "Select Supreme Commander 2 Folder" };
+
+            // Start at whatever path is already in the box (like the auto-detected one), or fall
+            // back to the usual Steam library location
+            string steamCommon = @"C:\Program Files (x86)\Steam\steamapps\common";
+            if (!string.IsNullOrWhiteSpace(GamePathBox.Text) && Directory.Exists(GamePathBox.Text))
+                dialog.InitialDirectory = GamePathBox.Text;
+            else if (Directory.Exists(steamCommon))
+                dialog.InitialDirectory = steamCommon;
+
             if (dialog.ShowDialog() == true)
             {
                 GamePathBox.Text = dialog.FolderName;
@@ -204,6 +213,17 @@ namespace SC2ModManager
         private void BrowseInstallPath_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog { Title = "Choose Install Folder" };
+
+            // Start at the folder containing the current install path in the box. The path itself
+            // usually doesn't exist yet (it gets created on install), so its parent is the spot.
+            if (!string.IsNullOrWhiteSpace(InstallPathBox.Text))
+            {
+                string current = InstallPathBox.Text;
+                string startAt = Directory.Exists(current) ? current : Path.GetDirectoryName(current);
+                if (!string.IsNullOrEmpty(startAt) && Directory.Exists(startAt))
+                    dialog.InitialDirectory = startAt;
+            }
+
             if (dialog.ShowDialog() == true)
                 InstallPathBox.Text = Path.Combine(dialog.FolderName, Globals.LauncherName);
         }
