@@ -10,17 +10,19 @@
         <Color x:Key="AccentDarkColor">#1270CC</Color>
         <Color x:Key="ButtonBaseColor">#1A2535</Color>
         <Color x:Key="ButtonHoverColor">#1E3550</Color>
+        <Color x:Key="ButtonHoverBorderColor">#1E3550</Color>
         <Color x:Key="ButtonPressedColor">#1270CC</Color>
         <Color x:Key="DisabledButtonColor">#2A2A2A</Color>
 
-        <SolidColorBrush x:Key="AccentBrush"         Color="{StaticResource AccentColor}"/>
-        <SolidColorBrush x:Key="AccentDarkBrush"     Color="{StaticResource AccentDarkColor}"/>
-        <SolidColorBrush x:Key="ButtonBaseBrush"      Color="{StaticResource ButtonBaseColor}"/>
-        <SolidColorBrush x:Key="ButtonHoverBrush"     Color="{StaticResource ButtonHoverColor}"/>
-        <SolidColorBrush x:Key="ButtonPressedBrush"   Color="{StaticResource ButtonPressedColor}"/>
-        <SolidColorBrush x:Key="DisabledButtonBrush"  Color="{StaticResource DisabledButtonColor}"/>
-        <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#CC0D1117"/>
-        <SolidColorBrush x:Key="SidebarOverlayBrush"  Color="#CC0A0F18"/>
+        <SolidColorBrush x:Key="AccentBrush"            Color="{StaticResource AccentColor}"/>
+        <SolidColorBrush x:Key="AccentDarkBrush"        Color="{StaticResource AccentDarkColor}"/>
+        <SolidColorBrush x:Key="ButtonBaseBrush"        Color="{StaticResource ButtonBaseColor}"/>
+        <SolidColorBrush x:Key="ButtonHoverBrush"       Color="{StaticResource ButtonHoverColor}"/>
+        <SolidColorBrush x:Key="ButtonHoverBorderBrush" Color="{StaticResource ButtonHoverBorderColor}"/>
+        <SolidColorBrush x:Key="ButtonPressedBrush"     Color="{StaticResource ButtonPressedColor}"/>
+        <SolidColorBrush x:Key="DisabledButtonBrush"    Color="{StaticResource DisabledButtonColor}"/>
+        <SolidColorBrush x:Key="PanelBackgroundBrush"   Color="#CC0D1117"/>
+        <SolidColorBrush x:Key="SidebarOverlayBrush"    Color="#CC0A0F18"/>
 
         <BitmapImage x:Key="ThemeMainBgImage" UriSource="pack://application:,,,/Assets/uef.png"/>
         <BitmapImage x:Key="ThemeSidebarImage" UriSource="pack://application:,,,/Assets/spoiler_profile.png"/>
