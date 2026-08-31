@@ -152,7 +152,7 @@ namespace SC2ModManager
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
                 : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
 
-            ThemeAeonCard.BorderBrush = theme == AppTheme.Aeon
+            ThemeAeonCard.BorderBrush = theme == AppTheme.DarkMode
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2C, 0x2D, 0x2E))
                 : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x25, 0x26, 0x26));
         }
@@ -168,6 +168,9 @@ namespace SC2ModManager
 
         private void ThemeCard_Aeon_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
             => SelectThemeCard(AppTheme.Aeon);
+
+        private void ThemeCard_DarkMode_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+            => SelectThemeCard(AppTheme.DarkMode);
 
         // ================= PAGE 3: GAME PATH =================
 
