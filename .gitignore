@@ -7,3 +7,6 @@ obj/
 *.log
 *.dll
 *.exe
+
+# auto-generated Migration Report when opened with Visual Studio 2026
+/UpgradeLog.htm
