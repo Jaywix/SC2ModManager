@@ -38,11 +38,27 @@ namespace SC2ModManager.Services
 
             switch (theme)
             {
+                default: // The goated theme #numberoneuefplayerxd
+                case AppTheme.Standard:
+                    res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF);
+                    res["ThemeAccentDarkColor"] = Color.FromRgb(0x12, 0x70, 0xCC);
+                    res["ThemeButtonBaseColor"] = Color.FromRgb(0x1A, 0x25, 0x35);
+                    res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
+                    res["ThemeButtonHoverBorderColor"] = res["ThemeAccentColor"];
+                    res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x0D, 0x11, 0x17);
+                    res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0A, 0x0F, 0x18);
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x1E, 0x90, 0xFF));
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x1E, 0x90, 0xFF));
+                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/uef.png");
+                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/spoiler_profile.png");
+                    break;
+
                 case AppTheme.UEF:
                     res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF);
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x12, 0x70, 0xCC);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x1A, 0x25, 0x35);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
+                    res["ThemeButtonHoverBorderColor"] = res["ThemeAccentColor"];
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x0D, 0x11, 0x17);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0A, 0x0F, 0x18);
                     res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x1E, 0x90, 0xFF));
@@ -56,6 +72,7 @@ namespace SC2ModManager.Services
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x99, 0x11, 0x00);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x1F, 0x0A, 0x08);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x3D, 0x0F, 0x0A);
+                    res["ThemeButtonHoverBorderColor"] = res["ThemeAccentColor"];
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x10, 0x06, 0x05);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0C, 0x04, 0x03);
                     res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0xCC, 0x22, 0x00));
@@ -69,6 +86,7 @@ namespace SC2ModManager.Services
                     res["ThemeAccentDarkColor"] = Color.FromRgb(0x00, 0x8C, 0x78);
                     res["ThemeButtonBaseColor"] = Color.FromRgb(0x0A, 0x1A, 0x18);
                     res["ThemeButtonHoverColor"] = Color.FromRgb(0x0F, 0x2A, 0x26);
+                    res["ThemeButtonHoverBorderColor"] = res["ThemeAccentColor"];
                     res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x08, 0x12, 0x10);
                     res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x05, 0x0E, 0x0C);
                     res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x00, 0xBF, 0xA5));
@@ -77,17 +95,18 @@ namespace SC2ModManager.Services
                     res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/aeonacu.png");
                     break;
 
-                default: // The goated theme #numberoneuefplayerxd
-                    res["ThemeAccentColor"] = Color.FromRgb(0x1E, 0x90, 0xFF);
-                    res["ThemeAccentDarkColor"] = Color.FromRgb(0x12, 0x70, 0xCC);
-                    res["ThemeButtonBaseColor"] = Color.FromRgb(0x1A, 0x25, 0x35);
-                    res["ThemeButtonHoverColor"] = Color.FromRgb(0x1E, 0x35, 0x50);
-                    res["ThemePanelBgColor"] = Color.FromArgb(0xCC, 0x0D, 0x11, 0x17);
-                    res["ThemeSidebarBgColor"] = Color.FromArgb(0xCC, 0x0A, 0x0F, 0x18);
-                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x1E, 0x90, 0xFF));
-                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x1E, 0x90, 0xFF));
-                    res["ThemeMainBgImage"] = MakeBitmapImage("/Assets/uef.png");
-                    res["ThemeSidebarImage"] = MakeBitmapImage("/Assets/spoiler_profile.png");
+                case AppTheme.DarkMode:
+                    res["ThemeAccentColor"] = Color.FromRgb(0x77, 0x77, 0x77); // TODO: This is used for selected buttons (which needs to be #2A2B2C) AND text (which needs to be #CCCCCC) AND borders
+                    res["ThemeAccentDarkColor"] = Color.FromRgb(0x25, 0x26, 0x26);
+                    res["ThemeButtonBaseColor"] = Color.FromRgb(0x19, 0x1A, 0x1B);
+                    res["ThemeButtonHoverColor"] = res["ThemeAccentDarkColor"];
+                    res["ThemeButtonHoverBorderColor"] = res["ThemeButtonHoverColor"];
+                    res["ThemePanelBgColor"] = Color.FromArgb(0xFF, 0x19, 0x1A, 0x1B);
+                    res["ThemeSidebarBgColor"] = Color.FromArgb(0xFF, 0x12, 0x13, 0x14);
+                    res["ListBoxSelectionBrush"] = new SolidColorBrush(Color.FromArgb(0x33, 0x2A, 0x2B, 0x2C)); // TODO: I copied these from the above cases, but couldn't find where it's used.
+                    res["ListBoxHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x22, 0x2A, 0x2B, 0x2C));     //       I'd prefer 0xFF but I don't know if there's a reason they're transparent?
+                    res["ThemeMainBgImage"] = null;
+                    res["ThemeSidebarImage"] = null;
                     break;
             }
 
@@ -96,6 +115,7 @@ namespace SC2ModManager.Services
             var accentDark = (Color)res["ThemeAccentDarkColor"];
             var btnBase = (Color)res["ThemeButtonBaseColor"];
             var btnHover = (Color)res["ThemeButtonHoverColor"];
+            var btnHoverBorder = (Color)res["ThemeButtonHoverBorderColor"];
             var panelBg = (Color)res["ThemePanelBgColor"];
             var sidebarBg = (Color)res["ThemeSidebarBgColor"];
 
@@ -110,6 +130,7 @@ namespace SC2ModManager.Services
             res["AccentDarkBrush"] = new SolidColorBrush(accentDark);
             res["ButtonBaseBrush"] = new SolidColorBrush(btnBase);
             res["ButtonHoverBrush"] = new SolidColorBrush(btnHover);
+            res["ButtonHoverBorderBrush"] = new SolidColorBrush(btnHoverBorder);
             res["ButtonPressedBrush"] = new SolidColorBrush(accentDark);
             res["PanelBackgroundBrush"] = new SolidColorBrush(panelBg);
             res["SidebarOverlayBrush"] = new SolidColorBrush(sidebarBg);

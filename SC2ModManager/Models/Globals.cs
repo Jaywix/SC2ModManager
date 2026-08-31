@@ -202,5 +202,6 @@ namespace SC2ModManager.Models
         public const string UEF = "uef";
         public const string Cybran = "cybran";
         public const string Aeon = "aeon";
+        public const string DarkMode = "darkmode";
     }
 }
