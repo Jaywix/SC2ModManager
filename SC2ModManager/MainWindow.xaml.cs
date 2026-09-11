@@ -95,6 +95,13 @@ namespace SC2ModManager
             UpdateThemeButtonHighlight(AppTheme.Aeon);
         }
 
+        private void ThemeDarkMode_Click_Border(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            vm.ChangeTheme(AppTheme.DarkMode);
+            ApplyCurrentTheme();
+            UpdateThemeButtonHighlight(AppTheme.DarkMode);
+        }
+
         private void UpdateThemeButtonHighlight(string activeTheme)
         {
             var inactive = new System.Windows.Media.SolidColorBrush(
@@ -114,6 +121,10 @@ namespace SC2ModManager
 
             ThemeAeonBtn.BorderBrush = activeTheme == AppTheme.Aeon
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
+                : inactive;
+
+            ThemeDarkModeBtn.BorderBrush = activeTheme == AppTheme.DarkMode
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2C, 0x2D, 0x2E))
                 : inactive;
         }
 
