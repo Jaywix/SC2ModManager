@@ -1819,6 +1819,9 @@ namespace SC2ModManager
         private void ClearDownloadMapFilter_Click(object sender, RoutedEventArgs e)
         {
             vm.DownloadMapsFilter.ClearAll();
+            // Clear the download status ones too. Setting these refreshes the list on its own
+            vm.DownloadMapsShowDownloaded = false;
+            vm.DownloadMapsShowNotDownloaded = false;
             vm.RefreshDownloadMapFilters();
         }
 

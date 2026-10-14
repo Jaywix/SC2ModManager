@@ -83,5 +83,12 @@ namespace SC2ModManager.Models
         ///     is suppressed.
         /// </summary>
         public bool SuppressLuaEditWarning { get; set; } = false;
+
+        /// <summary>
+        ///     When true, maps downloaded from the Download Custom Maps page get enabled (put in the game)
+        ///     right away instead of going to the disabled list. Defaults to on, and older configs that
+        ///     don't have this saved yet get the default too.
+        /// </summary>
+        public bool AutoEnableDownloadedMaps { get; set; } = true;
     }
 }

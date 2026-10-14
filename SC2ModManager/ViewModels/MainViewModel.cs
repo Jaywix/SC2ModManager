@@ -1225,12 +1225,17 @@ namespace SC2ModManager.ViewModels
             FilteredDisabledGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(DisabledGenericMods, InstalledGenericModSort));
             OnPropertyChanged(nameof(FilteredEnabledGenericMods));
             OnPropertyChanged(nameof(FilteredDisabledGenericMods));
+            RefreshListCounts();
         }
 
         public void RefreshDownloadGenericModSort()
         {
-            FilteredDownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(DownloadableGenericMods, DownloadGenericModSort));
+            FilteredDownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(
+                DownloadableGenericMods.Where(m =>
+                    PassesDownloadedFilter(m.IsDownloaded, DownloadGenericModsShowDownloaded, DownloadGenericModsShowNotDownloaded)),
+                DownloadGenericModSort));
             OnPropertyChanged(nameof(FilteredDownloadableGenericMods));
+            RefreshListCounts();
         }
 
 
@@ -1288,6 +1293,9 @@ namespace SC2ModManager.ViewModels
 
             EnabledGenericMods.Clear();
             DisabledGenericMods.Clear();
+
+            // Rebuild the lists on screen, otherwise the deleted mods (and the old counts) stay showing
+            RefreshInstalledGenericModSort();
         }
 
         // ================= DOWNLOAD: MAPS =================
@@ -1314,10 +1322,50 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        /// <summary>
+        ///     The "Automatically Enable New Downloaded Maps" checkbox on the Download Custom Maps page.
+        ///     Saved straight to the config so it sticks between launches.
+        /// </summary>
+        public bool AutoEnableDownloadedMaps
+        {
+            get => configService.Load()?.AutoEnableDownloadedMaps ?? true;
+            set
+            {
+                var config = configService.Load();
+                config.AutoEnableDownloadedMaps = value;
+                configService.Save(config);
+                OnPropertyChanged(nameof(AutoEnableDownloadedMaps));
+            }
+        }
+
+        /// <summary>
+        ///     Moves a just downloaded map to Enabled and puts it in the game. If it can't be put in the
+        ///     game it goes back to Disabled, so the map lists never say it's enabled when it isn't.
+        /// </summary>
+        private void EnableDownloadedMap(Map map)
+        {
+            string mapsEnabledPath = Path.Combine(Globals.GetDataPath(), "Mods", "Maps", "Enabled");
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            storageService.MoveMapToEnabled(map);
+            try
+            {
+                gamedataService.EnableMap(map, mapsEnabledPath, gameDataPath);
+            }
+            catch
+            {
+                storageService.MoveMapToDisabled(map);
+                throw;
+            }
+        }
+
         public async Task DownloadSelectedMapsAsync(IEnumerable<Map> maps)
         {
             int successCount = 0;
             var errors = new List<string>();
+
+            // Read once up front. Can't put maps in the game without a game path, so they stay disabled then
+            bool autoEnable = AutoEnableDownloadedMaps && !string.IsNullOrEmpty(GamePath);
 
             List<Map> installed = this.storageService.GetInstalledMaps();
             var newlyDownloaded = new List<Map>();
@@ -1344,6 +1392,20 @@ namespace SC2ModManager.ViewModels
                     map.IsEnabled = false;
                     newlyDownloaded.Add(map);
                     successCount++;
+
+                    if (autoEnable)
+                    {
+                        try
+                        {
+                            EnableDownloadedMap(map);
+                            map.IsEnabled = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            // The download itself worked, so it still counts. It's just sitting in the disabled list
+                            errors.Add($"{map.FileName}: downloaded, but couldn't be enabled ({ex.Message}). You can enable it from your installed maps.");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1365,10 +1427,27 @@ namespace SC2ModManager.ViewModels
                 storageService.SaveMapsState(existingByFile.Values);
             }
 
+            // Rebuild the list since IsDownloaded just changed. That updates the "downloaded" count, and if
+            // they're only showing not downloaded maps, the ones they just got drop out of the list
+            RefreshDownloadMapFilters();
+
             if (errors.Any())
-                MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
+            {
+                MessageBox.Show($"Some maps had problems:\n{string.Join("\n", errors)}");
+            }
+            else if (autoEnable)
+            {
+                MessageBox.Show($"{successCount} map(s) downloaded and enabled.");
+            }
+            else if (AutoEnableDownloadedMaps)
+            {
+                // Setting is on but there's no game path, so we couldn't put them in the game
+                MessageBox.Show($"{successCount} map(s) downloaded. Your game path isn't set, so they were added to your disabled maps instead of being enabled.");
+            }
             else
-                MessageBox.Show($"{successCount} map(s) downloaded successfully.");
+            {
+                MessageBox.Show($"{successCount} map(s) downloaded. They're in your disabled maps until you enable them.");
+            }
         }
 
         // ================= DOWNLOAD: GENERIC MODS =================
@@ -1452,6 +1531,9 @@ namespace SC2ModManager.ViewModels
                 storageService.SaveGenericModsState(existingByFile.Values);
             }
 
+            // Same as maps, rebuild the list since IsDownloaded just changed
+            RefreshDownloadGenericModSort();
+
             if (errors.Any())
                 MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
             else
@@ -1467,7 +1549,8 @@ namespace SC2ModManager.ViewModels
             => DisabledMaps.Where(m => InstalledMapsFilter.Passes(m));
 
         public IEnumerable<Map> GetFilteredDownloadableMaps()
-            => DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m));
+            => DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m) &&
+                PassesDownloadedFilter(m.IsDownloaded, DownloadMapsShowDownloaded, DownloadMapsShowNotDownloaded));
 
         public void RefreshInstalledMapFilters()
         {
@@ -1475,12 +1558,99 @@ namespace SC2ModManager.ViewModels
             FilteredDisabledMaps = new ObservableCollection<Map>(ApplyMapSort(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m)), InstalledMapSort));
             OnPropertyChanged(nameof(FilteredEnabledMaps));
             OnPropertyChanged(nameof(FilteredDisabledMaps));
+            RefreshListCounts();
         }
 
         public void RefreshDownloadMapFilters()
         {
-            FilteredDownloadableMaps = new ObservableCollection<Map>(ApplyMapSort(DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m)), DownloadMapSort));
+            FilteredDownloadableMaps = new ObservableCollection<Map>(ApplyMapSort(
+                DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m) &&
+                    PassesDownloadedFilter(m.IsDownloaded, DownloadMapsShowDownloaded, DownloadMapsShowNotDownloaded)),
+                DownloadMapSort));
             OnPropertyChanged(nameof(FilteredDownloadableMaps));
+            RefreshListCounts();
+        }
+
+        // ================= DOWNLOADED FILTER =================
+        // The "Downloaded" / "Not Downloaded" checkboxes on both download pages. Works like the other filter
+        // checkboxes: nothing checked (or both checked) shows everything, one checked shows just that
+
+        private bool downloadMapsShowDownloaded;
+        public bool DownloadMapsShowDownloaded
+        {
+            get => downloadMapsShowDownloaded;
+            set { downloadMapsShowDownloaded = value; OnPropertyChanged(nameof(DownloadMapsShowDownloaded)); RefreshDownloadMapFilters(); }
+        }
+
+        private bool downloadMapsShowNotDownloaded;
+        public bool DownloadMapsShowNotDownloaded
+        {
+            get => downloadMapsShowNotDownloaded;
+            set { downloadMapsShowNotDownloaded = value; OnPropertyChanged(nameof(DownloadMapsShowNotDownloaded)); RefreshDownloadMapFilters(); }
+        }
+
+        private bool downloadGenericModsShowDownloaded;
+        public bool DownloadGenericModsShowDownloaded
+        {
+            get => downloadGenericModsShowDownloaded;
+            set { downloadGenericModsShowDownloaded = value; OnPropertyChanged(nameof(DownloadGenericModsShowDownloaded)); RefreshDownloadGenericModSort(); }
+        }
+
+        private bool downloadGenericModsShowNotDownloaded;
+        public bool DownloadGenericModsShowNotDownloaded
+        {
+            get => downloadGenericModsShowNotDownloaded;
+            set { downloadGenericModsShowNotDownloaded = value; OnPropertyChanged(nameof(DownloadGenericModsShowNotDownloaded)); RefreshDownloadGenericModSort(); }
+        }
+
+        private static bool PassesDownloadedFilter(bool isDownloaded, bool showDownloaded, bool showNotDownloaded)
+        {
+            // Neither or both checked means no filter
+            if (showDownloaded == showNotDownloaded)
+                return true;
+
+            return showDownloaded ? isDownloaded : !isDownloaded;
+        }
+
+        // ================= LIST COUNTS =================
+
+        public string EnabledMapsCountText =>
+            ListCountText(EnabledMaps.Count, EnabledMaps.Count + DisabledMaps.Count, "enabled", FilteredEnabledMaps.Count, EnabledMaps.Count);
+
+        public string DisabledMapsCountText =>
+            ListCountText(DisabledMaps.Count, EnabledMaps.Count + DisabledMaps.Count, "disabled", FilteredDisabledMaps.Count, DisabledMaps.Count);
+
+        public string DownloadableMapsCountText =>
+            ListCountText(DownloadableMaps.Count(m => m.IsDownloaded), DownloadableMaps.Count, "downloaded", FilteredDownloadableMaps.Count, DownloadableMaps.Count);
+
+        public string EnabledGenericModsCountText =>
+            ListCountText(EnabledGenericMods.Count, EnabledGenericMods.Count + DisabledGenericMods.Count, "enabled", FilteredEnabledGenericMods.Count, EnabledGenericMods.Count);
+
+        public string DisabledGenericModsCountText =>
+            ListCountText(DisabledGenericMods.Count, EnabledGenericMods.Count + DisabledGenericMods.Count, "disabled", FilteredDisabledGenericMods.Count, DisabledGenericMods.Count);
+
+        public string DownloadableGenericModsCountText =>
+            ListCountText(DownloadableGenericMods.Count(m => m.IsDownloaded), DownloadableGenericMods.Count, "downloaded", FilteredDownloadableGenericMods.Count, DownloadableGenericMods.Count);
+
+        private static string ListCountText(int count, int total, string label, int shown, int listSize)
+        {
+            string text = $"{count:N0} / {total:N0} {label}";
+            if (shown != listSize)
+                text += $"   ({shown:N0} shown)";
+            return text;
+        }
+
+        /// <summary>
+        ///     Updates all the count text. Called whenever any of the lists get rebuilt and after downloads.
+        /// </summary>
+        public void RefreshListCounts()
+        {
+            OnPropertyChanged(nameof(EnabledMapsCountText));
+            OnPropertyChanged(nameof(DisabledMapsCountText));
+            OnPropertyChanged(nameof(DownloadableMapsCountText));
+            OnPropertyChanged(nameof(EnabledGenericModsCountText));
+            OnPropertyChanged(nameof(DisabledGenericModsCountText));
+            OnPropertyChanged(nameof(DownloadableGenericModsCountText));
         }
 
         // ================= MANUAL IMPORT =================

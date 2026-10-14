@@ -625,7 +625,8 @@
                                 <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 Go to <Run FontWeight="Bold">Manage Mods → Download</Run> and choose a mod type (Maps or Generic Gamedata Mods).
                 Check the boxes next to the mods you want and click <Run FontWeight="Bold">Download</Run>.
-                Downloaded mods are stored by the mod manager and start out disabled.
+                Downloaded maps are enabled right away unless you turn off <Run FontWeight="Bold">Automatically Enable New Downloaded Maps</Run> at the top of the Download Maps page.
+                Other downloaded mods are stored by the mod manager and start out disabled.
                                 </TextBlock>
 
                                 <TextBlock Text="✅  Enabling and Disabling Mods"
@@ -1581,7 +1582,11 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    <DockPanel Grid.Row="0">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding EnabledMapsCountText}"
+                                                   Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    </DockPanel>
                                     <ListBox Grid.Row="1"
                              x:Name="EnabledMapsList"
                              ItemsSource="{Binding FilteredEnabledMaps}"
@@ -1609,7 +1614,11 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    <DockPanel Grid.Row="0">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding DisabledMapsCountText}"
+                                                   Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    </DockPanel>
                                     <ListBox Grid.Row="1"
                              x:Name="DisabledMapsList"
                              ItemsSource="{Binding FilteredDisabledMaps}"
@@ -1784,7 +1793,11 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    <DockPanel Grid.Row="0">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding EnabledGenericModsCountText}"
+                                                   Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Enabled" Style="{StaticResource ColumnHeader}"/>
+                                    </DockPanel>
                                     <ListBox Grid.Row="1"
                              x:Name="EnabledGenericModsList"
                              ItemsSource="{Binding FilteredEnabledGenericMods}"
@@ -1812,7 +1825,11 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    <DockPanel Grid.Row="0">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding DisabledGenericModsCountText}"
+                                                   Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Disabled" Style="{StaticResource ColumnHeader}"/>
+                                    </DockPanel>
                                     <ListBox Grid.Row="1"
                              x:Name="DisabledGenericModsList"
                              ItemsSource="{Binding FilteredDisabledGenericMods}"
@@ -2075,7 +2092,15 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Download Custom Maps" Style="{StaticResource SectionHeader}"/>
+                        <DockPanel Grid.Row="0">
+                            <!-- Saved to the config right away through the binding, defaults to on -->
+                            <CheckBox DockPanel.Dock="Right"
+                                      Content="Automatically Enable New Downloaded Maps"
+                                      IsChecked="{Binding AutoEnableDownloadedMaps, Mode=TwoWay}"
+                                      VerticalAlignment="Center"
+                                      ToolTip="When this is on, maps you download are put in the game right away. When it's off, they go to your disabled maps until you enable them."/>
+                            <TextBlock Text="Download Custom Maps" Style="{StaticResource SectionHeader}"/>
+                        </DockPanel>
 
                         <!-- Filter bar -->
                         <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
@@ -2148,6 +2173,15 @@ Click="DownloadFiltersToggle_Click"/>
           Checked="DownloadMapFilter_Changed" Unchecked="DownloadMapFilter_Changed"/>
                                     </WrapPanel>
 
+                                    <!-- Download Status. These refresh the list on their own through the view model -->
+                                    <TextBlock Text="Download Status" Style="{StaticResource ColumnHeader}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,6">
+                                        <CheckBox Content="Downloaded" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsShowDownloaded, Mode=TwoWay}"/>
+                                        <CheckBox Content="Not Downloaded" Margin="0,0,10,4"
+          IsChecked="{Binding DownloadMapsShowNotDownloaded, Mode=TwoWay}"/>
+                                    </WrapPanel>
+
                                     <Button Content="Clear Filters" Width="100" HorizontalAlignment="Left"
     Click="ClearDownloadMapFilter_Click"/>
                                 </StackPanel>
@@ -2169,7 +2203,11 @@ Click="DownloadFiltersToggle_Click"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Available Maps" Style="{StaticResource ColumnHeader}"/>
+                                <DockPanel Grid.Row="0">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding DownloadableMapsCountText}"
+                                               Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Available Maps" Style="{StaticResource ColumnHeader}"/>
+                                </DockPanel>
                                 
                                 <ListBox Grid.Row="1"
                          x:Name="DownloadMapsList"
@@ -2329,6 +2367,14 @@ Click="DownloadFiltersToggle_Click"/>
                     Click="DownloadGenericModSortName_Click"/>
                             <Button Content="{Binding DownloadGenericModSort.DateButtonText}" Width="75"
                     Click="DownloadGenericModSortDate_Click"/>
+
+                            <!-- Download status filter. Generic mods don't have a filter panel so these live in the sort bar.
+                                 Same as the maps ones, nothing checked shows everything -->
+                            <TextBlock Text="Show:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                            <CheckBox Content="Downloaded" Margin="0,0,10,0" VerticalAlignment="Center"
+                                      IsChecked="{Binding DownloadGenericModsShowDownloaded, Mode=TwoWay}"/>
+                            <CheckBox Content="Not Downloaded" VerticalAlignment="Center"
+                                      IsChecked="{Binding DownloadGenericModsShowNotDownloaded, Mode=TwoWay}"/>
                         </StackPanel>
 
                         <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
@@ -2337,7 +2383,11 @@ Click="DownloadFiltersToggle_Click"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Available Mods" Style="{StaticResource ColumnHeader}"/>
+                                <DockPanel Grid.Row="0">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding DownloadableGenericModsCountText}"
+                                               Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Available Mods" Style="{StaticResource ColumnHeader}"/>
+                                </DockPanel>
                                 <ListBox Grid.Row="1"
                          x:Name="DownloadGenericModsList"
                          ItemsSource="{Binding FilteredDownloadableGenericMods}"
