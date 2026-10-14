@@ -8,6 +8,7 @@
 */
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace SC2ModManager.Models
 {
@@ -21,8 +22,12 @@ namespace SC2ModManager.Models
 
         public List<ReplayPlayerInfo> Players { get; set; } = new();
 
+        // Computed stuff gets [JsonIgnore] so it doesn't get written into the replay metadata cache
+        [JsonIgnore] 
         public bool HasAI => Players.Any(p => !p.IsHuman);
+        [JsonIgnore] 
         public int HumanPlayerCount => Players.Count(p => p.IsHuman);
+        [JsonIgnore] 
         public int TotalPlayerCount => Players.Count;
 
         // Game options
@@ -37,12 +42,14 @@ namespace SC2ModManager.Models
         public string TeamSpawn { get; set; }
 
         public List<string> Exclusions { get; set; } = new();
+        [JsonIgnore] 
         public bool HasExclusions => Exclusions.Count > 0;
 
         /// <summary>Match length in seconds, computed from the replay body's sim ticks. 0 = unknown.</summary>
         public double DurationSeconds { get; set; }
 
         /// <summary>Match length as m:ss (or h:mm:ss for long games). Empty when unknown.</summary>
+        [JsonIgnore]
         public string DurationDisplay
         {
             get

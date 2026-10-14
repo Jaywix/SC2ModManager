@@ -980,6 +980,10 @@
                                 Click="GoHome"
                                 HorizontalAlignment="Left" Width="80" Margin="0,0,12,0"
                                 VerticalAlignment="Center"/>
+                        <!-- Replay count, filled in by UpdateReplayCountText. Has to come before the title since the title is the fill child -->
+                        <TextBlock x:Name="ReplayCountText" DockPanel.Dock="Right"
+                                   Foreground="#AAAAAA" FontSize="13"
+                                   VerticalAlignment="Center" Visibility="Collapsed"/>
                         <TextBlock Text="Replays"
                                    Foreground="White" FontSize="24" FontFamily="Segoe UI"
                                    FontWeight="Light" VerticalAlignment="Center"/>

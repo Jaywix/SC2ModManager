@@ -9,12 +9,15 @@
 using ReplayParser.SC2;
 using SC2ModManager.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SC2ModManager.Services
@@ -70,27 +73,158 @@ namespace SC2ModManager.Services
         /// </summary>
         public List<ReplayEntry> GetReplays(string baseFolderPath)
         {
-            var result = new List<ReplayEntry>();
             if (string.IsNullOrEmpty(baseFolderPath) || !Directory.Exists(baseFolderPath))
-                return result;
+                return new List<ReplayEntry>();
 
-            foreach (string file in EnumerateReplayFilesSafe(baseFolderPath))
+            var files = EnumerateReplayFilesSafe(baseFolderPath).ToList();
+            var cache = LoadMetadataCache();
+
+            // Rebuilt from scratch every scan so deleted/moved replays fall out of the cache on their own
+            var newCache = new ConcurrentDictionary<string, ReplayCacheEntry>(StringComparer.OrdinalIgnoreCase);
+            var entries = new ReplayEntry[files.Count];
+            int parsedCount = 0;
+
+            // Parsing is independent per file so just spread it across the cores. Anything we've
+            // already parsed (same size + last write time) comes straight from the cache instead
+            // Also changed this so that it runs in parallel, which hopefully helps speed it up. I originally
+            // wrote this with threads, but Claude pointed out that Parallel.For is a better option for this kind
+            // of work. I'm not sure if it is faster with this or not tbh but the Threads were slower than this
+            Parallel.For(0, files.Count, i =>
             {
+                string file = files[i];
+                FileInfo info;
+                try
+                {
+                    info = new FileInfo(file);
+                    if (!info.Exists) return; // got deleted mid-scan
+                }
+                catch
+                {
+                    return;
+                }
+
+                ReplayMetadata meta;
+                if (cache.TryGetValue(file, out var cached) &&
+                    cached.SizeBytes == info.Length &&
+                    cached.LastWriteUtc == info.LastWriteTimeUtc &&
+                    cached.Metadata != null)
+                {
+                    meta = cached.Metadata;
+                }
+                else
+                {
+                    meta = ParseReplayMetadata(file);
+
+                    // Failed parses don't go in the cache, so they don't count as a change worth saving
+                    if (!meta.ParseFailed)
+                        Interlocked.Increment(ref parsedCount);
+                }
+
+                // Only cache good parses. A failure is usually the game still holding the file open,
+                // and caching that would leave the replay looking broken until the file changes again
+                if (!meta.ParseFailed)
+                {
+                    newCache[file] = new ReplayCacheEntry
+                    {
+                        SizeBytes = info.Length,
+                        LastWriteUtc = info.LastWriteTimeUtc,
+                        Metadata = meta
+                    };
+                }
+
                 string dir = Path.GetDirectoryName(file) ?? baseFolderPath;
                 string relativeDir = Path.GetRelativePath(baseFolderPath, dir);
 
-                var entry = new ReplayEntry
+                entries[i] = new ReplayEntry
                 {
                     FilePath = file,
                     FolderName = relativeDir == "." ? string.Empty : relativeDir,
-                    LastModified = File.GetLastWriteTime(file),
-                    FileSizeBytes = new FileInfo(file).Length
+                    LastModified = info.LastWriteTime,
+                    FileSizeBytes = info.Length,
+                    Metadata = meta
                 };
-                entry.Metadata = ParseReplayMetadata(file);
-                result.Add(entry);
-            }
+            });
 
-            return result.OrderByDescending(r => r.LastModified).ToList();
+            // Only rewrite the cache file if something actually changed
+            if (parsedCount > 0 || newCache.Count != cache.Count)
+                SaveMetadataCache(newCache);
+
+            return entries.Where(e => e != null).OrderByDescending(r => r.LastModified).ToList();
+        }
+
+        // ============================== Replay metadata cache ==============================
+        // Parsed metadata gets saved to Data/replay_cache.json keyed by file path, so after the first
+        // load we only parse new or changed replays instead of every single one every time.
+
+        // Bump this whenever ParseReplayMetadata or ReplayMetadata changes so old cached results
+        // get thrown out and everything re-parses with the new logic
+        private const int MetadataCacheVersion = 1;
+
+        private static readonly object CacheFileLock = new();
+
+        private static string MetadataCachePath => Path.Combine(Globals.GetDataPath(), "replay_cache.json");
+
+        private class ReplayCacheEntry
+        {
+            public long SizeBytes { get; set; }
+            public DateTime LastWriteUtc { get; set; }
+            public ReplayMetadata Metadata { get; set; }
+        }
+
+        private class ReplayCacheFile
+        {
+            public int Version { get; set; }
+            public Dictionary<string, ReplayCacheEntry> Entries { get; set; } = new();
+        }
+
+        private static Dictionary<string, ReplayCacheEntry> LoadMetadataCache()
+        {
+            try
+            {
+                lock (CacheFileLock)
+                {
+                    if (!File.Exists(MetadataCachePath))
+                        return new Dictionary<string, ReplayCacheEntry>(StringComparer.OrdinalIgnoreCase);
+
+                    var cacheFile = JsonSerializer.Deserialize<ReplayCacheFile>(File.ReadAllText(MetadataCachePath));
+                    if (cacheFile?.Entries == null || cacheFile.Version != MetadataCacheVersion)
+                        return new Dictionary<string, ReplayCacheEntry>(StringComparer.OrdinalIgnoreCase);
+
+                    return new Dictionary<string, ReplayCacheEntry>(cacheFile.Entries, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            catch
+            {
+                // Corrupt or unreadable cache
+                return new Dictionary<string, ReplayCacheEntry>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static void SaveMetadataCache(IDictionary<string, ReplayCacheEntry> entries)
+        {
+            try
+            {
+                var cacheFile = new ReplayCacheFile
+                {
+                    Version = MetadataCacheVersion,
+                    Entries = new Dictionary<string, ReplayCacheEntry>(entries, StringComparer.OrdinalIgnoreCase)
+                };
+                string json = JsonSerializer.Serialize(cacheFile);
+
+                lock (CacheFileLock)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(MetadataCachePath));
+
+                    // Write to a temp file then swap it in so a crash mid-write can't leave a half written cache
+                    string tempPath = MetadataCachePath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+                    File.Move(tempPath, MetadataCachePath, overwrite: true);
+                }
+            }
+            catch
+            {
+                // Cache is just a speedup, if it can't be saved the replays still load fine
+            }
         }
 
         /// <summary>
@@ -328,10 +462,11 @@ namespace SC2ModManager.Services
 
             return new ReplayEntry
             {
-                FilePath     = newPath,
-                FolderName   = entry.FolderName,
-                LastModified = File.GetLastWriteTime(newPath),
-                Metadata     = entry.Metadata
+                FilePath      = newPath,
+                FolderName    = entry.FolderName,
+                LastModified  = File.GetLastWriteTime(newPath),
+                FileSizeBytes = entry.FileSizeBytes,
+                Metadata      = entry.Metadata
             };
         }
 

@@ -34,6 +34,23 @@ namespace SC2ModManager
         private bool   _filterHasExclusions  = false;
         private int    _filterPlayerCount    = 0;   // 0 = all, 2 = 1v1, 4/6/8 = exact count
 
+        // Every replay from the last scan. Filters/sort/search all work off this list so they don't
+        // have to rescan and re-parse the whole folder every time you click something
+        private List<SC2ModManager.Models.ReplayEntry> _allReplays = new();
+        private bool _replaysLoading = false;
+        private int  _replayLoadId   = 0;   // bumped every refresh so an older, slower scan can't overwrite a newer one
+
+        // Waits for a pause in typing before filtering instead of filtering on every keystroke
+        private System.Windows.Threading.DispatcherTimer _replaySearchTimer;
+
+        // Paging so we don't build thousands of cards at once. Filters + sort always run on the full
+        // list (_filteredReplays), we just only build cards for the first _replaysShown of them
+        private const int ReplayInitialPageSize = 100;
+        private const int ReplayShowMoreSize    = 50;
+        private List<SC2ModManager.Models.ReplayEntry> _filteredReplays = new();
+        private int _replaysShown = 0;
+        private System.Windows.Controls.Button _showMoreReplaysButton;
+
         private SC2ModManager.Models.ReplayEntry _currentDetailReplay;
 
 
@@ -604,46 +621,77 @@ namespace SC2ModManager
             RefreshReplayList();
         }
 
-        private void RefreshReplayList()
+        /// <summary>
+        ///     Rescans the replay folder on a background thread and rebuilds the cached list. Only
+        ///     needed on first open, the refresh button, or a folder change. Filters don't call this.
+        /// </summary>
+        private async void RefreshReplayList()
         {
             // Show folder path
             ReplayFolderPathText.Text = string.IsNullOrEmpty(vm.ReplaysPath)
                 ? "(not set)"
                 : vm.ReplaysPath;
 
+            int loadId = ++_replayLoadId;
+
             // Clear old cards
+            _allReplays = new();
             ReplayListPanel.Children.Clear();
             ReplayFolderMissingText.Visibility = Visibility.Collapsed;
             ReplayEmptyText.Visibility = Visibility.Collapsed;
             ReplayLoadingText.Visibility = Visibility.Collapsed;
+            ReplayCountText.Visibility = Visibility.Collapsed;   // comes back once the scan finishes
 
             if (string.IsNullOrEmpty(vm.ReplaysPath) || !System.IO.Directory.Exists(vm.ReplaysPath))
             {
+                _replaysLoading = false;
                 ReplayFolderMissingText.Visibility = Visibility.Visible;
                 return;
             }
 
+            _replaysLoading = true;
             ReplayLoadingText.Visibility = Visibility.Visible;
 
-            // Parse metadata on background thread, update UI on dispatcher
-            _ = Task.Run(() => vm.GetReplays())
-                .ContinueWith(t =>
-                {
-                    var all = t.Result;
-                    Dispatcher.Invoke(() =>
-                    {
-                        ReplayLoadingText.Visibility = Visibility.Collapsed;
-                        ApplyReplayFilter(all);
-                    });
-                });
+            List<SC2ModManager.Models.ReplayEntry> all;
+            try
+            {
+                // Parse metadata on a background thread, the await brings us back to the UI thread
+                all = await Task.Run(() => vm.GetReplays());
+            }
+            catch (Exception ex)
+            {
+                if (loadId != _replayLoadId) return;
+                _replaysLoading = false;
+                ReplayLoadingText.Visibility = Visibility.Collapsed;
+                MessageBox.Show($"Failed to load replays: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // A newer refresh started while this one was running, let that one win
+            if (loadId != _replayLoadId) return;
+
+            _allReplays = all;
+            _replaysLoading = false;
+            ReplayLoadingText.Visibility = Visibility.Collapsed;
+            ApplyReplayFilter();
         }
 
-        private void ApplyReplayFilter(List<SC2ModManager.Models.ReplayEntry> all)
+        /// <summary>
+        ///     Filters + sorts the whole cached replay list, then builds cards for the first page of
+        ///     results. No disk access here. resetPaging goes back to the first 100, which is what you
+        ///     want for a new filter/sort. Delete and rename pass false so you don't lose your spot
+        ///     after clicking Show More a bunch of times.
+        /// </summary>
+        private void ApplyReplayFilter(bool resetPaging = true)
         {
+            // Still scanning, the scan applies the current filters itself when it finishes
+            if (_replaysLoading) return;
+
             string search = ReplaySearchBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
 
             // 1. Filter
-            IEnumerable<SC2ModManager.Models.ReplayEntry> filtered = all;
+            IEnumerable<SC2ModManager.Models.ReplayEntry> filtered = _allReplays;
 
             if (!string.IsNullOrEmpty(search))
                 filtered = filtered.Where(r =>
@@ -668,18 +716,83 @@ namespace SC2ModManager
                 _          => filtered.OrderByDescending(r => r.LastModified)
             };
 
-            var list = sorted.ToList();
+            // Everything that matches, already sorted. Paging only happens below when building cards
+            _filteredReplays = sorted.ToList();
 
+            int target = resetPaging ? ReplayInitialPageSize : Math.Max(_replaysShown, ReplayInitialPageSize);
+            _replaysShown = Math.Min(target, _filteredReplays.Count);
+
+            // Count is based on everything that matched, not just the cards built so far
+            UpdateReplayCountText(_filteredReplays.Count);
             ReplayListPanel.Children.Clear();
 
-            if (list.Count == 0)
+            // Set both ways, otherwise the "no replays" text sticks around after a filter that
+            // matched nothing gets switched to one that does
+            ReplayEmptyText.Visibility = _filteredReplays.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (_filteredReplays.Count == 0) return;
+
+            for (int i = 0; i < _replaysShown; i++)
+                ReplayListPanel.Children.Add(BuildReplayCard(_filteredReplays[i]));
+
+            UpdateShowMoreButton();
+        }
+
+        /// <summary>
+        ///     Adds the next 50 cards to the bottom of the list without rebuilding the ones already there.
+        /// </summary>
+        private void ShowMoreReplays_Click(object sender, RoutedEventArgs e)
+        {
+            // Pull the button off so the new cards go above it, UpdateShowMoreButton puts it back if there's more
+            ReplayListPanel.Children.Remove(_showMoreReplaysButton);
+
+            int end = Math.Min(_replaysShown + ReplayShowMoreSize, _filteredReplays.Count);
+            for (int i = _replaysShown; i < end; i++)
+                ReplayListPanel.Children.Add(BuildReplayCard(_filteredReplays[i]));
+            _replaysShown = end;
+
+            UpdateShowMoreButton();
+        }
+
+        /// <summary>
+        ///     Puts the Show More button at the bottom of the list if there are still replays that
+        ///     matched the filters but don't have cards yet, otherwise takes it away.
+        /// </summary>
+        private void UpdateShowMoreButton()
+        {
+            if (_showMoreReplaysButton == null)
             {
-                ReplayEmptyText.Visibility = Visibility.Visible;
-                return;
+                _showMoreReplaysButton = new System.Windows.Controls.Button
+                {
+                    Style = (System.Windows.Style)TryFindResource("ModernButton"),
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                    MinWidth = 160,
+                    Margin = new System.Windows.Thickness(0, 4, 0, 12)
+                };
+                _showMoreReplaysButton.Click += ShowMoreReplays_Click;
             }
 
-            foreach (var replay in list)
-                ReplayListPanel.Children.Add(BuildReplayCard(replay));
+            ReplayListPanel.Children.Remove(_showMoreReplaysButton);
+
+            int remaining = _filteredReplays.Count - _replaysShown;
+            if (remaining <= 0) return;
+
+            _showMoreReplaysButton.Content = $"Show {Math.Min(ReplayShowMoreSize, remaining)} more  ({remaining:N0} left)";
+            ReplayListPanel.Children.Add(_showMoreReplaysButton);
+        }
+
+        /// <summary>
+        ///     Top right count on the replays page. Shows "Showing X of Y" when filters/search are
+        ///     hiding some, otherwise just the total.
+        /// </summary>
+        private void UpdateReplayCountText(int shownCount)
+        {
+            int total = _allReplays.Count;
+            string noun = total == 1 ? "replay" : "replays";
+
+            ReplayCountText.Text = shownCount == total
+                ? $"{total:N0} {noun} loaded"
+                : $"Showing {shownCount:N0} of {total:N0} {noun}";
+            ReplayCountText.Visibility = Visibility.Visible;
         }
 
         private System.Windows.UIElement BuildReplayCard(SC2ModManager.Models.ReplayEntry replay)
@@ -818,6 +931,12 @@ namespace SC2ModManager
             btnStack.Children.Add(renameBtn);
             btnStack.Children.Add(deleteBtn);
             System.Windows.Controls.Grid.SetColumn(btnStack, 1);
+
+            // Cards can get built while a replay is running now (Show More, or changing a filter), so
+            // match what SetReplayLaunchButtonsEnabled did to the cards that already existed
+            if (vm.IsReplayRunning)
+                foreach (var b in btnStack.Children.OfType<System.Windows.Controls.Button>())
+                    b.IsEnabled = false;
 
             grid.Children.Add(leftStack);
             grid.Children.Add(btnStack);
@@ -1034,7 +1153,11 @@ namespace SC2ModManager
             try
             {
                 vm.DeleteReplay(replay);
-                RefreshReplayList();
+
+                // Just drop it from the cached list instead of rescanning the whole folder. Keep the
+                // paging so the list doesn't snap back to 100 after deleting something further down
+                _allReplays.Remove(replay);
+                ApplyReplayFilter(resetPaging: false);
             }
             catch (Exception ex)
             {
@@ -1071,7 +1194,11 @@ namespace SC2ModManager
                     ReplayDetailsTitle.Text = updated.DisplayName;
                 }
 
-                RefreshReplayList();
+                // Swap the renamed entry into the cached list instead of rescanning the whole folder
+                int index = _allReplays.FindIndex(x => string.Equals(x.FilePath, replay.FilePath, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0)
+                    _allReplays[index] = updated;
+                ApplyReplayFilter(resetPaging: false);
             }
             catch (Exception ex)
             {
@@ -1086,12 +1213,27 @@ namespace SC2ModManager
             if (sender is not System.Windows.Controls.Button btn) return;
             _replaySortMode = btn.Tag as string ?? "DateDesc";
             UpdateReplayFilterButtonStyles();
-            ApplyReplayFilter(vm.GetReplays());
+            ApplyReplayFilter();
         }
 
         private void ReplaySearch_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            ApplyReplayFilter(vm.GetReplays());
+            // Restart the timer on every keystroke, so filtering only happens once typing pauses
+            if (_replaySearchTimer == null)
+            {
+                _replaySearchTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(250)
+                };
+                _replaySearchTimer.Tick += (s, args) =>
+                {
+                    _replaySearchTimer.Stop();
+                    ApplyReplayFilter();
+                };
+            }
+
+            _replaySearchTimer.Stop();
+            _replaySearchTimer.Start();
         }
 
         private void ClearReplaySearch_Click(object sender, RoutedEventArgs e)
@@ -1119,7 +1261,7 @@ namespace SC2ModManager
             }
 
             UpdateReplayFilterButtonStyles();
-            ApplyReplayFilter(vm.GetReplays());
+            ApplyReplayFilter();
         }
 
         private void ClearReplayFilters_Click(object sender, RoutedEventArgs e)
@@ -1131,7 +1273,10 @@ namespace SC2ModManager
             if (ReplaySearchBox != null)
                 ReplaySearchBox.Text = string.Empty;
             UpdateReplayFilterButtonStyles();
-            ApplyReplayFilter(vm.GetReplays());
+
+            // Filter right away, so cancel the search debounce that clearing the box just kicked off
+            _replaySearchTimer?.Stop();
+            ApplyReplayFilter();
         }
 
         /// <summary>
