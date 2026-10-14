@@ -77,5 +77,11 @@ namespace SC2ModManager.Models
         ///     game files. The game files stay altered, which is on the user to maintain.
         /// </summary>
         public bool KeepLuoOnUninstall { get; set; } = false;
+
+        /// <summary>
+        ///     When true, the warning about editing the raw lua in the hotkey editor's Advanced mode
+        ///     is suppressed.
+        /// </summary>
+        public bool SuppressLuaEditWarning { get; set; } = false;
     }
 }

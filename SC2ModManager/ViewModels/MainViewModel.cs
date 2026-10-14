@@ -341,6 +341,9 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            if (!CheckGameClosedForGamedata())
+                return;
+
             // Three-way choice: cancel, restore, or take a full backup of the current gamedata
             // state first so the restore can be undone from the Backups screen
             var dialog = new RestoreGamedataDialog(gamedataService.HasFullBackup())
@@ -351,8 +354,27 @@ namespace SC2ModManager.ViewModels
 
             if (dialog.Choice == RestoreGamedataChoice.Cancel) return;
 
+            // The game could have been opened while the dialog was up
+            if (!CheckGameClosedForGamedata())
+                return;
+
+            string? luoBackup = null;
+
             try
             {
+                // The restore wipes gamedata, luo.scd included. If someone's luo.scd has their own mod
+                // changes in it (not just hotkeys), save a copy next to the game first so they don't lose it
+                try
+                {
+                    luoBackup = new HotkeyService().BackUpLuoIfModded(GamePath + "\\gamedata");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Couldn't back up luo.scd, so the restore was cancelled: {ex.Message}",
+                        "Backup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 if (dialog.Choice == RestoreGamedataChoice.BackupFirstThenRestore)
                 {
                     try
@@ -390,12 +412,31 @@ namespace SC2ModManager.ViewModels
                 DisableAllGenericMods();
                 storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
 
-                MessageBox.Show("Original gamedata restored successfully.");
+                string done = "Original gamedata restored successfully.";
+                if (luoBackup != null)
+                    done += $"\n\nYour luo.scd had changes besides hotkeys, so a copy was saved here first:\n{luoBackup}";
+                MessageBox.Show(done);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to restore gamedata: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        ///     Restoring gamedata or applying a preset moves game files around (the hotkey files too for
+        ///     restores), so it can't happen with the game open.
+        /// </summary>
+        private static bool CheckGameClosedForGamedata()
+        {
+            if (!SC2ModManager.Services.DllInjectionService.IsGameRunning())
+                return true;
+
+            MessageBox.Show(
+                "Supreme Commander 2 is running. Close the game before changing the game's files.\n\n" +
+                "The game has these files open while it runs, so changing them now could break it.",
+                "Close the Game First", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
         }
 
         // ================= FULL GAMEDATA BACKUP =================
@@ -446,12 +487,20 @@ namespace SC2ModManager.ViewModels
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (confirm != MessageBoxResult.Yes) return;
+            if (confirm != MessageBoxResult.Yes) 
+                return;
+
+            if (!CheckGameClosedForGamedata())
+                return;
 
             try
             {
-                await gamedataService.RestoreFullBackupAsync(Path.Combine(GamePath, "gamedata"));
-                MessageBox.Show("Backup restored. Your gamedata folder is exactly how it was when the backup was made.");
+                string? savedToc = await gamedataService.RestoreFullBackupAsync(Path.Combine(GamePath, "gamedata"));
+
+                string done = "Backup restored. Your gamedata folder is exactly how it was when the backup was made.";
+                if (savedToc != null)
+                    done += $"\n\nThe toc.win.bdf that was in your game folder got replaced by the one from the backup, so a copy of it was saved here:\n{savedToc}";
+                MessageBox.Show(done);
             }
             catch (Exception ex)
             {
@@ -568,6 +617,10 @@ namespace SC2ModManager.ViewModels
                 MessageBoxButton.YesNo);
 
             if (confirm != MessageBoxResult.Yes) return;
+
+            // Applying a preset moves gamedata files around, which shouldn't happen while the game has them open
+            if (!CheckGameClosedForGamedata())
+                return;
 
             try
             {
@@ -1465,6 +1518,13 @@ namespace SC2ModManager.ViewModels
 
                         foreach (var scd in Directory.GetFiles(tempDir, "*.scd", SearchOption.AllDirectories))
                         {
+                            string? blocked = GetImportBlockReason(Path.GetFileName(scd));
+                            if (blocked != null)
+                            {
+                                MessageBox.Show(blocked, "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                continue;
+                            }
+
                             if (!installed.Any(m => m.FileName.Equals(Path.GetFileName(scd), StringComparison.OrdinalIgnoreCase)))
                             {
                                 await storageService.ImportGenericModAsync(scd);
@@ -1475,6 +1535,13 @@ namespace SC2ModManager.ViewModels
                     }
                     else if (file.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
                     {
+                        string? blocked = GetImportBlockReason(Path.GetFileName(file));
+                        if (blocked != null)
+                        {
+                            MessageBox.Show(blocked, "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            continue;
+                        }
+
                         if (installed.Any(m => m.FileName.Equals(Path.GetFileName(file), StringComparison.OrdinalIgnoreCase)))
                             throw new Exception($"A mod with the filename '{Path.GetFileName(file)}' is already installed.");
 
@@ -1494,6 +1561,13 @@ namespace SC2ModManager.ViewModels
 
                         if (confirm != MessageBoxResult.Yes) continue;
 
+                        string? blocked = GetImportBlockReason(Path.GetFileName(file));
+                        if (blocked != null)
+                        {
+                            MessageBox.Show(blocked, "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            continue;
+                        }
+
                         await storageService.ImportGenericModAsync(file);
                         successCount++;
                     }
@@ -1506,6 +1580,32 @@ namespace SC2ModManager.ViewModels
 
             LoadInstalledGenericMods();
             return successCount > 0;
+        }
+
+        /// <summary>
+        ///     Manual Import is only for adding new files to the game, never for replacing the game's own
+        ///     files. That has to be done by the user in File Explorer. Returns why a file can't be imported,
+        ///     or null if it's fine.
+        /// </summary>
+        private string? GetImportBlockReason(string fileName)
+        {
+            const string howToReplace = "Manual Import is only for adding new files. If you really want to replace a game file, do it yourself in File Explorer.";
+
+            // The hotkey files are never allowed, those have their own rules (see HotkeyService)
+            var originals = presetService.LoadOriginalFilesList();
+            bool isOriginal = Globals.IsHotkeyManagedFile(fileName) ||
+                originals.Any(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase));
+
+            if (isOriginal)
+                return $"Upload failed: '{fileName}' has the same name as one of the game's original gamedata files, and those can't be overwritten.\n\n{howToReplace}";
+
+            // The original files list only gets saved after a Restore Original Game Files, so most people
+            // won't have it. In that case anything already in gamedata might be an original, so block those too
+            if (originals.Count == 0 && !string.IsNullOrEmpty(GamePath) &&
+                File.Exists(Path.Combine(GamePath, "gamedata", fileName)))
+                return $"Upload failed: a file named '{fileName}' is already in your gamedata folder and might be one of the game's original files, so it can't be overwritten.\n\n{howToReplace}";
+
+            return null;
         }
 
         // ================= UPDATER =================
@@ -1717,12 +1817,21 @@ namespace SC2ModManager.ViewModels
         {
             bool keepLuo = KeepLuoOnUninstall;
 
-            string hotkeyNote = keepLuo
-                ? "Note: 'Keep hotkey mod game files' is enabled, so luo.scd and toc.win.bdf will be LEFT IN PLACE and the original lua.scd will not be restored — your game files stay altered and are yours to maintain."
-                : "Note: If Maksing's Hotkey Mods are installed, they will be uninstalled first (restoring your original game files).";
+            // The hotkey files get changed during uninstall, and the game has them open while it runs
+            if (SC2ModManager.Services.DllInjectionService.IsGameRunning())
+            {
+                MessageBox.Show(
+                    "Supreme Commander 2 is running. Close the game before uninstalling the mod manager.\n\n" +
+                    "Uninstalling puts the game's hotkey files back, and changing them while the game is open could break it.",
+                    "Close the Game First", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string hotkeyNote = "If the hotkey mod is installed, it is uninstalled first. " +
+                HotkeyEditorViewModel.GetNormalUninstallDescription(keepLuo);
 
             var confirm = MessageBox.Show(
-                $"This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\n{hotkeyNote} You will be asked whether you want to keep your installed maps and mods in the game folder. The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
+                $"This will permanently delete all SC2 Mod Manager files including your downloaded mods, presets, and configuration.\n\n{hotkeyNote}\n\nYou will be asked whether you want to keep your installed maps and mods in the game folder. The launcher support files will also be removed from your game folder.\n\nAre you sure you want to uninstall?",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -1735,11 +1844,17 @@ namespace SC2ModManager.ViewModels
                 string gamedataPath = Path.Combine(GamePath, "gamedata");
                 var hotkeyService = new SC2ModManager.Services.HotkeyService();
 
-                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.NormalHotkey))
+                // Also run it if only the lua.scd backup is left, that's the one thing we can't lose when the data folder gets wiped
+                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.NormalHotkey) ||
+                    hotkeyService.HasUsableLuaBackup(gamedataPath))
                 {
                     try
                     {
-                        hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath, keepLuo);
+                        var result = hotkeyService.UninstallMod(SC2ModManager.Models.HotkeyModType.NormalHotkey, gamedataPath, keepLuo);
+
+                        string? extra = HotkeyEditorViewModel.DescribeUninstallResult(result);
+                        if (extra != null)
+                            MessageBox.Show(extra, "Hotkey Mod Uninstalled", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
@@ -1754,7 +1869,8 @@ namespace SC2ModManager.ViewModels
                     }
                 }
 
-                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.BuildModeHotkey))
+                if (hotkeyService.IsModInstalled(SC2ModManager.Models.HotkeyModType.BuildModeHotkey) ||
+                    hotkeyService.IsInstalledInGame(SC2ModManager.Models.HotkeyModType.BuildModeHotkey, gamedataPath))
                 {
                     try
                     {

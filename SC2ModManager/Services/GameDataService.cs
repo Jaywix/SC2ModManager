@@ -67,6 +67,11 @@ namespace SC2ModManager.Services
             if (!File.Exists(source))
                 throw new Exception($"Mod not found in Enabled folder: {mod.FileName}");
 
+            // Older versions let lua.scd/luo.scd get imported as generic mods. Copying one of those into
+            // gamedata can crash the game, so they only ever get changed from the Hotkeys tab
+            if (Globals.IsHotkeyManagedFile(mod.FileName))
+                throw new Exception($"'{mod.FileName}' is one of the game's hotkey files and can't be enabled as a mod.");
+
             File.Copy(source, destination, true);
         }
 
@@ -75,6 +80,10 @@ namespace SC2ModManager.Services
         /// </summary>
         public void DisableGenericMod(GenericGamedataMod mod, string gameDataPath)
         {
+            // Same as above, never delete a hotkey file from here. Deleting lua.scd/luo.scd can leave the game with no keymap
+            if (Globals.IsHotkeyManagedFile(mod.FileName))
+                return;
+
             string path = Path.Combine(gameDataPath, mod.FileName);
 
             if (File.Exists(path))
@@ -179,8 +188,14 @@ namespace SC2ModManager.Services
         ///     Puts gamedata (and the toc.win.bdf state) back exactly how it was when the full backup
         ///     was taken. The backup is kept afterwards so this can be done again if needed.
         /// </summary>
-        public async Task RestoreFullBackupAsync(string gameDataPath)
+        /// <returns>
+        ///     Where their own toc.win.bdf got copied to if the restore was about to replace or delete it,
+        ///     or null if that didn't happen.
+        /// </returns>
+        public async Task<string?> RestoreFullBackupAsync(string gameDataPath)
         {
+            string? savedToc = null;
+
             var info = GetFullBackupInfo()
                 ?? throw new InvalidOperationException("No full gamedata backup exists.");
 
@@ -228,6 +243,13 @@ namespace SC2ModManager.Services
                     string gameRoot = Path.GetDirectoryName(gameDataPath)!;
                     string tocPath = Path.Combine(gameRoot, Globals.TocWinBdfName);
 
+                    // If the toc in the game right now is going to get replaced or deleted, and it isn't the
+                    // hotkey mod's, save a copy as toc.win.bdf.bak first so we never lose someone's own toc
+                    bool restoringSameToc = info.TocWasPresent && File.Exists(tocPath) && File.Exists(GetFullBackupTocPath()) &&
+                        File.ReadAllBytes(tocPath).AsSpan().SequenceEqual(File.ReadAllBytes(GetFullBackupTocPath()));
+                    if (!restoringSameToc)
+                        savedToc = HotkeyService.BackUpTocIfNotOurs(gameRoot);
+
                     if (info.TocWasPresent && File.Exists(GetFullBackupTocPath()))
                         File.Copy(GetFullBackupTocPath(), tocPath, overwrite: true);
                     else if (!info.TocWasPresent && File.Exists(tocPath))
@@ -238,6 +260,8 @@ namespace SC2ModManager.Services
             {
                 progressWindow.Close();
             }
+
+            return savedToc;
         }
 
         // ================= RESTORE =================

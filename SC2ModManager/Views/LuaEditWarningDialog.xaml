@@ -1,0 +1,66 @@
+<Window x:Class="SC2ModManager.Views.LuaEditWarningDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Advanced Mode"
+        Width="480"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#0D1117"
+        Foreground="White"
+        FontFamily="Segoe UI">
+
+    <StackPanel Margin="24,20,24,20">
+
+        <!-- Warning icon + title -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+            <TextBlock Text="⚠" FontSize="22" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBlock Text="Editing the Raw Lua Is On You"
+                       FontSize="17" FontWeight="SemiBold" Foreground="White"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Warning text -->
+        <Border Background="#1C1600" BorderBrush="#856404" BorderThickness="1" CornerRadius="4"
+                Padding="14,10" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Foreground="#E3B341" FontSize="13" TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,8">
+                    <Run Text="Advanced mode saves exactly what you type into the game's lua files. "/>
+                    <Run Text="The mod manager can't check it for mistakes." FontWeight="Bold"/>
+                </TextBlock>
+                <TextBlock Foreground="#E3B341" FontSize="13" TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,8">
+                    <Run Text="One typo can stop your hotkeys from working or stop the game from launching at all. Any problems caused by changes made here are your responsibility, not the mod manager's."/>
+                </TextBlock>
+                <TextBlock Foreground="#E3B341" FontSize="13" TextWrapping="Wrap" LineHeight="20">
+                    <Run Text="Hotkeys you comment out here won't show up in Normal mode. To get one back, uncomment it here. If something breaks, Restore Originals puts the hotkeys back to how they were when the mod was installed."/>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Don't show again checkbox -->
+        <CheckBox x:Name="DontShowAgainCheckBox"
+                  Content="Don't show this warning again"
+                  Foreground="#AAAAAA"
+                  FontSize="13"
+                  Margin="0,0,0,20"/>
+
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel"
+                    Width="90" Height="32" Margin="0,0,8,0"
+                    Background="#2D333B" Foreground="White"
+                    BorderBrush="#444C56" BorderThickness="1"
+                    Cursor="Hand"
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
+            <Button Content="I Understand"
+                    Width="140" Height="32"
+                    Background="#1E90FF" Foreground="White"
+                    BorderThickness="0"
+                    FontWeight="SemiBold"
+                    Cursor="Hand"
+                    Click="Continue_Click"/>
+        </StackPanel>
+
+    </StackPanel>
+</Window>

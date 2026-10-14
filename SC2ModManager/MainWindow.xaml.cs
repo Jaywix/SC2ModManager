@@ -72,7 +72,14 @@ namespace SC2ModManager
             LauncherNavButton.Visibility = Visibility.Collapsed;
 #endif
 
-            Loaded += async (s, e) => await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
+            Loaded += async (s, e) =>
+            {
+                await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
+
+                // Steam's "verify files", a game update, or a crash halfway through a change can all
+                // leave lua/luo/toc in a combination the game can't launch with. Catch it here and offer a fix
+                await vm.HotkeyEditor.CheckGameKeymapFilesAsync(GetGamedataPathOrNull());
+            };
             Closed += (s, e) => vm.StopAutoSave();
         }
 
@@ -284,13 +291,15 @@ namespace SC2ModManager
         private void GoToDownloadMods(object sender, RoutedEventArgs e) => ShowView("DownloadMods");
         private void GoToManualImport(object sender, RoutedEventArgs e) => ShowView("ManualImport");
 
-        private void GoToHotkeyEditor(object sender, RoutedEventArgs e)
+        private async void GoToHotkeyEditor(object sender, RoutedEventArgs e)
         {
             // Pass the gamedata path so the editor picks up the installed .scd files as the source
             // of truth. This keeps a custom luo.scd from getting overwritten by our local copy.
-            string? gamedataPath = string.IsNullOrEmpty(vm.GamePath)
-                ? null
-                : System.IO.Path.Combine(vm.GamePath, "gamedata");
+            string? gamedataPath = GetGamedataPathOrNull();
+
+            // Fix anything that would stop the game from launching first (like luo.scd with no toc),
+            // so the editor loads whatever state the user picked
+            await vm.HotkeyEditor.CheckGameKeymapFilesAsync(gamedataPath);
 
             vm.HotkeyEditor.LoadNormalHotkeys(gamedataPath);
             vm.HotkeyEditor.LoadBuildModeHotkeys(gamedataPath);
@@ -1943,6 +1952,12 @@ namespace SC2ModManager
 
         // ================= HOTKEY EDITOR =================
 
+        /// <summary>
+        ///     The gamedata folder for the current game path, or null if no game path is set. No message box.
+        /// </summary>
+        private string? GetGamedataPathOrNull() =>
+            string.IsNullOrEmpty(vm.GamePath) ? null : System.IO.Path.Combine(vm.GamePath, "gamedata");
+
         private string GetGamedataPath()
         {
             var config = new SC2ModManager.Services.ConfigService().Load();
@@ -1973,18 +1988,93 @@ namespace SC2ModManager
         {
             string gamedataPath = GetGamedataPath();
             if (gamedataPath == null) return;
-            vm.HotkeyEditor.SaveNormalHotkeys(gamedataPath);
-            MessageBox.Show("Normal hotkeys saved and applied to game.", "Saved",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            // Only say it saved if it actually did. The save shows its own message when it doesn't
+            if (vm.HotkeyEditor.SaveNormalHotkeys(gamedataPath))
+                MessageBox.Show("Normal hotkeys saved and applied to game.", "Saved",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void SaveBuildModeHotkeys_Click(object sender, RoutedEventArgs e)
         {
             string gamedataPath = GetGamedataPath();
             if (gamedataPath == null) return;
-            vm.HotkeyEditor.SaveBuildModeHotkeys(gamedataPath);
-            MessageBox.Show("Build mode hotkeys saved and applied to game.", "Saved",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            if (vm.HotkeyEditor.SaveBuildModeHotkeys(gamedataPath))
+                MessageBox.Show("Build mode hotkeys saved and applied to game.", "Saved",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // ── Hotkey search ────────────────────────────────────────────────────
+
+        private void HotkeySearch_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (vm == null || HotkeySearchKeyBox == null || HotkeySearchCommandBox == null || HotkeySearchDescriptionBox == null)
+                return;
+
+            var (main, tooltip, debug) = vm.HotkeyEditor.SearchHotkeys(
+                HotkeySearchKeyBox.Text, HotkeySearchCommandBox.Text, HotkeySearchDescriptionBox.Text);
+
+            if (!vm.HotkeyEditor.IsHotkeySearchActive)
+            {
+                HotkeySearchResultText.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // Tooltip and Debug start closed, so open any section that has matches or they'd be hidden in there
+            if (main > 0) MainHotkeysExpander.IsExpanded = true;
+            if (tooltip > 0) TooltipHotkeysExpander.IsExpanded = true;
+            if (debug > 0) DebugHotkeysExpander.IsExpanded = true;
+
+            int total = main + tooltip + debug;
+            HotkeySearchResultText.Text = total == 0
+                ? "No hotkeys match your search."
+                : $"{total} matching hotkey{(total == 1 ? "" : "s")}   (Main: {main}, Tooltip: {tooltip}, Debug: {debug})";
+            HotkeySearchResultText.Visibility = Visibility.Visible;
+        }
+
+        private void ClearHotkeySearch_Click(object sender, RoutedEventArgs e)
+        {
+            // Each of these fires HotkeySearch_Changed, which puts every row back
+            HotkeySearchKeyBox.Text = string.Empty;
+            HotkeySearchCommandBox.Text = string.Empty;
+            HotkeySearchDescriptionBox.Text = string.Empty;
+        }
+
+        // ── Advanced (raw lua) mode warning ──────────────────────────────────
+
+        private void NormalAdvancedMode_Checked(object sender, RoutedEventArgs e)
+        {
+            // Flip it back after the click finishes, flipping it inside the Checked event fights the binding
+            if (!ConfirmLuaEditWarning())
+                Dispatcher.InvokeAsync(() => vm.HotkeyEditor.IsNormalAdvancedMode = false);
+        }
+
+        private void BuildModeAdvancedMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!ConfirmLuaEditWarning())
+                Dispatcher.InvokeAsync(() => vm.HotkeyEditor.IsBuildModeAdvancedMode = false);
+        }
+
+        /// <summary>
+        ///     Shows the "editing raw lua is on you" warning unless they turned it off. Returns false if
+        ///     they backed out, so the toggle goes back to Normal mode.
+        /// </summary>
+        private bool ConfirmLuaEditWarning()
+        {
+            var configService = new SC2ModManager.Services.ConfigService();
+            var config = configService.Load();
+            if (config.SuppressLuaEditWarning)
+                return true;
+
+            var dialog = new SC2ModManager.Views.LuaEditWarningDialog { Owner = this };
+            dialog.ShowDialog();
+
+            if (dialog.Confirmed && dialog.SuppressInFuture)
+            {
+                config.SuppressLuaEditWarning = true;
+                configService.Save(config);
+            }
+
+            return dialog.Confirmed;
         }
 
         private void RestoreNormalHotkeys_Click(object sender, RoutedEventArgs e)
@@ -2035,7 +2125,10 @@ namespace SC2ModManager
         /// <summary>
         /// Captures a keystroke from a DataGrid TextBox and formats it to game notation.
         /// E.g. Ctrl+X → "Ctrl-X",  Shift+M → "Shift-M",  R → "R".
-        /// Escape clears the binding.
+        /// Escape puts the key back to what it was in the file. Every hotkey needs a key, so there's
+        /// no clearing one. A blank key used to get saved as [''] and then the hotkey vanished from the editor.
+        /// The key boxes are read-only in the xaml so right click Cut/Paste/Delete can't change them either,
+        /// this is the only way a key gets set. Saving and HotkeyService both refuse blank keys too.
         /// </summary>
         private void HotkeyCapture_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
@@ -2046,7 +2139,8 @@ namespace SC2ModManager
 
             if (key == System.Windows.Input.Key.Escape)
             {
-                tb.Text = string.Empty;
+                if (tb.DataContext is SC2ModManager.Models.HotkeyEntry entry)
+                    tb.Text = entry.OriginalKeyCombo;
                 return;
             }
 
@@ -2080,20 +2174,15 @@ namespace SC2ModManager
 
             if (key == System.Windows.Input.Key.Escape)
             {
-                tb.Text = string.Empty;
+                if (tb.DataContext is SC2ModManager.Models.BuildModeEntry entry)
+                    tb.Text = entry.OriginalKey;
                 return;
             }
 
-            if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
-                    or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
-                    or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt)
-                return;
-
-            string keyStr = KeyToGameString(key);
-            if (string.IsNullOrEmpty(keyStr)) return;
-
-            // Build mode uses only single characters (the game file uses single letters)
-            tb.Text = keyStr;
+            // Build mode only uses single letters (every key in the game file is one), so anything
+            // else just gets ignored
+            if (key >= System.Windows.Input.Key.A && key <= System.Windows.Input.Key.Z)
+                tb.Text = key.ToString();
         }
 
         private static string KeyToGameString(System.Windows.Input.Key key)
@@ -2111,9 +2200,11 @@ namespace SC2ModManager
                 return "Num" + (int)(key - System.Windows.Input.Key.NumPad0);
 
             // Function keys
-            if (key >= System.Windows.Input.Key.F1 && key <= System.Windows.Input.Key.F12)
+            if (key >= System.Windows.Input.Key.F1 && key <= System.Windows.Input.Key.F24)
                 return key.ToString();
 
+            // These have to be the game's own key names from lua/keymap/keyNames.lua. The old version
+            // wrote the actual characters, and the ' key put a quote straight into the lua which breaks the file
             return key switch
             {
                 System.Windows.Input.Key.Space     => "Space",
@@ -2126,21 +2217,28 @@ namespace SC2ModManager
                 System.Windows.Input.Key.End       => "End",
                 System.Windows.Input.Key.Prior     => "PageUp",
                 System.Windows.Input.Key.Next      => "PageDown",
-                System.Windows.Input.Key.Up        => "Up",
-                System.Windows.Input.Key.Down      => "Down",
-                System.Windows.Input.Key.Left      => "Left",
-                System.Windows.Input.Key.Right     => "Right",
-                System.Windows.Input.Key.OemMinus  => "-",
-                System.Windows.Input.Key.OemPlus   => "=",
-                System.Windows.Input.Key.OemOpenBrackets => "[",
-                System.Windows.Input.Key.OemCloseBrackets => "]",
-                System.Windows.Input.Key.OemSemicolon => ";",
-                System.Windows.Input.Key.OemQuotes => "'",
-                System.Windows.Input.Key.OemComma  => ",",
-                System.Windows.Input.Key.OemPeriod => ".",
-                System.Windows.Input.Key.OemQuestion => "/",
-                System.Windows.Input.Key.OemBackslash => "\\",
-                System.Windows.Input.Key.Oem5      => "\\",
+                System.Windows.Input.Key.Pause     => "Pause",
+                System.Windows.Input.Key.Up        => "UpArrow",
+                System.Windows.Input.Key.Down      => "DownArrow",
+                System.Windows.Input.Key.Left      => "LeftArrow",
+                System.Windows.Input.Key.Right     => "RightArrow",
+                System.Windows.Input.Key.Multiply  => "NumStar",
+                System.Windows.Input.Key.Add       => "NumPlus",
+                System.Windows.Input.Key.Subtract  => "NumMinus",
+                System.Windows.Input.Key.Divide    => "NumSlash",
+                System.Windows.Input.Key.Decimal   => "NumPeriod",
+                System.Windows.Input.Key.OemMinus  => "Minus",
+                System.Windows.Input.Key.OemPlus   => "Equals",
+                System.Windows.Input.Key.OemOpenBrackets => "LeftBracket",
+                System.Windows.Input.Key.OemCloseBrackets => "RightBracket",
+                System.Windows.Input.Key.OemSemicolon => "Semicolon",
+                System.Windows.Input.Key.OemQuotes => "Quote",
+                System.Windows.Input.Key.OemComma  => "Comma",
+                System.Windows.Input.Key.OemPeriod => "Period",
+                System.Windows.Input.Key.OemQuestion => "Slash",
+                System.Windows.Input.Key.OemTilde  => "Tilde",
+                System.Windows.Input.Key.OemBackslash => "Backslash",
+                System.Windows.Input.Key.Oem5      => "Backslash",
                 _ => string.Empty
             };
         }

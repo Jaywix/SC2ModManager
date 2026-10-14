@@ -2762,6 +2762,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                      Foreground="White"/>
                                         <RadioButton Content="Advanced (Raw Lua)"
                                                      IsChecked="{Binding HotkeyEditor.IsNormalAdvancedMode}"
+                                                     Checked="NormalAdvancedMode_Checked"
                                                      VerticalAlignment="Center" Foreground="White"/>
                                     </StackPanel>
 
@@ -2776,7 +2777,38 @@ Click="DownloadFiltersToggle_Click"/>
                                                 <Run>= Duplicate key binding within this section</Run>
                                             </TextBlock>
 
-                                            <Expander Header="Main Hotkeys" IsExpanded="True"
+                                            <!-- Search. One box per column, lined up with the grid columns below. Empty boxes are ignored -->
+                                            <Grid Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                                    <TextBlock Text="Search key" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,2"/>
+                                                    <TextBox x:Name="HotkeySearchKeyBox" VerticalContentAlignment="Center"
+                                                             TextChanged="HotkeySearch_Changed"
+                                                             ToolTip="Type a key like R, Ctrl, or Ctrl-R"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                                                    <TextBlock Text="Search command" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,2"/>
+                                                    <TextBox x:Name="HotkeySearchCommandBox" VerticalContentAlignment="Center"
+                                                             TextChanged="HotkeySearch_Changed"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Search description" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,2"/>
+                                                    <TextBox x:Name="HotkeySearchDescriptionBox" VerticalContentAlignment="Center"
+                                                             TextChanged="HotkeySearch_Changed"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="3" Content="✕" Width="26" Height="26" Margin="6,0,0,0"
+                                                        VerticalAlignment="Bottom"
+                                                        Click="ClearHotkeySearch_Click" ToolTip="Clear search"/>
+                                            </Grid>
+                                            <TextBlock x:Name="HotkeySearchResultText" Foreground="#AAAAAA" FontSize="11"
+                                                       Margin="0,0,0,8" Visibility="Collapsed"/>
+
+                                            <Expander x:Name="MainHotkeysExpander" Header="Main Hotkeys" IsExpanded="True"
                                                       Foreground="White" Margin="0,0,0,8">
                                                 <DataGrid ItemsSource="{Binding HotkeyEditor.MainHotkeys}"
                                                           x:Name="MainHotkeysGrid"
@@ -2813,6 +2845,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -2824,7 +2857,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                 </DataGrid>
                                             </Expander>
 
-                                            <Expander Header="Tooltip Hotkeys" IsExpanded="False"
+                                            <Expander x:Name="TooltipHotkeysExpander" Header="Tooltip Hotkeys" IsExpanded="False"
                                                       Foreground="White" Margin="0,0,0,8">
                                                 <DataGrid ItemsSource="{Binding HotkeyEditor.TooltipHotkeys}"
                                                           AutoGenerateColumns="False" CanUserAddRows="False"
@@ -2855,6 +2888,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -2866,7 +2900,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                 </DataGrid>
                                             </Expander>
 
-                                            <Expander Header="Debug Hotkeys" IsExpanded="False"
+                                            <Expander x:Name="DebugHotkeysExpander" Header="Debug Hotkeys" IsExpanded="False"
                                                       Foreground="White" Margin="0,0,0,8">
                                                 <DataGrid ItemsSource="{Binding HotkeyEditor.DebugHotkeys}"
                                                           AutoGenerateColumns="False" CanUserAddRows="False"
@@ -2897,6 +2931,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3031,6 +3066,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                      Margin="0,0,12,0" VerticalAlignment="Center" Foreground="White"/>
                                         <RadioButton Content="Advanced (Raw Lua)"
                                                      IsChecked="{Binding HotkeyEditor.IsBuildModeAdvancedMode}"
+                                                     Checked="BuildModeAdvancedMode_Checked"
                                                      VerticalAlignment="Center" Foreground="White"/>
                                     </StackPanel>
 
@@ -3087,6 +3123,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3125,6 +3162,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3163,6 +3201,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3201,6 +3240,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3239,6 +3279,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3277,6 +3318,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3315,6 +3357,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3353,6 +3396,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3391,6 +3435,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>
@@ -3429,6 +3474,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                                              FontWeight="SemiBold"
                                                                              BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
+                                                                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
                                                                              Tag="capture"/>
                                                                 </DataTemplate>

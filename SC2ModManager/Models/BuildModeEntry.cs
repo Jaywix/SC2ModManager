@@ -48,6 +48,12 @@ namespace SC2ModManager.Models
         public string Comment { get; init; } = string.Empty;
 
 
+        /// <summary>
+        ///     The key as it was read from the file. Escape in the editor puts the key back to this,
+        ///     and saving only validates keys that are different from it.
+        /// </summary>
+        public string OriginalKey { get; init; } = string.Empty;
+
         private string _key = string.Empty;
 
         /// <summary>
