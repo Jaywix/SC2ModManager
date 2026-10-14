@@ -303,9 +303,10 @@ namespace SC2ModManager.ViewModels
                 Filter = "SupremeCommander2.exe|SupremeCommander2.exe"
             };
 
-            // Start in the current game path if we have one
+            // Start in the current game path if we have one.
+            // GetFullPath normalizes any forward slashes since the dialog throws "Value does not fall within the expected range" on them
             if (!string.IsNullOrEmpty(GamePath) && Directory.Exists(GamePath))
-                dialog.InitialDirectory = GamePath;
+                dialog.InitialDirectory = Path.GetFullPath(GamePath);
 
             if (dialog.ShowDialog() != true) return;
 

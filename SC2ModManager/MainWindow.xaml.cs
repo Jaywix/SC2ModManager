@@ -363,8 +363,9 @@ namespace SC2ModManager
             };
 
             // Start in the current game path if we have one
+            // GetFullPath normalizes any forward slashes since the dialog throws "Value does not fall within the expected range" on them
             if (!string.IsNullOrEmpty(vm.GamePath) && System.IO.Directory.Exists(vm.GamePath))
-                dialog.InitialDirectory = vm.GamePath;
+                dialog.InitialDirectory = System.IO.Path.GetFullPath(vm.GamePath);
 
             if (dialog.ShowDialog() != true) return;
             GamePathInput.Text = System.IO.Path.GetDirectoryName(dialog.FileName);

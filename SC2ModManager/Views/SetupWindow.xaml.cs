@@ -179,10 +179,11 @@ namespace SC2ModManager
             var dialog = new OpenFolderDialog { Title = "Select Supreme Commander 2 Folder" };
 
             // Start at whatever path is already in the box (like the auto-detected one), or fall
-            // back to the usual Steam library location
+            // back to the usual Steam library location.
+            // GetFullPath normalizes any forward slashes since the dialog throws "Value does not fall within the expected range" on them
             string steamCommon = @"C:\Program Files (x86)\Steam\steamapps\common";
             if (!string.IsNullOrWhiteSpace(GamePathBox.Text) && Directory.Exists(GamePathBox.Text))
-                dialog.InitialDirectory = GamePathBox.Text;
+                dialog.InitialDirectory = Path.GetFullPath(GamePathBox.Text);
             else if (Directory.Exists(steamCommon))
                 dialog.InitialDirectory = steamCommon;
 

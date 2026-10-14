@@ -34,7 +34,12 @@ namespace SC2ModManager.Services
                     return new AppConfig();
 
                 string json = File.ReadAllText(ConfigPath);
-                return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                var config = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+
+                // Older versions could save the game path with mixed slashes (from the Steam registry),
+                // so clean it up on load. It gets written back clean the next time the config is saved
+                config.GamePath = NormalizePath(config.GamePath);
+                return config;
             }
             catch
             {
@@ -72,8 +77,26 @@ namespace SC2ModManager.Services
             if (!IsValidGamePath(newPath))
                 throw new InvalidDataException("The specified path does not appear to be a valid Supreme Commander 2 installation.");
 
-            config.GamePath = newPath;
+            config.GamePath = NormalizePath(newPath);
             Save(config);
+        }
+
+        /// <summary>
+        ///     Tries to flip any forward slashes to backslashes and get the full path
+        /// </summary>
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) 
+                return path;
+
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path;
+            }
         }
 
         private string TryGetFromSteam()
@@ -82,7 +105,9 @@ namespace SC2ModManager.Services
             string steamPath = key?.GetValue("SteamPath")?.ToString();
             if (string.IsNullOrEmpty(steamPath)) return null;
 
-            string gamePath = Path.Combine(steamPath, "steamapps", "common", "Supreme Commander 2");
+            // Steam stores SteamPath with forward slashes (d:/program files (x86)/steam), so GetFullPath
+            // flips them to backslashes. The file dialogs throw on mixed slashes otherwise
+            string gamePath = NormalizePath(Path.Combine(steamPath, "steamapps", "common", "Supreme Commander 2"));
             return Directory.Exists(gamePath) ? gamePath : null;
         }
 
