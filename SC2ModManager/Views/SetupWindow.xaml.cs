@@ -194,6 +194,30 @@ namespace SC2ModManager
             }
         }
 
+        /// <summary>
+        ///     Checks the game path whenever the box changes, so typing or pasting a path works the same as
+        ///     Browse. Before this only Browse and auto-detect validated, so a pasted path left Next stuck,
+        ///     and typing over an auto-detected path still saved the auto-detected one.
+        /// </summary>
+        private void GamePathBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            // Can fire while the window is still being built
+            if (GamePathValidBorder == null || GamePathInvalidBorder == null)
+                return;
+
+            string path = GamePathBox.Text.Trim();
+            if (path.Length == 0)
+            {
+                // Empty box, don't yell at them yet
+                validatedGamePath = null;
+                GamePathValidBorder.Visibility = Visibility.Collapsed;
+                GamePathInvalidBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            ValidateGamePath(path);
+        }
+
         private void ValidateGamePath(string path)
         {
             bool valid = Directory.Exists(Path.Combine(path, "bin")) &&
@@ -294,20 +318,41 @@ namespace SC2ModManager
                 }
                 catch { }
 
+                // The shortcut is extra, so if it fails (like a OneDrive Desktop) the install still worked.
+                // It used to be inside the main try and made the whole install say it failed
+                string? shortcutWarning = null;
                 if (DesktopShortcutCheckBox.IsChecked == true)
                 {
-                    string iconPath = Path.Combine(installFolder, "Assets", "Supreme_Commander_2_2.ico");
-                    installService.CreateDesktopShortcut(installFolder, iconPath);
+                    try
+                    {
+                        string iconPath = Path.Combine(installFolder, "Assets", "Supreme_Commander_2_2.ico");
+                        installService.CreateDesktopShortcut(installFolder, iconPath);
+                    }
+                    catch (Exception shortcutEx)
+                    {
+                        shortcutWarning = $"The desktop shortcut couldn't be created ({shortcutEx.Message}). You can still open the mod manager from:\n{installFolder}";
+                    }
                 }
 
                 InstallStatusText.Text = "Installation complete!";
                 InstallCompleteBorder.Visibility = Visibility.Visible;
                 NextButton.IsEnabled = true;
+
+                if (shortcutWarning != null)
+                    MessageBox.Show(shortcutWarning, "Desktop Shortcut", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                InstallStatusText.Text = $"Installation failed: {ex.Message}";
-                InstallFileText.Text = ex.ToString();
+                // Don't leave them stuck on the last page with no Back button. Send them back to the
+                // install location page so they can change something and hit Install again
+                MessageBox.Show(
+                    $"Installation failed: {ex.Message}\n\nYou can pick a different install location or try again.",
+                    "Installation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                InstallProgressBar.Value = 0;
+                InstallStatusText.Text = string.Empty;
+                InstallFileText.Text = string.Empty;
+                currentPage = 4;
             }
 
             UpdateWizardState();

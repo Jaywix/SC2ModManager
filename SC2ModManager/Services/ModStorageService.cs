@@ -82,22 +82,52 @@ namespace SC2ModManager.Services
                     if (!entry.FullName.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
                         continue;
 
+                    // Extract to a temp name first, same reason as DownloadToFileAsync
                     string destPath = Path.Combine(destinationFolder, Path.GetFileName(entry.FullName));
-                    entry.ExtractToFile(destPath, overwrite: true);
+                    string tempPath = destPath + ".download";
+                    try
+                    {
+                        entry.ExtractToFile(tempPath, overwrite: true);
+                        File.Move(tempPath, destPath, overwrite: true);
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempPath)) File.Delete(tempPath);
+                    }
                 }
             });
         }
 
+        /// <summary>
+        ///     Downloads to a temp file next to outputPath and only renames it to the real name once the
+        ///     whole thing came through. If the internet drops halfway, a half downloaded .scd used to sit
+        ///     in the folder looking like an installed mod, and then retrying said "already installed".
+        ///     The .download name doesn't end in .scd so nothing ever lists it.
+        /// </summary>
         private async Task DownloadToFileAsync(string url, string outputPath)
         {
-            using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
+            string tempPath = outputPath + ".download";
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            try
+            {
+                using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
 
-            await stream.CopyToAsync(fileStream);
-            await fileStream.FlushAsync();
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+                    await stream.CopyToAsync(fileStream);
+                    await fileStream.FlushAsync();
+                }
+
+                // The file stream is closed now, so the rename can happen
+                File.Move(tempPath, outputPath, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
         }
 
 
@@ -171,9 +201,16 @@ namespace SC2ModManager.Services
             if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 string tempZip = Path.Combine(Path.GetTempPath(), $"{map.ID}_download.zip");
-                await DownloadToFileAsync(url, tempZip);
-                await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
-                File.Delete(tempZip);
+                try
+                {
+                    await DownloadToFileAsync(url, tempZip);
+                    await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
+                }
+                finally
+                {
+                    // Clean up the zip even when the download or extract failed
+                    if (File.Exists(tempZip)) File.Delete(tempZip);
+                }
             }
             else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
             {
@@ -390,9 +427,16 @@ namespace SC2ModManager.Services
             if (url.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 string tempZip = Path.Combine(Path.GetTempPath(), $"{mod.ID}_download.zip");
-                await DownloadToFileAsync(url, tempZip);
-                await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
-                File.Delete(tempZip);
+                try
+                {
+                    await DownloadToFileAsync(url, tempZip);
+                    await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
+                }
+                finally
+                {
+                    // Clean up the zip even when the download or extract failed
+                    if (File.Exists(tempZip)) File.Delete(tempZip);
+                }
             }
             else if (url.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
             {

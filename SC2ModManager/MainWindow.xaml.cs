@@ -80,6 +80,13 @@ namespace SC2ModManager
                 // leave lua/luo/toc in a combination the game can't launch with. Catch it here and offer a fix
                 await vm.HotkeyEditor.CheckGameKeymapFilesAsync(GetGamedataPathOrNull());
             };
+            // Same unsaved changes check as leaving the page, but for closing the app. Skipped when the app
+            // is shutting itself down for an update or uninstall, there's no "stay" option there
+            Closing += (s, e) =>
+            {
+                if (!Application.Current.Dispatcher.HasShutdownStarted && !ConfirmLeavingWithUnsavedChanges())
+                    e.Cancel = true;
+            };
             Closed += (s, e) => vm.StopAutoSave();
         }
 
@@ -154,8 +161,52 @@ namespace SC2ModManager
 
         // ================= NAVIGATION =================
 
+        private string _currentView = "Home";
+
+        /// <summary>
+        ///     Enable/Disable on the installed maps and mods pages only changes the game when you hit Save,
+        ///     so ask before leaving with changes that haven't been saved. Returns false if they want to stay.
+        /// </summary>
+        private bool ConfirmLeavingWithUnsavedChanges()
+        {
+            bool isMaps = _currentView == "InstalledMaps";
+            bool isMods = _currentView == "InstalledGenericMods";
+
+            if (!(isMaps && vm.HasUnsavedMapChanges()) && !(isMods && vm.HasUnsavedGenericModChanges()))
+                return true;
+
+            string what = isMaps ? "maps" : "mods";
+            var choice = MessageBox.Show(
+                $"You enabled or disabled some {what} but haven't saved, so the game doesn't have those changes yet.\n\n" +
+                "Yes: save them to the game now\n" +
+                "No: throw the changes away\n" +
+                "Cancel: stay on this page",
+                "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+
+            switch (choice)
+            {
+                case MessageBoxResult.Yes:
+                    // If the save had problems it already said what, so stay on the page so they can see it
+                    return isMaps ? vm.SaveMapsToGamedata() : vm.SaveGenericModsToGamedata();
+
+                case MessageBoxResult.No:
+                    if (isMaps) vm.DiscardMapChanges();
+                    else vm.DiscardGenericModChanges();
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         private void ShowView(string view)
         {
+            // Leaving the installed maps/mods page with unsaved Enable/Disable changes
+            if (view != _currentView && !ConfirmLeavingWithUnsavedChanges())
+                return;
+
+            _currentView = view;
+
             HomeView.Visibility = Visibility.Collapsed;
             ModsView.Visibility = Visibility.Collapsed;
             SettingsView.Visibility = Visibility.Collapsed;
@@ -351,7 +402,21 @@ namespace SC2ModManager
         // ================= HOME =================
 
         private void LaunchGame_Click(object sender, RoutedEventArgs e) => vm.LaunchGame();
-        private async void Update_Click(object sender, RoutedEventArgs e) => await vm.RunUpdater();
+        private async void Update_Click(object sender, RoutedEventArgs e)
+        {
+            // Off until the update download is done. A second click used to try opening the same temp zip
+            // the first download had locked and showed "Updater failed: file in use"
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
+            try
+            {
+                await vm.RunUpdater();
+            }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
+        }
 
         private void NewsLink_Click(object sender, RoutedEventArgs e)
         {
@@ -564,10 +629,16 @@ namespace SC2ModManager
 
                 if (confirm != MessageBoxResult.Yes) return;
 
+                object originalContent = btn.Content;
                 btn.IsEnabled = false;
                 btn.Content = "Restoring...";
 
                 await vm.RestoreVersionAsync(release.DownloadUrl, release.TagName);
+
+                // If we're still here the app didn't close for the restore (it got cancelled or failed),
+                // so put the button back instead of leaving it stuck on "Restoring..."
+                btn.IsEnabled = true;
+                btn.Content = originalContent;
             }
         }
 
@@ -1475,8 +1546,9 @@ namespace SC2ModManager
 
         private void SaveMaps_Click(object sender, RoutedEventArgs e)
         {
-            vm.SaveMapsToGamedata();
-            MessageBox.Show("Maps saved successfully.");
+            // Only say it worked if it did. The save already showed a message for whatever went wrong
+            if (vm.SaveMapsToGamedata())
+                MessageBox.Show("Maps saved successfully.");
         }
 
         private void DeleteSelectedMaps_Click(object sender, RoutedEventArgs e)
@@ -1544,8 +1616,8 @@ namespace SC2ModManager
 
         private void SaveGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            vm.SaveGenericModsToGamedata();
-            MessageBox.Show("Generic mods saved successfully.");
+            if (vm.SaveGenericModsToGamedata())
+                MessageBox.Show("Generic mods saved successfully.");
         }
 
         private void DeleteSelectedGenericMods_Click(object sender, RoutedEventArgs e)
@@ -1721,15 +1793,27 @@ namespace SC2ModManager
             var selected = vm.FilteredDownloadableMaps.Where(m => m.IsChecked).ToList();
             if (!selected.Any()) { MessageBox.Show("No maps selected."); return; }
 
-            await vm.DownloadSelectedMapsAsync(selected);
-            foreach (var m in selected) m.IsChecked = false;
+            // Turn the button off until it's done so a second click can't start the same downloads again
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
+            try
+            {
+                await vm.DownloadSelectedMapsAsync(selected);
+                foreach (var m in selected) m.IsChecked = false;
+            }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
         }
 
         // ================= DOWNLOAD: GENERIC MODS =================
 
         private void SelectAllDownloadGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var m in vm.DownloadableGenericMods) m.IsChecked = true;
+            // Only what's showing, same as the maps page. Using the full list here checked mods hidden by
+            // the Downloaded / Not Downloaded filter. Deselect All still clears everything, hidden or not
+            foreach (var m in vm.FilteredDownloadableGenericMods) m.IsChecked = true;
         }
 
         private void DeselectAllDownloadGenericMods_Click(object sender, RoutedEventArgs e)
@@ -1739,11 +1823,22 @@ namespace SC2ModManager
 
         private async void DownloadSelectedGenericMods_Click(object sender, RoutedEventArgs e)
         {
-            var selected = vm.DownloadableGenericMods.Where(m => m.IsChecked).ToList();
+            // Only checked mods that are actually showing, so a filter can't download something you can't see
+            var selected = vm.FilteredDownloadableGenericMods.Where(m => m.IsChecked).ToList();
             if (!selected.Any()) { MessageBox.Show("No mods selected."); return; }
 
-            await vm.DownloadSelectedGenericModsAsync(selected);
-            foreach (var m in selected) m.IsChecked = false;
+            // Turn the button off until it's done so a second click can't start the same downloads again
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
+            try
+            {
+                await vm.DownloadSelectedGenericModsAsync(selected);
+                foreach (var m in selected) m.IsChecked = false;
+            }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
         }
 
         // ================= SORT =================

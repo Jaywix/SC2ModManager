@@ -169,6 +169,7 @@
                 <TextBlock Text="Game Installation Folder" Foreground="#888888" FontSize="11" Margin="0,0,0,4"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <TextBox x:Name="GamePathBox"
+                             TextChanged="GamePathBox_TextChanged"
                              Width="380" Height="32"
                              Background="#1A2535" Foreground="White"
                              BorderBrush="#1E90FF" BorderThickness="1"

@@ -26,24 +26,78 @@ namespace SC2ModManager.Services
             Directory.CreateDirectory(Globals.GetDataPath());
         }
 
+        // config.json.bak is always the last config that saved fine (File.Replace makes it on every save)
+        private string BackupPath => ConfigPath + ".bak";
+
+        private static readonly object FileLock = new();
+
         public AppConfig Load()
         {
-            try
+            lock (FileLock)
             {
                 if (!File.Exists(ConfigPath))
                     return new AppConfig();
 
-                string json = File.ReadAllText(ConfigPath);
-                var config = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                // Normal case, config.json reads fine
+                if (TryRead(ConfigPath, out var config))
+                    return config!;
+
+                // config.json is broken (the app got killed mid-save, disk problem, someone edited it by hand).
+                // This used to silently reset every setting. Try the backup from the last good save first
+                if (TryRead(BackupPath, out var backup))
+                {
+                    try { File.Copy(BackupPath, ConfigPath, overwrite: true); } catch { }
+                    TellUser("Your settings file was damaged, so the mod manager restored it from the last good backup. " +
+                             "Anything you changed right before this might need to be set again.");
+                    return backup!;
+                }
+
+                // Both are broken. Move the bad one out of the way (not deleted, in case someone wants to look at it)
+                // so this only happens once, and start fresh
+                try { File.Move(ConfigPath, ConfigPath + ".broken", overwrite: true); } catch { }
+                TellUser("Your settings file was damaged and couldn't be recovered, so the mod manager is starting with default settings. " +
+                         "You may need to set your game path and theme again.\n\n" +
+                         $"The damaged file was kept here:\n{ConfigPath}.broken");
+                return new AppConfig();
+            }
+        }
+
+        private bool TryRead(string path, out AppConfig? config)
+        {
+            config = null;
+            try
+            {
+                if (!File.Exists(path))
+                    return false;
+
+                config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(path));
+                if (config == null)
+                    return false;
 
                 // Older versions could save the game path with mixed slashes (from the Steam registry),
                 // so clean it up on load. It gets written back clean the next time the config is saved
                 config.GamePath = NormalizePath(config.GamePath);
-                return config;
+                return true;
             }
             catch
             {
-                return new AppConfig();
+                config = null;
+                return false;
+            }
+        }
+
+        // Load gets called from all over, sometimes not on the UI thread, so queue the message instead of showing it right here
+        private static void TellUser(string message)
+        {
+            try
+            {
+                System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+                    System.Windows.MessageBox.Show(message, "Settings Restored",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning));
+            }
+            catch
+            {
+                // nothing we can do if there's no UI to show it on
             }
         }
 
@@ -51,9 +105,36 @@ namespace SC2ModManager.Services
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath));
-                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(ConfigPath, json);
+                lock (FileLock)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath));
+                    string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+
+                    // Write the whole thing to a temp file first, then swap it in. If the app gets killed
+                    // halfway through a write, the real config.json is still the old good one instead of
+                    // an empty or half written file
+                    string tempPath = ConfigPath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+
+                    if (File.Exists(ConfigPath))
+                    {
+                        try
+                        {
+                            // Swaps the new file in and keeps the old one as config.json.bak in one step
+                            File.Replace(tempPath, ConfigPath, BackupPath);
+                        }
+                        catch (IOException)
+                        {
+                            // File.Replace doesn't work on some drives (network/FAT), do it the long way
+                            File.Copy(ConfigPath, BackupPath, overwrite: true);
+                            File.Move(tempPath, ConfigPath, overwrite: true);
+                        }
+                    }
+                    else
+                    {
+                        File.Move(tempPath, ConfigPath);
+                    }
+                }
             }
             catch (Exception ex)
             {

@@ -190,11 +190,19 @@ namespace SC2ModManager.ViewModels
 
         public void SetGamePath(string path)
         {
+            // Remember what it was before saving. Re-entering the same path (like fixing the slash
+            // thing) used to disable every map and mod for no reason
+            string? oldPath = configService.Load()?.GamePath;
+
             configService.UpdateGamePath(configService.Load(), path);
             gameService = new GameService(configService);
 
             InitializeGamePath();
 
+            if (IsSameFolder(oldPath, path))
+                return;
+
+            // Actually a different game folder, so none of our maps/mods are in its gamedata yet.
             // Load from disk first. These collections only get populated when the user visits the
             // Installed screens, so disabling without loading first would do nothing and leave the
             // storage folders out of sync.
@@ -203,6 +211,26 @@ namespace SC2ModManager.ViewModels
 
             this.DisableAllGenericMods();
             this.DisableAllMaps();
+        }
+
+        /// <summary>
+        ///     True if both paths point at the same folder, ignoring slashes, capitals, and a trailing slash.
+        /// </summary>
+        private static bool IsSameFolder(string? a, string? b)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+                return false;
+
+            try
+            {
+                string normA = Path.GetFullPath(a).TrimEnd('\\', '/');
+                string normB = Path.GetFullPath(b).TrimEnd('\\', '/');
+                return string.Equals(normA, normB, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // ================= UPDATE =================
@@ -496,6 +524,15 @@ namespace SC2ModManager.ViewModels
             try
             {
                 string? savedToc = await gamedataService.RestoreFullBackupAsync(Path.Combine(GamePath, "gamedata"));
+
+                // The restore put maps/mods back in gamedata without the mod manager knowing, so the lists
+                // still said Disabled and the next Save would've deleted them all again. Line our lists up
+                // with what's actually in the game now (in gamedata = enabled). Load first, the collections
+                // are empty if the user never opened the Installed pages this session
+                LoadInstalledMaps();
+                LoadInstalledGenericMods();
+                DiscardMapChanges();
+                DiscardGenericModChanges();
 
                 string done = "Backup restored. Your gamedata folder is exactly how it was when the backup was made.";
                 if (savedToc != null)
@@ -1106,13 +1143,90 @@ namespace SC2ModManager.ViewModels
         public void EnableAllMaps() => EnableSelectedMaps(DisabledMaps.ToList());
         public void DisableAllMaps() => DisableSelectedMaps(EnabledMaps.ToList());
 
-        public void SaveMapsToGamedata()
+        // ================= UNSAVED ENABLE/DISABLE CHANGES =================
+        // Enable/Disable only moves files around in our storage folders, the game doesn't change until
+        // Save. Instead of keeping a "dirty" flag that every code path has to remember to set, we just
+        // compare against gamedata: enabled means it's in gamedata, so anything enabled that isn't there
+        // (or disabled that is) is a change that hasn't been saved yet
+
+        public bool HasUnsavedMapChanges() =>
+            HasUnsavedChanges(EnabledMaps.Concat(DisabledMaps).Select(m => (m.FileName, m.IsEnabled)));
+
+        public bool HasUnsavedGenericModChanges() =>
+            HasUnsavedChanges(EnabledGenericMods.Concat(DisabledGenericMods).Select(m => (m.FileName, m.IsEnabled)));
+
+        private bool HasUnsavedChanges(IEnumerable<(string FileName, bool IsEnabled)> items)
+        {
+            if (string.IsNullOrEmpty(GamePath))
+                return false;
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+            if (!Directory.Exists(gameDataPath))
+                return false;
+
+            return items.Any(i => i.IsEnabled != File.Exists(Path.Combine(gameDataPath, i.FileName)));
+        }
+
+        /// <summary>
+        ///     Throws away unsaved Enable/Disable changes by putting each map back to match what's actually
+        ///     in the game: in gamedata = enabled, not in gamedata = disabled.
+        /// </summary>
+        public void DiscardMapChanges()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+                return;
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            foreach (var map in EnabledMaps.Concat(DisabledMaps).ToList())
+            {
+                bool inGame = File.Exists(Path.Combine(gameDataPath, map.FileName));
+                if (inGame && !map.IsEnabled)
+                    storageService.MoveMapToEnabled(map);
+                else if (!inGame && map.IsEnabled)
+                    storageService.MoveMapToDisabled(map);
+            }
+
+            LoadInstalledMaps();
+            storageService.SaveMapsState(EnabledMaps.Concat(DisabledMaps));
+        }
+
+        /// <summary>
+        ///     Same as DiscardMapChanges but for generic mods.
+        /// </summary>
+        public void DiscardGenericModChanges()
+        {
+            if (string.IsNullOrEmpty(GamePath))
+                return;
+
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            foreach (var mod in EnabledGenericMods.Concat(DisabledGenericMods).ToList())
+            {
+                bool inGame = File.Exists(Path.Combine(gameDataPath, mod.FileName));
+                if (inGame && !mod.IsEnabled)
+                    storageService.MoveGenericModToEnabled(mod);
+                else if (!inGame && mod.IsEnabled)
+                    storageService.MoveGenericModToDisabled(mod);
+            }
+
+            LoadInstalledGenericMods();
+            storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
+        }
+
+        /// <summary>
+        ///     Puts the enabled maps in the game and takes the disabled ones out. Returns false if anything
+        ///     went wrong, so the Save button doesn't say it worked when it didn't.
+        /// </summary>
+        public bool SaveMapsToGamedata()
         {
             if (string.IsNullOrEmpty(GamePath))
             {
                 MessageBox.Show("Game path not set.");
-                return;
+                return false;
             }
+
+            bool allWorked = true;
 
             string mapsEnabledPath = Path.Combine(
                 Globals.GetDataPath(), "Mods", "Maps", "Enabled"
@@ -1125,10 +1239,15 @@ namespace SC2ModManager.ViewModels
             foreach (var map in EnabledMaps)
             {
                 try { gamedataService.EnableMap(map, mapsEnabledPath, gameDataPath); }
-                catch (Exception ex) { MessageBox.Show($"Could not enable {map.FileName}: {ex.Message}"); }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not enable {map.FileName}: {ex.Message}");
+                    allWorked = false;
+                }
             }
 
             storageService.SaveMapsState(EnabledMaps.Concat(DisabledMaps));
+            return allWorked;
         }
 
         public void UninstallMap(Map map)
@@ -1243,13 +1362,19 @@ namespace SC2ModManager.ViewModels
         public void EnableAllGenericMods() => EnableSelectedGenericMods(DisabledGenericMods.ToList());
         public void DisableAllGenericMods() => DisableSelectedGenericMods(EnabledGenericMods.ToList());
 
-        public void SaveGenericModsToGamedata()
+        /// <summary>
+        ///     Puts the enabled generic mods in the game and takes the disabled ones out. Returns false if
+        ///     anything went wrong, so the Save button doesn't say it worked when it didn't.
+        /// </summary>
+        public bool SaveGenericModsToGamedata()
         {
             if (string.IsNullOrEmpty(GamePath))
             {
                 MessageBox.Show("Game path not set.");
-                return;
+                return false;
             }
+
+            bool allWorked = true;
 
             string modsEnabledPath = Path.Combine(
                 Globals.GetDataPath(), "Mods", "GenericMods", "Enabled"
@@ -1265,13 +1390,15 @@ namespace SC2ModManager.ViewModels
                 { 
                     gamedataService.EnableGenericMod(mod, modsEnabledPath, gameDataPath); 
                 }
-                catch (Exception ex) 
-                { 
-                    MessageBox.Show($"Could not enable {mod.FileName}: {ex.Message}"); 
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not enable {mod.FileName}: {ex.Message}");
+                    allWorked = false;
                 }
             }
 
             storageService.SaveGenericModsState(EnabledGenericMods.Concat(DisabledGenericMods));
+            return allWorked;
         }
 
         public void UninstallGenericMod(GenericGamedataMod mod)
@@ -1958,6 +2085,10 @@ namespace SC2ModManager.ViewModels
 
                     if (File.Exists(zipPath))
                         File.Delete(zipPath);
+
+                    // They cancelled, so nothing is being restored. Don't fall through to the shutdown
+                    // below, that used to close the app right after saying the restore was cancelled
+                    return;
                 }
 
                 Application.Current.Shutdown();
