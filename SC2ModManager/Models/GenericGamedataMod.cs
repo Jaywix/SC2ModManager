@@ -268,8 +268,9 @@ namespace SC2ModManager.Models
         {
             foreach (var mod in availableMods)
             {
-                mod.IsDownloaded = downloadedMods.Contains(mod.FileName);
-                mod.IsEnabled = enabledMods.Contains(mod.FileName);
+                // Windows file names don't care about capitals, so neither do we
+                mod.IsDownloaded = downloadedMods.Contains(mod.FileName, StringComparer.OrdinalIgnoreCase);
+                mod.IsEnabled = enabledMods.Contains(mod.FileName, StringComparer.OrdinalIgnoreCase);
             }
 
             return availableMods;

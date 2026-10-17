@@ -219,6 +219,29 @@ namespace SC2ModManager.Services
 
         // ================= HELPERS =================
 
+        /// <summary>
+        ///     If saving a preset with this name would replace an existing one, returns that preset's name.
+        ///     Checks the actual file and not just the name, because names like "a/b" and "a_b" both save
+        ///     to a_b.json and would quietly replace each other. Null if nothing would get replaced.
+        /// </summary>
+        public string? FindPresetThatWouldBeReplaced(string name)
+        {
+            string path = Path.Combine(presetsPath, $"{MakeSafeFileName(name)}.json");
+            if (!File.Exists(path))
+                return null;
+
+            try
+            {
+                var existing = JsonSerializer.Deserialize<ModPreset>(File.ReadAllText(path));
+                return string.IsNullOrWhiteSpace(existing?.Name) ? name : existing.Name;
+            }
+            catch
+            {
+                // Can't read it, but something's still there and would get replaced
+                return name;
+            }
+        }
+
         private string MakeSafeFileName(string name)
         {
             foreach (char c in Path.GetInvalidFileNameChars())

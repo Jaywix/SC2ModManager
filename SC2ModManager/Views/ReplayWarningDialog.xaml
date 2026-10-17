@@ -6,7 +6,7 @@
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#0D1117"
+        Background="{DynamicResource PanelBackgroundBrush}"
         Foreground="White"
         FontFamily="Segoe UI">
 
@@ -47,7 +47,7 @@
                     Click="Cancel_Click"/>
             <Button Content="▶  Launch Replay"
                     Width="140" Height="32"
-                    Background="#1E90FF" Foreground="White"
+                    Background="{DynamicResource AccentBrush}" Foreground="White"
                     BorderThickness="0"
                     FontWeight="SemiBold"
                     Cursor="Hand"

@@ -141,7 +141,14 @@ namespace SC2MMUpdater
                     File.Copy(newUpdaterPath, tempUpdater, true);
 
                     string batchPath = Path.Combine(Path.GetTempPath(), "sc2mm_updater_swap.bat");
+
+                    // chcp 65001 switches cmd to UTF-8 before it reads the paths below. File.WriteAllText saves
+                    // the .bat as UTF-8, but cmd reads .bat files in the old Windows code page by default, so a
+                    // path with an accent in it (like a C:\Users\José install) got mangled and the move silently
+                    // failed. If it ever still fails, the mod manager finds SC2MMUpdater_new.exe on its next
+                    // start and finishes the swap itself (see UpdateService.RepairStuckUpdaterSwap)
                     string batch = $@"@echo off
+                        chcp 65001 >nul
                         timeout /t 2 /nobreak >nul
                         move /y ""{tempUpdater}"" ""{currentUpdaterPath}""
                         del ""%~f0""

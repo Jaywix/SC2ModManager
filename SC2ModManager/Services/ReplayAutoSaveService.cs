@@ -64,7 +64,13 @@ namespace SC2ModManager.Services
         private async Task MonitorLoopAsync(CancellationToken token)
         {
             bool wasRunning = false;
+            bool firstPass = true;
             string lastSeenSig = null;
+
+            // The last replay we saved, remembered between launches. This used to only live in memory and got
+            // reset to "whatever LastGame is now" every time a game session started, so a game that finished
+            // while the mod manager was closed (or before it was opened) never got saved
+            _lastCopiedSignature = LoadRememberedSignature();
 
             try
             {
@@ -73,43 +79,39 @@ namespace SC2ModManager.Services
                     bool running = DllInjectionService.IsGameRunning();
 
                     if (running && !wasRunning)
-                    {
-                        // Session just started. Seed with whatever LastGame already exists so we
-                        // don't re-copy a replay from before this session — only new games count.
-                        var current = FindCurrentLastGame();
-                        _lastCopiedSignature = current != null ? Signature(current) : null;
-                        lastSeenSig = _lastCopiedSignature;
                         Log("game session started");
+
+                    // Look while a game session is going, right after it ends, and once when the mod manager
+                    // starts (that last one is what catches games that finished while we weren't open)
+                    if (running || wasRunning || firstPass)
+                    {
+                        var f = FindCurrentLastGame();
+                        if (f != null)
+                        {
+                            string sig = Signature(f);
+
+                            if (_lastCopiedSignature == null)
+                            {
+                                // Nothing remembered yet (first run with this version, or auto-save was just
+                                // turned on). Don't copy whatever old replay is sitting there, just start
+                                // remembering from here, same as it used to work
+                                Remember(sig);
+                                lastSeenSig = sig;
+                            }
+                            else if (sig != _lastCopiedSignature)
+                            {
+                                if (running && sig != lastSeenSig)
+                                    lastSeenSig = sig;   // the game's open and the file just changed, wait a poll for it to settle
+                                else
+                                    TrySave(f, sig);     // stable for a poll, or the game is closed so the file is done
+                            }
+                        }
                     }
 
-                    if (running)
-                    {
-                        // During the session: copy each game's replay once it settles. LastGame gets
-                        // overwritten after every game, so this catches all of them, not just the last.
-                        var f = FindCurrentLastGame();
-                        if (f != null)
-                        {
-                            string sig = Signature(f);
-                            if (sig != lastSeenSig)
-                                lastSeenSig = sig;                 // still changing, wait for it to settle
-                            else if (sig != _lastCopiedSignature)  // stable for a poll and not yet saved
-                                TrySave(f, ref _lastCopiedSignature, sig);
-                        }
-                    }
-                    else if (wasRunning)
-                    {
-                        // Session ended. Grab the final game's replay if we didn't already — the game
-                        // has exited so the file is fully released now.
-                        var f = FindCurrentLastGame();
-                        if (f != null)
-                        {
-                            string sig = Signature(f);
-                            if (sig != _lastCopiedSignature)
-                                TrySave(f, ref _lastCopiedSignature, sig);
-                        }
+                    if (wasRunning && !running)
                         Log("game session ended");
-                    }
 
+                    firstPass = false;
                     wasRunning = running;
                     await Task.Delay(PollMs, token);
                 }
@@ -121,10 +123,35 @@ namespace SC2ModManager.Services
             }
         }
 
-        private void TrySave(FileInfo replay, ref string lastCopiedSig, string sig)
+        private void TrySave(FileInfo replay, string sig)
         {
             if (TryCopyReplay(replay))
-                lastCopiedSig = sig;
+                Remember(sig);
+        }
+
+        // ======= Remembering the last saved replay between launches (stored in config.json) =======
+
+        private static string LoadRememberedSignature()
+        {
+            try { return new ConfigService().Load().LastAutoSavedReplaySignature; }
+            catch { return null; }
+        }
+
+        private void Remember(string sig)
+        {
+            _lastCopiedSignature = sig;
+            try
+            {
+                var configService = new ConfigService();
+                var config = configService.Load();
+                config.LastAutoSavedReplaySignature = sig;
+                configService.Save(config);
+            }
+            catch (Exception ex)
+            {
+                // Still remembered for this session, it just won't carry over to the next launch
+                Log($"couldn't save last auto-saved replay: {ex.Message}");
+            }
         }
 
         private bool TryCopyReplay(FileInfo src)

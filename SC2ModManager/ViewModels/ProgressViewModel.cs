@@ -44,8 +44,65 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        // ================= CANCEL =================
+        // The Cancel button (and the window's X) ask the work to stop through this. Some steps can't be stopped
+        // halfway without breaking the game (like deleting and replacing gamedata), so the work turns cancel off
+        // for those with TryLockCancel and a note saying why
 
-  
+        private readonly System.Threading.CancellationTokenSource cancellation = new();
+        private readonly object cancelGate = new();
+
+        public System.Threading.CancellationToken CancellationToken => cancellation.Token;
+
+        private bool canCancel = true;
+        public bool CanCancel
+        {
+            get => canCancel;
+            private set { canCancel = value; OnPropertyChanged(nameof(CanCancel)); }
+        }
+
+        private string cancelNote = string.Empty;
+        /// <summary>Shown under the bar when cancel is off, explaining why.</summary>
+        public string CancelNote
+        {
+            get => cancelNote;
+            private set { cancelNote = value; OnPropertyChanged(nameof(CancelNote)); }
+        }
+
+        public void RequestCancel()
+        {
+            lock (cancelGate)
+            {
+                if (!canCancel)
+                    return;
+
+                cancellation.Cancel();
+                canCancel = false;
+            }
+
+            OnPropertyChanged(nameof(CanCancel));
+            Status = "Cancelling...";
+        }
+
+        /// <summary>
+        ///     Turns cancel off for a step that can't be stopped partway. Returns false if they already hit
+        ///     Cancel, so the caller stops there instead of starting the step anyway. The lock makes sure a
+        ///     click can't sneak in between checking and turning it off.
+        /// </summary>
+        public bool TryLockCancel(string why)
+        {
+            lock (cancelGate)
+            {
+                if (cancellation.IsCancellationRequested)
+                    return false;
+
+                canCancel = false;
+            }
+
+            OnPropertyChanged(nameof(CanCancel));
+            CancelNote = why;
+            return true;
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 

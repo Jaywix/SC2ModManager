@@ -152,9 +152,12 @@ namespace SC2ModManager
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
                 : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
 
-            ThemeAeonCard.BorderBrush = theme == AppTheme.DarkMode
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2C, 0x2D, 0x2E))
-                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x25, 0x26, 0x26));
+            // Was setting ThemeAeonCard by mistake, so picking Aeon looked unselected and Dark Mode never lit up.
+            // Dark Mode has no accent color, so selected is a light grey that actually stands out from the
+            // #444444 unselected border (the old #2C2D2E was darker than unselected)
+            ThemeDarkModeCard.BorderBrush = theme == AppTheme.DarkMode
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCC, 0xCC, 0xCC))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x44, 0x44, 0x44));
         }
 
         private void ThemeCard_Standard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)

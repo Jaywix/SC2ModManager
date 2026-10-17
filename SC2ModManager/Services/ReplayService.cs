@@ -158,7 +158,9 @@ namespace SC2ModManager.Services
 
         // Bump this whenever ParseReplayMetadata or ReplayMetadata changes so old cached results
         // get thrown out and everything re-parses with the new logic
-        private const int MetadataCacheVersion = 1;
+        // 2: cut off replays now count as failed instead of "Players (0)", and the parser jumps to each header
+        //    block's real end. Bumped so anything cached under the old rules gets read again once
+        private const int MetadataCacheVersion = 2;
 
         private static readonly object CacheFileLock = new();
 
@@ -315,6 +317,17 @@ namespace SC2ModManager.Services
             try
             {
                 var data = SC2ReplayParser.Parse(filePath);
+
+                // The parser stops early without throwing when the header is cut off (a replay from a game
+                // that crashed, or one still being written). That used to show up as "Players (0)" like it
+                // parsed fine. Mark it as failed instead, but keep whatever we did get (like the map) below.
+                // Failed parses don't go in the cache, so it gets another try next time
+                if (!data.HeaderComplete)
+                {
+                    meta.ParseFailed = true;
+                    meta.ParseError = "This replay file is incomplete or damaged, it looks like it got cut off. " +
+                                      "It might be from a game that crashed, or one that's still being saved.";
+                }
 
                 meta.MapRawPath = data.MapName;
                 meta.GameVersion = data.Version;

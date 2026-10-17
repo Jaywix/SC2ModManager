@@ -24,6 +24,11 @@
         <SolidColorBrush x:Key="PanelBackgroundBrush"   Color="#CC0D1117"/>
         <SolidColorBrush x:Key="SidebarOverlayBrush"    Color="#CC0A0F18"/>
 
+        <!-- See-through accent colors, ThemeService rebuilds these from the accent color for each theme -->
+        <SolidColorBrush x:Key="AccentSubtleBrush"      Color="#441E90FF"/>
+        <SolidColorBrush x:Key="AccentFaintBrush"       Color="#221E90FF"/>
+        <SolidColorBrush x:Key="BannerBackgroundBrush"  Color="#261E90FF"/>
+
         <BitmapImage x:Key="ThemeMainBgImage" UriSource="pack://application:,,,/Assets/uef.png"/>
         <BitmapImage x:Key="ThemeSidebarImage" UriSource="pack://application:,,,/Assets/spoiler_profile.png"/>
 

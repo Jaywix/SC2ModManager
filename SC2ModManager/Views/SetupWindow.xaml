@@ -143,7 +143,7 @@
 
                     <!-- Dark Mode -->
                     <Border x:Name="ThemeDarkModeCard" Margin="8,0,0,0" CornerRadius="6" Padding="14"
-                Background="#0A1A18" BorderThickness="2" BorderBrush="#2A2B2C"
+                Background="#0A1A18" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_DarkMode_Click">
                         <StackPanel>
                             <TextBlock Text="☾  Dark Mode"

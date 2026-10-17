@@ -321,8 +321,9 @@ namespace SC2ModManager.Models
         {
             foreach (var map in availableMaps)
             {
-                map.IsDownloaded = downloadedMaps.Contains(map.FileName);
-                map.IsEnabled = enabledMaps.Contains(map.FileName);
+                // Windows file names don't care about capitals, so neither do we
+                map.IsDownloaded = downloadedMaps.Contains(map.FileName, StringComparer.OrdinalIgnoreCase);
+                map.IsEnabled = enabledMaps.Contains(map.FileName, StringComparer.OrdinalIgnoreCase);
             }
 
             return availableMaps;

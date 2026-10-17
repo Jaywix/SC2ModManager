@@ -410,6 +410,12 @@ namespace SC2ModManager.ViewModels
                         await gamedataService.CreateFullBackupAsync(GamePath + "\\gamedata");
                         RefreshFullBackupInfo();
                     }
+                    catch (OperationCanceledException)
+                    {
+                        MessageBox.Show("The backup was cancelled, so the restore didn't happen. Nothing in your game was changed, and your old backup (if you had one) is still there.",
+                            "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
                     catch (Exception ex)
                     {
                         // If the backup didn't finish, don't go wiping gamedata — that's the whole
@@ -444,6 +450,12 @@ namespace SC2ModManager.ViewModels
                 if (luoBackup != null)
                     done += $"\n\nYour luo.scd had changes besides hotkeys, so a copy was saved here first:\n{luoBackup}";
                 MessageBox.Show(done);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancel works until the final folder swap, and before that the real gamedata hasn't been touched
+                MessageBox.Show("The restore was cancelled. Nothing in your game was changed.",
+                    "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -539,6 +551,12 @@ namespace SC2ModManager.ViewModels
                     done += $"\n\nThe toc.win.bdf that was in your game folder got replaced by the one from the backup, so a copy of it was saved here:\n{savedToc}";
                 MessageBox.Show(done);
             }
+            catch (OperationCanceledException)
+            {
+                // Cancel works until the final folder swap, and before that the real gamedata hasn't been touched
+                MessageBox.Show("The restore was cancelled. Nothing in your game was changed.",
+                    "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to restore backup: {ex.Message}");
@@ -566,6 +584,19 @@ namespace SC2ModManager.ViewModels
             {
                 MessageBox.Show("Game path not set.");
                 return;
+            }
+
+            // Saving used to replace an existing preset with the same name without asking
+            string? replaced = presetService.FindPresetThatWouldBeReplaced(NewPresetName);
+            if (replaced != null)
+            {
+                string question = string.Equals(replaced, NewPresetName, StringComparison.Ordinal)
+                    ? $"A preset named '{replaced}' already exists. Replace it with what's in your gamedata now?"
+                    : $"'{NewPresetName}' would replace your existing preset '{replaced}' (the names save to the same file). Replace it?";
+
+                var confirm = MessageBox.Show(question, "Replace Preset?", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (confirm != MessageBoxResult.Yes)
+                    return;
             }
 
             try
@@ -865,22 +896,65 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            if (!CheckGameClosedForGamedata())
+                return;
+
+            int deletedCount = DeleteScanFilesFromGamedata(items, out var problems);
+
+            MessageBox.Show($"{deletedCount} file(s) deleted from gamedata." + DescribeDeleteProblems(problems));
+        }
+
+        /// <summary>
+        ///     Deletes the selected scan results from gamedata one by one. A file that can't be deleted (locked
+        ///     by the game or antivirus) used to stop everything partway with some files gone and some not.
+        ///     Now it's skipped and reported, and the rest still get deleted. The hotkey files are never deleted
+        ///     from here, removing lua.scd/luo.scd this way can leave the game unable to launch.
+        /// </summary>
+        private int DeleteScanFilesFromGamedata(IEnumerable<ScanResultItem> items, out List<string> problems)
+        {
             string gameDataPath = Path.Combine(GamePath, "gamedata");
             int deletedCount = 0;
+            problems = new List<string>();
 
             foreach (var item in items.Where(i => i.IsSelected))
             {
-                string path = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories)
-                    .FirstOrDefault();
-
-                if (path != null)
+                if (Globals.IsHotkeyManagedFile(item.FileName))
                 {
+                    problems.Add($"• {item.FileName}: this is one of the game's hotkey files, manage it from the Hotkeys page instead");
+                    continue;
+                }
+
+                try
+                {
+                    string? path = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories)
+                        .FirstOrDefault();
+
+                    if (path == null)
+                        continue;
+
+                    File.SetAttributes(path, FileAttributes.Normal); // read-only files can't be deleted otherwise
                     File.Delete(path);
                     deletedCount++;
                 }
+                catch (Exception ex)
+                {
+                    problems.Add($"• {item.FileName}: {ex.Message}");
+                }
             }
 
-            MessageBox.Show($"{deletedCount} file(s) deleted from gamedata.");
+            return deletedCount;
+        }
+
+        private static string DescribeDeleteProblems(List<string> problems)
+        {
+            if (problems.Count == 0)
+                return string.Empty;
+
+            string list = string.Join("\n", problems.Take(10));
+            if (problems.Count > 10)
+                list += $"\n...and {problems.Count - 10} more";
+
+            return $"\n\nThese couldn't be deleted:\n{list}";
         }
 
         public async Task ImportMetadataForMatchedMods(IEnumerable<ScanResultItem> items)
@@ -972,22 +1046,13 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
-            string gameDataPath = Path.Combine(GamePath, "gamedata");
-            int deletedCount = 0;
+            if (!CheckGameClosedForGamedata())
+                return;
 
-            foreach (var item in items.Where(i => i.IsSelected))
-            {
-                string path = Directory.GetFiles(gameDataPath, item.FileName, SearchOption.AllDirectories)
-                    .FirstOrDefault();
+            int deletedCount = DeleteScanFilesFromGamedata(items, out var problems);
 
-                if (path != null)
-                {
-                    File.Delete(path);
-                    deletedCount++;
-                }
-            }
-
-            MessageBox.Show($"{deletedCount} file(s) removed from gamedata.\n\nYou can re-download them from the Download screen whenever you want.");
+            MessageBox.Show($"{deletedCount} file(s) removed from gamedata.\n\nYou can re-download them from the Download screen whenever you want." +
+                DescribeDeleteProblems(problems));
         }
 
         public async Task ImportSelectedScanResultsAsync(IEnumerable<ScanResultItem> items)
@@ -1096,7 +1161,12 @@ namespace SC2ModManager.ViewModels
         {
             var onDisk = storageService.GetInstalledMaps();
             var savedState = storageService.LoadMapsState();
-            var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
+
+            // Ignore capitals like Windows does, and if the saved state ever has the same file twice just
+            // use the first one. ToDictionary used to throw on a duplicate, which broke this page every time
+            var stateByFile = savedState
+                .GroupBy(m => m.FileName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             var enriched = onDisk.Select(m =>
             {
@@ -1290,9 +1360,15 @@ namespace SC2ModManager.ViewModels
 
         public void LoadInstalledGenericMods()
         {
-            var onDisk = storageService.GetInstalledGenericMods();
+            // Load every file type. The "Show only .scd files" checkbox only hides rows on screen, so saving and
+            // the unsaved changes check still see everything
+            var onDisk = storageService.GetInstalledGenericMods(includeAllFileTypes: true);
             var savedState = storageService.LoadGenericModsState();
-            var stateByFile = savedState.ToDictionary(m => m.FileName, m => m);
+
+            // Same as maps, ignore capitals and don't crash on a duplicate in the saved state
+            var stateByFile = savedState
+                .GroupBy(m => m.FileName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             var enriched = onDisk.Select(m =>
             {
@@ -1338,10 +1414,37 @@ namespace SC2ModManager.ViewModels
             RefreshInstalledGenericModSort();
         }
 
+        /// <summary>
+        ///     The "Show only .scd files" checkbox on the installed generic mods page. On by default, the game only
+        ///     loads .scd files. Turning it off shows whatever other files got imported too.
+        /// </summary>
+        private bool showOnlyScdGenericMods = true;
+        public bool ShowOnlyScdGenericMods
+        {
+            get => showOnlyScdGenericMods;
+            set
+            {
+                showOnlyScdGenericMods = value;
+                OnPropertyChanged(nameof(ShowOnlyScdGenericMods));
+                RefreshInstalledGenericModSort();
+            }
+        }
+
+        private bool PassesGenericModFileTypeFilter(GenericGamedataMod mod) =>
+            !ShowOnlyScdGenericMods || mod.FileName.EndsWith(".scd", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Enable All on the page only enables what's showing, not files hidden by the .scd checkbox.</summary>
+        public void EnableAllShownGenericMods() => EnableSelectedGenericMods(FilteredDisabledGenericMods.ToList());
+
+        /// <summary>Disable All on the page only disables what's showing, not files hidden by the .scd checkbox.</summary>
+        public void DisableAllShownGenericMods() => DisableSelectedGenericMods(FilteredEnabledGenericMods.ToList());
+
         public void RefreshInstalledGenericModSort()
         {
-            FilteredEnabledGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(EnabledGenericMods, InstalledGenericModSort));
-            FilteredDisabledGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(DisabledGenericMods, InstalledGenericModSort));
+            FilteredEnabledGenericMods = new ObservableCollection<GenericGamedataMod>(
+                ApplyGenericModSort(EnabledGenericMods.Where(PassesGenericModFileTypeFilter), InstalledGenericModSort));
+            FilteredDisabledGenericMods = new ObservableCollection<GenericGamedataMod>(
+                ApplyGenericModSort(DisabledGenericMods.Where(PassesGenericModFileTypeFilter), InstalledGenericModSort));
             OnPropertyChanged(nameof(FilteredEnabledGenericMods));
             OnPropertyChanged(nameof(FilteredDisabledGenericMods));
             RefreshListCounts();
@@ -1433,7 +1536,8 @@ namespace SC2ModManager.ViewModels
             {
                 var all = await storageService.GetDownloadableMapsAsync();
                 var installed = storageService.GetInstalledMaps();
-                var fileNames = installed.Select(m => m.FileName).ToHashSet();
+                // Ignore capitals, same as the "already installed" check when downloading
+                var fileNames = installed.Select(m => m.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var map in all)
                     map.IsDownloaded = fileNames.Contains(map.FileName);
@@ -1495,6 +1599,8 @@ namespace SC2ModManager.ViewModels
             bool autoEnable = AutoEnableDownloadedMaps && !string.IsNullOrEmpty(GamePath);
 
             List<Map> installed = this.storageService.GetInstalledMaps();
+            var installedGenericNames = storageService.GetInstalledGenericMods()
+                .Select(m => m.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var newlyDownloaded = new List<Map>();
 
                 var mapList = maps.ToList();
@@ -1508,6 +1614,11 @@ namespace SC2ModManager.ViewModels
                 {
                     if (installed.Any(m => m.FileName.Equals(map.FileName, StringComparison.OrdinalIgnoreCase)))
                         throw new Exception($"A mod with the filename '{map.FileName}' is already installed. Please uninstall it before downloading.");
+
+                    // Maps and generic mods go into the same gamedata folder, so two with the same file name
+                    // would overwrite each other there, and saving maps would delete the mod's file
+                    if (installedGenericNames.Contains(map.FileName))
+                        throw new Exception($"A generic mod with the filename '{map.FileName}' is already installed, and a map with the same name would overwrite it in your game. Please uninstall that mod first.");
 
                     map.IsQueued = false;
                     map.IsDownloading = true;
@@ -1585,7 +1696,8 @@ namespace SC2ModManager.ViewModels
             {
                 var all = await storageService.GetDownloadableGenericModsAsync();
                 var installed = storageService.GetInstalledGenericMods();
-                var fileNames = installed.Select(m => m.FileName).ToHashSet();
+                // Ignore capitals, same as the "already installed" check when downloading
+                var fileNames = installed.Select(m => m.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var mod in all)
                     mod.IsDownloaded = fileNames.Contains(mod.FileName);
@@ -1614,6 +1726,8 @@ namespace SC2ModManager.ViewModels
             var newlyDownloaded = new List<GenericGamedataMod>();
 
             List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
+            var installedMapNames = storageService.GetInstalledMaps()
+                .Select(m => m.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 var modList = mods.ToList();
 
@@ -1626,6 +1740,10 @@ namespace SC2ModManager.ViewModels
                 {
                     if (installed.Any(m => m.FileName.Equals(mod.FileName, StringComparison.OrdinalIgnoreCase)))
                         throw new Exception($"A mod with the filename '{mod.FileName}' is already installed. Please uninstall it before downloading.");
+
+                    // Same as maps, a map and a generic mod with the same file name would overwrite each other in gamedata
+                    if (installedMapNames.Contains(mod.FileName))
+                        throw new Exception($"A map with the filename '{mod.FileName}' is already installed, and a mod with the same name would overwrite it in your game. Please uninstall that map first.");
 
                     mod.IsQueued = false;
                     mod.IsDownloading = true;
@@ -1851,7 +1969,9 @@ namespace SC2ModManager.ViewModels
                         var confirm = MessageBox.Show(
                             $"'{Path.GetFileName(file)}' is not a standard .scd file. " +
                             "Importing non-standard files could cause issues with your game.\n\n" +
-                            "Are you sure you want to import it into the gamedata folder?",
+                            "It will be added to your installed generic mods as disabled. To see it there, uncheck " +
+                            "\"Show only .scd files\" on the installed mods page.\n\n" +
+                            "Are you sure you want to import it?",
                             "Non-Standard File",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Warning);
@@ -1891,10 +2011,16 @@ namespace SC2ModManager.ViewModels
             // The hotkey files are never allowed, those have their own rules (see HotkeyService)
             var originals = presetService.LoadOriginalFilesList();
             bool isOriginal = Globals.IsHotkeyManagedFile(fileName) ||
+                ModStorageService.IsOriginalGameFile(fileName) ||   // the built in list of the game's own files
                 originals.Any(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase));
 
             if (isOriginal)
                 return $"Upload failed: '{fileName}' has the same name as one of the game's original gamedata files, and those can't be overwritten.\n\n{howToReplace}";
+
+            // Maps and generic mods share the gamedata folder, so a mod with the same name as an installed map
+            // would overwrite it there (and saving maps would then delete the mod's file)
+            if (storageService.GetInstalledMaps().Any(m => string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase)))
+                return $"Upload failed: a map named '{fileName}' is already installed, and a mod with the same name would overwrite it in your game. Uninstall the map first, or rename the file you're importing.";
 
             // The original files list only gets saved after a Restore Original Game Files, so most people
             // won't have it. In that case anything already in gamedata might be an original, so block those too
@@ -2323,6 +2449,14 @@ namespace SC2ModManager.ViewModels
             var config = configService.Load();
             config.ReplayFolderPath = path;
             configService.Save(config);
+
+            // If auto-save was paused because the old folder was missing, picking a folder starts it back up
+            if (config.AutoSaveReplays && !AutoSaveReplays && Directory.Exists(path))
+            {
+                AutoSaveReplays = true;
+                AutoSavePausedMessage = null;
+                replayAutoSave.Start(() => ReplaysPath);
+            }
         }
 
         // ================= AUTO-SAVE REPLAYS =================
@@ -2343,14 +2477,22 @@ namespace SC2ModManager.ViewModels
         {
             AutoSaveReplays = enabled;
 
+            // Stop first so the watcher can't write its "last saved" right after we clear it below
+            if (!enabled)
+                replayAutoSave.Stop();
+
             var config = configService.Load();
             config.AutoSaveReplays = enabled;
+
+            // Forget the last saved replay when it's turned off. Otherwise turning it back on later would grab
+            // whatever game they played while it was off, which they didn't ask for
+            if (!enabled)
+                config.LastAutoSavedReplaySignature = null;
+
             configService.Save(config);
 
             if (enabled)
                 replayAutoSave.Start(() => ReplaysPath);
-            else
-                replayAutoSave.Stop();
         }
 
         /// <summary>
@@ -2461,11 +2603,32 @@ namespace SC2ModManager.ViewModels
                 ReplaysPath = Globals.DefaultReplaysBasePath;
             }
 
-            // Pick auto-save back up if it was left on and we have a folder to save into.
-            AutoSaveReplays = config.AutoSaveReplays;
-            if (AutoSaveReplays && !string.IsNullOrEmpty(ReplaysPath))
+            // Pick auto-save back up if it was left on and we have a folder to save into. If they picked a
+            // folder and it's gone (drive unplugged, folder deleted) don't quietly save somewhere else, and
+            // don't show the checkbox as on while nothing is running. Pause it and tell them. The setting stays
+            // on in the config, so it picks back up on its own once the folder is back
+            bool chosenFolderMissing = !string.IsNullOrEmpty(config.ReplayFolderPath) && !Directory.Exists(config.ReplayFolderPath);
+            bool canAutoSave = !chosenFolderMissing && !string.IsNullOrEmpty(ReplaysPath);
+
+            AutoSaveReplays = config.AutoSaveReplays && canAutoSave;
+            if (AutoSaveReplays)
+            {
                 replayAutoSave.Start(() => ReplaysPath);
+            }
+            else if (config.AutoSaveReplays)
+            {
+                string missing = chosenFolderMissing ? config.ReplayFolderPath : Globals.DefaultReplaysBasePath;
+                AutoSavePausedMessage =
+                    $"Auto-save replays is turned on, but your replays folder couldn't be found:\n{missing}\n\n" +
+                    "Auto-save is paused until the folder is back. You can pick a different folder on the Replays page, " +
+                    "or reconnect the drive it's on and restart the mod manager.";
+            }
         }
+
+        /// <summary>
+        ///     Set at startup when auto-save is on but there's no folder to save into. The window shows it once it's open.
+        /// </summary>
+        public string? AutoSavePausedMessage { get; private set; }
 
         public void OpenFolder(string path)
         {

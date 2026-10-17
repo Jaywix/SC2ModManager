@@ -71,31 +71,83 @@ namespace SC2ModManager.Services
         }
 
         // ================= HELPERS =================
-        private async Task ExtractScdFromZipAsync(string zipPath, string destinationFolder)
+        /// <summary>
+        ///     Pulls every .scd out of a downloaded zip into the folder and returns the paths it made. Won't
+        ///     overwrite anything that's already there, and if anything fails partway it removes what it
+        ///     already pulled out, so a bad zip never leaves stray files behind.
+        /// </summary>
+        private async Task<List<string>> ExtractScdFromZipAsync(string zipPath, string destinationFolder)
         {
-            await Task.Run(() =>
+            return await Task.Run(() =>
             {
+                var extracted = new List<string>();
                 using ZipArchive archive = ZipFile.OpenRead(zipPath);
 
-                foreach (var entry in archive.Entries)
-                {
-                    if (!entry.FullName.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
-                        continue;
+                var scdEntries = archive.Entries
+                    .Where(e => e.FullName.EndsWith(".scd", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-                    // Extract to a temp name first, same reason as DownloadToFileAsync
+                // Check first so nothing gets half extracted. Overwriting here used to silently replace
+                // a different map/mod that happened to have the same file name
+                foreach (var entry in scdEntries)
+                {
                     string destPath = Path.Combine(destinationFolder, Path.GetFileName(entry.FullName));
-                    string tempPath = destPath + ".download";
-                    try
+                    if (File.Exists(destPath))
+                        throw new IOException($"The download contains '{Path.GetFileName(destPath)}', which is already installed, so nothing was extracted.");
+                }
+
+                try
+                {
+                    foreach (var entry in scdEntries)
                     {
-                        entry.ExtractToFile(tempPath, overwrite: true);
-                        File.Move(tempPath, destPath, overwrite: true);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempPath)) File.Delete(tempPath);
+                        // Extract to a temp name first, same reason as DownloadToFileAsync
+                        string destPath = Path.Combine(destinationFolder, Path.GetFileName(entry.FullName));
+                        string tempPath = destPath + ".download";
+                        try
+                        {
+                            entry.ExtractToFile(tempPath, overwrite: true);
+                            File.Move(tempPath, destPath);
+                            extracted.Add(destPath);
+                        }
+                        finally
+                        {
+                            if (File.Exists(tempPath)) File.Delete(tempPath);
+                        }
                     }
                 }
+                catch
+                {
+                    DeleteFiles(extracted);
+                    throw;
+                }
+
+                return extracted;
             });
+        }
+
+        /// <summary>
+        ///     After extracting a zip download, makes sure the file the list says we're getting is actually in
+        ///     there. The app only keeps track of that one name, so if the zip had something else in it,
+        ///     auto-enable, the duplicate check, and uninstall would all miss it. If it's not there, the
+        ///     extracted files get removed and this throws.
+        /// </summary>
+        private static void EnsureZipHadExpectedFile(List<string> extracted, string folder, string expectedFileName)
+        {
+            string expected = Path.Combine(folder, expectedFileName);
+            if (extracted.Any(p => string.Equals(p, expected, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            string had = extracted.Count == 0 ? "no .scd files" : string.Join(", ", extracted.Select(Path.GetFileName));
+            DeleteFiles(extracted);
+            throw new InvalidDataException($"The download was supposed to contain '{expectedFileName}' but it had {had}. Nothing was installed.");
+        }
+
+        private static void DeleteFiles(IEnumerable<string> paths)
+        {
+            foreach (var path in paths)
+            {
+                try { if (File.Exists(path)) File.Delete(path); } catch { }
+            }
         }
 
         /// <summary>
@@ -204,7 +256,8 @@ namespace SC2ModManager.Services
                 try
                 {
                     await DownloadToFileAsync(url, tempZip);
-                    await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
+                    var extracted = await ExtractScdFromZipAsync(tempZip, mapsDisabledPath);
+                    EnsureZipHadExpectedFile(extracted, mapsDisabledPath, map.FileName);
                 }
                 finally
                 {
@@ -360,18 +413,27 @@ namespace SC2ModManager.Services
         /// <summary>
         ///     Returns all installed generic mods (enabled + disabled) with IsEnabled set correctly.
         /// </summary>
-        public List<GenericGamedataMod> GetInstalledGenericMods()
+        /// <param name="includeAllFileTypes">
+        ///     False (the default) only returns .scd files. True returns every file, for the installed mods page
+        ///     where the "Show only .scd files" checkbox decides what's shown. Manual Import can add other file
+        ///     types, and before this they got copied in but never showed up anywhere.
+        /// </param>
+        public List<GenericGamedataMod> GetInstalledGenericMods(bool includeAllFileTypes = false)
         {
             var result = new List<GenericGamedataMod>();
+            string pattern = includeAllFileTypes ? "*" : "*.scd";
 
-            foreach (var file in Directory.GetFiles(genericModsEnabledPath, "*.scd"))
+            foreach (var file in Directory.GetFiles(genericModsEnabledPath, pattern).Where(IsModFile))
                 result.Add(new GenericGamedataMod(Path.GetFileName(file)) { IsEnabled = true, IsDownloaded = true });
 
-            foreach (var file in Directory.GetFiles(genericModsDisabledPath, "*.scd"))
+            foreach (var file in Directory.GetFiles(genericModsDisabledPath, pattern).Where(IsModFile))
                 result.Add(new GenericGamedataMod(Path.GetFileName(file)) { IsEnabled = false, IsDownloaded = true });
 
             return result;
         }
+
+        // A download that's still going (or got interrupted) sits there as name.download until it's done. Not a mod
+        private static bool IsModFile(string path) => !path.EndsWith(".download", StringComparison.OrdinalIgnoreCase);
 
         public bool HasEnabledGenericMods()
         {
@@ -430,7 +492,8 @@ namespace SC2ModManager.Services
                 try
                 {
                     await DownloadToFileAsync(url, tempZip);
-                    await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
+                    var extracted = await ExtractScdFromZipAsync(tempZip, genericModsDisabledPath);
+                    EnsureZipHadExpectedFile(extracted, genericModsDisabledPath, mod.FileName);
                 }
                 finally
                 {
@@ -567,11 +630,12 @@ namespace SC2ModManager.Services
             foreach(var file in Directory.GetFiles(mapsDisabledPath, "*.scd"))
                 known.Add(Path.GetFileName(file));
 
-            // Generic mods
-            foreach(var file in Directory.GetFiles(genericModsEnabledPath, "*.scd"))
+            // Generic mods. Every file type, not just .scd, otherwise a non-.scd file imported from a scan would
+            // show up as unknown again on the next scan
+            foreach(var file in Directory.GetFiles(genericModsEnabledPath, "*").Where(IsModFile))
                 known.Add(Path.GetFileName(file));
 
-            foreach(var file in Directory.GetFiles(genericModsDisabledPath, "*.scd"))
+            foreach(var file in Directory.GetFiles(genericModsDisabledPath, "*").Where(IsModFile))
                 known.Add(Path.GetFileName(file));
 
 

@@ -74,7 +74,23 @@ namespace SC2ModManager
 
             Loaded += async (s, e) =>
             {
+                // If the last update's updater swap got stuck, finish it now (see the comment on the method)
+                SC2ModManager.Services.UpdateService.RepairStuckUpdaterSwap();
+
+                // If a gamedata restore got interrupted (crash, power loss) partway through its folder swap, put
+                // things back together before anything else looks at gamedata. Can't happen with the game open
+                if (!string.IsNullOrEmpty(vm.GamePath) && !SC2ModManager.Services.DllInjectionService.IsGameRunning())
+                {
+                    try { SC2ModManager.Services.GamedataService.RecoverInterruptedSwap(System.IO.Path.Combine(vm.GamePath, "gamedata")); }
+                    catch { /* it tries again next time a restore runs */ }
+                }
+
                 await vm.ScanGamedataForUnknownMods(silentOnMissingPath: true);
+
+                // Auto-save was on but its replays folder is missing, so it's paused. Let them know instead of
+                // showing the checkbox as on while nothing is being saved
+                if (vm.AutoSavePausedMessage != null)
+                    MessageBox.Show(vm.AutoSavePausedMessage, "Auto-Save Paused", MessageBoxButton.OK, MessageBoxImage.Warning);
 
                 // Steam's "verify files", a game update, or a crash halfway through a change can all
                 // leave lua/luo/toc in a combination the game can't launch with. Catch it here and offer a fix
@@ -154,8 +170,10 @@ namespace SC2ModManager
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0xBF, 0xA5))
                 : inactive;
 
+            // Light grey when selected. The old #2C2D2E was darker than the #444444 unselected border, so the
+            // selected Dark Mode tile looked like the unselected one
             ThemeDarkModeBtn.BorderBrush = activeTheme == AppTheme.DarkMode
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2C, 0x2D, 0x2E))
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCC, 0xCC, 0xCC))
                 : inactive;
         }
 
@@ -387,16 +405,46 @@ namespace SC2ModManager
             ShowView("InstalledGenericMods");
         }
 
+        // These used to wait for the list to download before switching pages, so on a slow connection the
+        // click looked like it did nothing and people clicked again. Now the page opens right away with a
+        // loading message, and the list shows up when it's ready
+
         private async void GoToDownloadMaps(object sender, RoutedEventArgs e)
         {
-            await vm.LoadDownloadableMapsAsync();
             ShowView("DownloadMaps");
+            if (_currentView != "DownloadMaps")
+                return; // they chose to stay on the page they were on (unsaved changes)
+
+            DownloadMapsList.Visibility = Visibility.Collapsed;
+            DownloadMapsLoadingText.Visibility = Visibility.Visible;
+            try
+            {
+                await vm.LoadDownloadableMapsAsync();
+            }
+            finally
+            {
+                DownloadMapsLoadingText.Visibility = Visibility.Collapsed;
+                DownloadMapsList.Visibility = Visibility.Visible;
+            }
         }
 
         private async void GoToDownloadGenericMods(object sender, RoutedEventArgs e)
         {
-            await vm.LoadDownloadableGenericModsAsync();
             ShowView("DownloadGenericMods");
+            if (_currentView != "DownloadGenericMods")
+                return; // they chose to stay on the page they were on (unsaved changes)
+
+            DownloadGenericModsList.Visibility = Visibility.Collapsed;
+            DownloadGenericModsLoadingText.Visibility = Visibility.Visible;
+            try
+            {
+                await vm.LoadDownloadableGenericModsAsync();
+            }
+            finally
+            {
+                DownloadGenericModsLoadingText.Visibility = Visibility.Collapsed;
+                DownloadGenericModsList.Visibility = Visibility.Visible;
+            }
         }
 
         // ================= HOME =================
@@ -522,7 +570,8 @@ namespace SC2ModManager
                 var releases = await vm.GetPreviousReleasesAsync();
                 PreviousVersionsLoadingText.Visibility = Visibility.Collapsed;
 
-                if (releases == null || releases.Count == 0)
+                // The current version is in the list now too, so check there's something besides it to restore
+                if (releases == null || !releases.Any(r => !r.IsCurrentVersion))
                 {
                     PreviousVersionsErrorText.Text = "No previous versions are available for restore.";
                     PreviousVersionsErrorText.Visibility = Visibility.Visible;
@@ -564,20 +613,28 @@ namespace SC2ModManager
                 Text = release.TagName,
                 FontSize = 16,
                 FontWeight = System.Windows.FontWeights.SemiBold,
-                Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush") ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
                 VerticalAlignment = System.Windows.VerticalAlignment.Center
             };
+            // Linked to the theme color instead of copying it, so switching themes updates it too
+            versionLabel.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "AccentBrush");
             System.Windows.Controls.Grid.SetColumn(versionLabel, 0);
 
+            // The version you're running gets a greyed out button, there's nothing to restore
             var restoreBtn = new System.Windows.Controls.Button
             {
-                Content = "Restore this Version",
+                Content = release.IsCurrentVersion ? "Currently Installed" : "Restore this Version",
                 Tag = release,
                 Style = (System.Windows.Style)TryFindResource("ModernButton"),
                 MinWidth = 155,
-                FontWeight = System.Windows.FontWeights.SemiBold
+                FontWeight = System.Windows.FontWeights.SemiBold,
+                IsEnabled = !release.IsCurrentVersion,
+                ToolTip = release.IsCurrentVersion ? "This is the version you're using right now." : null
             };
-            restoreBtn.Click += ReleaseCard_RestoreClick;
+            if (!release.IsCurrentVersion)
+                restoreBtn.Click += ReleaseCard_RestoreClick;
+
+            // Disabled buttons don't show tooltips unless this is on
+            System.Windows.Controls.ToolTipService.SetShowOnDisabled(restoreBtn, true);
             System.Windows.Controls.Grid.SetColumn(restoreBtn, 1);
 
             headerGrid.Children.Add(versionLabel);
@@ -896,10 +953,10 @@ namespace SC2ModManager
                 Text = replay.DisplayName,
                 FontSize = 14,
                 FontWeight = System.Windows.FontWeights.SemiBold,
-                Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush")
-                             ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
                 TextWrapping = System.Windows.TextWrapping.Wrap
             };
+            // Linked to the theme color instead of copying it, so switching themes updates it too
+            nameText.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "AccentBrush");
             leftStack.Children.Add(nameText);
 
             // Map name (if parsed)
@@ -1049,15 +1106,16 @@ namespace SC2ModManager
             // Helper to make a section header
             System.Windows.Controls.TextBlock SectionHeader(string text)
             {
-                return new System.Windows.Controls.TextBlock
+                var header = new System.Windows.Controls.TextBlock
                 {
                     Text = text,
                     FontSize = 15,
                     FontWeight = System.Windows.FontWeights.SemiBold,
-                    Foreground = (System.Windows.Media.Brush)TryFindResource("AccentBrush")
-                                 ?? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x90, 0xFF)),
                     Margin = new System.Windows.Thickness(0, 0, 0, 8)
                 };
+                // Linked to the theme color instead of copying it, so switching themes updates it too
+                header.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "AccentBrush");
+                return header;
             }
 
             // Helper to make a labelled data row
@@ -1611,8 +1669,9 @@ namespace SC2ModManager
             vm.RefreshInstalledGenericModSort();
         }
 
-        private void EnableAllGenericMods_Click(object sender, RoutedEventArgs e) => vm.EnableAllGenericMods();
-        private void DisableAllGenericMods_Click(object sender, RoutedEventArgs e) => vm.DisableAllGenericMods();
+        // Only what's showing, so the "Show only .scd files" checkbox can't make these touch files you can't see
+        private void EnableAllGenericMods_Click(object sender, RoutedEventArgs e) => vm.EnableAllShownGenericMods();
+        private void DisableAllGenericMods_Click(object sender, RoutedEventArgs e) => vm.DisableAllShownGenericMods();
 
         private void SaveGenericMods_Click(object sender, RoutedEventArgs e)
         {

@@ -97,7 +97,11 @@ namespace SC2ModManager.Services
 
             // Write a batch script to delete the folder after process exits
             string batchPath = Path.Combine(Path.GetTempPath(), "sc2mm_uninstall.bat");
+            // chcp 65001 switches cmd to UTF-8 before it reads the paths. Without it, a path with an accent in it
+            // (like C:\Users\José) got mangled because cmd reads .bat files in the old Windows code page, and
+            // the uninstall silently deleted nothing
             string batchContent = $@"@echo off
+                    chcp 65001 >nul
                     timeout /t 2 /nobreak >nul
                     rd /s /q ""{installFolder}""
                     rd /s /q ""{pointerDir}""

@@ -201,7 +201,7 @@
 
         <!-- ListBox style -->
         <Style TargetType="ListBox">
-            <Setter Property="Background"        Value="#CC0D1117"/>
+            <Setter Property="Background"        Value="{DynamicResource PanelBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderThickness"   Value="1"/>
             <Setter Property="Foreground"        Value="White"/>
@@ -689,7 +689,7 @@
                                             <Border Margin="0,0,0,12" CornerRadius="6" Padding="16">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="#CC0D1117"/>
+                                                        <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                         <Setter Property="BorderThickness" Value="1"/>
                                                         <Setter Property="BorderBrush" Value="#33FFFFFF"/>
                                                         <Style.Triggers>
@@ -1068,7 +1068,7 @@
                         </Border>
 
                         <!-- Game running banner -->
-                        <Border Grid.Row="2" Background="#0D1A2A" BorderBrush="{DynamicResource AccentBrush}"
+                        <Border Grid.Row="2" Background="{DynamicResource BannerBackgroundBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                 BorderThickness="1" CornerRadius="4" Padding="14,10" Margin="0,0,0,10"
                                 x:Name="ReplayRunningBanner" Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
@@ -1123,9 +1123,11 @@
                                 Content="← Back to Replay List"
                                 Click="BackToReplayList_Click"
                                 Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <!-- Off while a replay is running, same as the card buttons. Renaming the file the game has open fails or breaks the replay -->
                         <Button DockPanel.Dock="Left"
                                 Content="✏ Rename"
                                 Click="RenameReplay_Click"
+                                IsEnabled="{Binding IsReplayRunning, Converter={StaticResource InverseBoolConverter}}"
                                 Margin="0,0,12,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="ReplayDetailsTitle"
                                    Foreground="White" FontSize="20" FontFamily="Segoe UI"
@@ -1673,7 +1675,7 @@
                                 <StackPanel Visibility="{Binding SelectedInstalledMap, Converter={StaticResource NullToVisibilityConverter}}">
 
                                     <!-- Map image -->
-                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="{DynamicResource PanelBackgroundBrush}" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedInstalledMap.MapPictureUrl}"
                                    Stretch="Uniform"
@@ -1771,7 +1773,15 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                        <DockPanel Grid.Row="0">
+                            <!-- On by default since the game only loads .scd files. Off shows other imported file types too -->
+                            <CheckBox DockPanel.Dock="Right"
+                                      Content="Show only .scd files"
+                                      IsChecked="{Binding ShowOnlyScdGenericMods, Mode=TwoWay}"
+                                      VerticalAlignment="Center"
+                                      ToolTip="The game only loads .scd files. Uncheck this to also see any other file types you imported."/>
+                            <TextBlock Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                        </DockPanel>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -1881,7 +1891,7 @@
 
                                 <StackPanel Visibility="{Binding SelectedInstalledGenericMod, Converter={StaticResource NullToVisibilityConverter}}">
 
-                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="{DynamicResource PanelBackgroundBrush}" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedInstalledGenericMod.PictureUrl}"
                                    Stretch="Uniform"
@@ -2208,7 +2218,13 @@ Click="DownloadFiltersToggle_Click"/>
                                                Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
                                     <TextBlock Text="Available Maps" Style="{StaticResource ColumnHeader}"/>
                                 </DockPanel>
-                                
+
+                                <!-- Shown while the map list downloads, the list is hidden until it's done -->
+                                <TextBlock Grid.Row="1" x:Name="DownloadMapsLoadingText"
+                                           Text="Loading list of downloadable maps..."
+                                           Foreground="{DynamicResource AccentBrush}" FontSize="13"
+                                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0"
+                                           Visibility="Collapsed"/>
                                 <ListBox Grid.Row="1"
                          x:Name="DownloadMapsList"
                          ItemsSource="{Binding FilteredDownloadableMaps}"
@@ -2265,7 +2281,7 @@ Click="DownloadFiltersToggle_Click"/>
 
                                 <StackPanel Visibility="{Binding SelectedDownloadMap, Converter={StaticResource NullToVisibilityConverter}}">
 
-                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="{DynamicResource PanelBackgroundBrush}" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedDownloadMap.MapPictureUrl}"
                                    Stretch="Uniform"
@@ -2331,7 +2347,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                 <Border Background="{DynamicResource ButtonBaseBrush}" BorderBrush="{DynamicResource AccentBrush}"
                                         BorderThickness="1" CornerRadius="3"
                                         Padding="6,2" Margin="0,0,4,4">
-                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource AccentBrush}"/>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -2388,6 +2404,12 @@ Click="DownloadFiltersToggle_Click"/>
                                                Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
                                     <TextBlock Text="Available Mods" Style="{StaticResource ColumnHeader}"/>
                                 </DockPanel>
+                                <!-- Shown while the mod list downloads, the list is hidden until it's done -->
+                                <TextBlock Grid.Row="1" x:Name="DownloadGenericModsLoadingText"
+                                           Text="Loading list of downloadable mods..."
+                                           Foreground="{DynamicResource AccentBrush}" FontSize="13"
+                                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0"
+                                           Visibility="Collapsed"/>
                                 <ListBox Grid.Row="1"
                          x:Name="DownloadGenericModsList"
                          ItemsSource="{Binding FilteredDownloadableGenericMods}"
@@ -2444,7 +2466,7 @@ Click="DownloadFiltersToggle_Click"/>
 
                                 <StackPanel Visibility="{Binding SelectedDownloadGenericMod, Converter={StaticResource NullToVisibilityConverter}}">
 
-                                    <Border Height="200" Background="#0D1117" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
+                                    <Border Height="200" Background="{DynamicResource PanelBackgroundBrush}" CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding SelectedDownloadGenericMod.PictureUrl}"
                                    Stretch="Uniform"
@@ -2735,7 +2757,7 @@ Click="DownloadFiltersToggle_Click"/>
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="#1A2535"/>
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBaseBrush}"/>
                                                     <Setter TargetName="Bd" Property="BorderThickness" Value="0,0,0,3"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                 </Trigger>
@@ -2784,7 +2806,7 @@ Click="DownloadFiltersToggle_Click"/>
                                     </Grid.RowDefinitions>
 
                                     <!-- Instructions -->
-                                    <Border Grid.Row="0" Background="#0D1A2A" BorderBrush="#22AACCFF" BorderThickness="1"
+                                    <Border Grid.Row="0" Background="{DynamicResource BannerBackgroundBrush}" BorderBrush="{DynamicResource AccentFaintBrush}" BorderThickness="1"
                                             CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="⌨" FontSize="22" VerticalAlignment="Center"
@@ -2876,7 +2898,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -2891,9 +2913,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
@@ -2919,7 +2941,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -2934,9 +2956,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
@@ -2962,7 +2984,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -2977,9 +2999,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding KeyCombo, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
@@ -3091,7 +3113,7 @@ Click="DownloadFiltersToggle_Click"/>
                                     </Grid.RowDefinitions>
 
                                     <!-- Instructions -->
-                                    <Border Grid.Row="0" Background="#0D1A2A" BorderBrush="#22AACCFF" BorderThickness="1"
+                                    <Border Grid.Row="0" Background="{DynamicResource BannerBackgroundBrush}" BorderBrush="{DynamicResource AccentFaintBrush}" BorderThickness="1"
                                             CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🏗" FontSize="22" VerticalAlignment="Center"
@@ -3154,7 +3176,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3169,9 +3191,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3193,7 +3215,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3208,9 +3230,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3232,7 +3254,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3247,9 +3269,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3271,7 +3293,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3286,9 +3308,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3310,7 +3332,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3325,9 +3347,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3349,7 +3371,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3364,9 +3386,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3388,7 +3410,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3403,9 +3425,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3427,7 +3449,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3442,9 +3464,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3466,7 +3488,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3481,9 +3503,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"
@@ -3505,7 +3527,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                           PreviewMouseWheel="HotkeyDataGrid_PreviewMouseWheel">
                                                     <DataGrid.RowStyle>
                                                         <Style TargetType="DataGridRow">
-                                                            <Setter Property="Background" Value="#111820"/>
+                                                            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
@@ -3520,9 +3542,9 @@ Click="DownloadFiltersToggle_Click"/>
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                     <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Background="#1A2535" Foreground="{DynamicResource AccentBrush}"
+                                                                             Background="{DynamicResource ButtonBaseBrush}" Foreground="{DynamicResource AccentBrush}"
                                                                              FontWeight="SemiBold"
-                                                                             BorderBrush="#44AACCFF" BorderThickness="0,0,0,1"
+                                                                             BorderBrush="{DynamicResource AccentSubtleBrush}" BorderThickness="0,0,0,1"
                                                                              Padding="4,1" VerticalAlignment="Center"
                                                                              IsReadOnly="True" IsReadOnlyCaretVisible="True"
                                                                              PreviewKeyDown="BuildModeHotkeyCapture_PreviewKeyDown"

@@ -99,8 +99,14 @@ namespace ReplayParser.SC2
                 if (modsSize > reader.BaseStream.Length - reader.BaseStream.Position)
                     return;
 
+                long modsStart = reader.BaseStream.Position;
                 var modsData = ReadLuaDataSafe(reader, 0);
                 data.Mods = ParseMods(modsData);
+
+                // Jump to where the replay says this block ends. Normally the lua reader already stops right
+                // there, but if it bailed out early on something weird (unknown type, too deep, too many items),
+                // everything after it would get read from the middle of this block and come out as garbage
+                reader.BaseStream.Position = modsStart + modsSize;
             }
 
             var scenarioSize = reader.ReadUInt32();
@@ -109,8 +115,12 @@ namespace ReplayParser.SC2
                 if (scenarioSize > reader.BaseStream.Length - reader.BaseStream.Position)
                     return;
 
+                long scenarioStart = reader.BaseStream.Position;
                 var scenarioData = ReadLuaDataSafe(reader, 0);
                 ParseScenario(scenarioData, data);
+
+                // Same as the mods block, always continue from where this block really ends
+                reader.BaseStream.Position = scenarioStart + scenarioSize;
             }
             
             var playersCount = reader.ReadByte();
@@ -134,7 +144,21 @@ namespace ReplayParser.SC2
                 for (int armyIdx = 0; armyIdx < armiesCount && reader.BaseStream.Position < reader.BaseStream.Length; armyIdx++)
                 {
                     var armyDataSize = reader.ReadUInt32();
+
+                    // Same check as the mods/scenario blocks. If the army block can't fit, the file is cut off,
+                    // so stop instead of reading players out of garbage (HeaderComplete stays false)
+                    if (armyDataSize > reader.BaseStream.Length - reader.BaseStream.Position)
+                        return;
+
+                    long armyStart = reader.BaseStream.Position;
                     var armyData = ReadLuaDataSafe(reader, 0);
+
+                    // Continue from where the replay says this army's block ends, same reason as the mods block
+                    reader.BaseStream.Position = armyStart + armyDataSize;
+
+                    if (reader.BaseStream.Position >= reader.BaseStream.Length)
+                        return;
+
                     var armySource = reader.ReadByte();
                     
                     var player = new SC2Player

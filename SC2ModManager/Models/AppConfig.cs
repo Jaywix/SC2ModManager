@@ -90,5 +90,12 @@ namespace SC2ModManager.Models
         ///     don't have this saved yet get the default too.
         /// </summary>
         public bool AutoEnableDownloadedMaps { get; set; } = true;
+
+        /// <summary>
+        ///     The last replay auto-save copied (path|write time|size). Remembered between launches so a game that
+        ///     finished while the mod manager was closed still gets saved the next time it opens. Null means auto-save
+        ///     hasn't started remembering yet (first run with this version, or it was just turned back on).
+        /// </summary>
+        public string? LastAutoSavedReplaySignature { get; set; }
     }
 }

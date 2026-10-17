@@ -134,6 +134,12 @@ namespace SC2ModManager.Services
             res["ButtonPressedBrush"] = new SolidColorBrush(accentDark);
             res["PanelBackgroundBrush"] = new SolidColorBrush(panelBg);
             res["SidebarOverlayBrush"] = new SolidColorBrush(sidebarBg);
+
+            // See-through versions of the accent color. These replaced the light blue that was typed straight
+            // into the xaml (#44AACCFF, #22AACCFF, #0D1A2A) and stayed blue in Cybran/Aeon/Dark Mode
+            res["AccentSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0x44, accent.R, accent.G, accent.B));     // key box underlines
+            res["AccentFaintBrush"] = new SolidColorBrush(Color.FromArgb(0x22, accent.R, accent.G, accent.B));      // banner borders
+            res["BannerBackgroundBrush"] = new SolidColorBrush(Color.FromArgb(0x26, accent.R, accent.G, accent.B)); // info banners
         }
 
         private BitmapImage MakeBitmapImage(string assetPath)
