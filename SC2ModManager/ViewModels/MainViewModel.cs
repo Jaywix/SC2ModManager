@@ -349,14 +349,45 @@ namespace SC2ModManager.ViewModels
 
         public async Task LoadNewsAsync()
         {
+            NewsLoadFailed = false;
+            NewsStatusText = "Loading news...";
+
             try
             {
                 var items = await newsService.GetNewsAsync();
                 NewsItems = new ObservableCollection<NewsItemViewModel>(
                     items.Select(i => new NewsItemViewModel(i)));
                 OnPropertyChanged(nameof(NewsItems));
+
+                // The panel used to just be blank when this failed, now it says so and shows a Retry button
+                NewsLoadFailed = newsService.LastFetchFailed;
+                NewsStatusText = NewsLoadFailed
+                    ? "Couldn't load the news. Check your internet connection and try again."
+                    : NewsItems.Count == 0 ? "No news right now." : string.Empty;
             }
-            catch { }
+            catch
+            {
+                NewsLoadFailed = true;
+                NewsStatusText = "Couldn't load the news. Check your internet connection and try again.";
+            }
+        }
+
+        private string newsStatusText = string.Empty;
+        /// <summary>Shown in the news panel while loading, when it fails, or when there's nothing. Empty when news is showing.</summary>
+        public string NewsStatusText
+        {
+            get => newsStatusText;
+            private set { newsStatusText = value; OnPropertyChanged(nameof(NewsStatusText)); OnPropertyChanged(nameof(HasNewsStatus)); }
+        }
+
+        public bool HasNewsStatus => !string.IsNullOrEmpty(NewsStatusText);
+
+        private bool newsLoadFailed;
+        /// <summary>Shows the Retry button in the news panel.</summary>
+        public bool NewsLoadFailed
+        {
+            get => newsLoadFailed;
+            private set { newsLoadFailed = value; OnPropertyChanged(nameof(NewsLoadFailed)); }
         }
 
         // ================= BACKUPS =================
@@ -570,6 +601,7 @@ namespace SC2ModManager.ViewModels
             var all = presetService.LoadAllPresets();
             Presets = new ObservableCollection<ModPreset>(all);
             OnPropertyChanged(nameof(Presets));
+            RefreshEmptyStates();
         }
 
         public void SaveCurrentStateAsPreset()
@@ -731,7 +763,27 @@ namespace SC2ModManager.ViewModels
                 // there. Clean it up so the game still launches after the switch.
                 new HotkeyService().ReconcileNormalHotkeyState(Path.Combine(GamePath, "gamedata"));
 
-                MessageBox.Show($"Preset '{SelectedPreset.Name}' applied.");
+                // A preset can only put back files the mod manager still has. Anything it lists that's still not
+                // in gamedata (usually a map or mod that got uninstalled since the preset was saved) used to just
+                // get skipped without saying anything
+                string gamedataPath = Path.Combine(GamePath, "gamedata");
+                var missing = SelectedPreset.Files
+                    .Where(f => !Globals.IsHotkeyManagedFile(f) && !File.Exists(Path.Combine(gamedataPath, f)))
+                    .ToList();
+
+                string applied = $"Preset '{SelectedPreset.Name}' applied.";
+                if (missing.Count > 0)
+                {
+                    string list = string.Join("\n", missing.Take(15).Select(f => "• " + f));
+                    if (missing.Count > 15)
+                        list += $"\n...and {missing.Count - 15} more";
+
+                    applied += $"\n\nThese files in the preset couldn't be put back because the mod manager doesn't have them anymore " +
+                               $"(they were probably uninstalled or deleted):\n\n{list}\n\n" +
+                               "You can download them again from the Download pages, then apply the preset again.";
+                }
+
+                MessageBox.Show(applied);
             }
             catch (Exception ex)
             {
@@ -774,6 +826,7 @@ namespace SC2ModManager.ViewModels
             );
 
             OnPropertyChanged(nameof(CompareResults));
+            RefreshEmptyStates();
         }
 
         private List<string> GetFilesForSelection(string selectionName)
@@ -812,6 +865,9 @@ namespace SC2ModManager.ViewModels
                 return;
             }
 
+            IsScanning = true;
+            try
+            {
             HashSet<string> knownMods = storageService.GetAllKnownModFileNames();
 
             List<string> inGamedata = await Task.Run(() =>
@@ -886,6 +942,45 @@ namespace SC2ModManager.ViewModels
             OnPropertyChanged(nameof(ScanMatchResults));
 
             HasUnrecognizedFiles = unknown.Any() || matched.Any();
+            }
+            finally
+            {
+                // Also refreshes the "Scanning..." / "nothing found" text on the Scan page
+                IsScanning = false;
+            }
+        }
+
+        // ================= EMPTY STATES =================
+        // The text shown in place of a list when it's empty (or still scanning), so an empty list doesn't just look
+        // broken. Empty string means the list has stuff and nothing extra shows (StringToVisibilityConverter)
+
+        private bool isScanning;
+        public bool IsScanning
+        {
+            get => isScanning;
+            private set { isScanning = value; OnPropertyChanged(nameof(IsScanning)); RefreshEmptyStates(); }
+        }
+
+        public string ScanMatchEmptyText =>
+            IsScanning ? "Scanning gamedata..." :
+            ScanMatchResults.Count == 0 ? "Nothing in your gamedata matches the download lists." : string.Empty;
+
+        public string ScanUnknownEmptyText =>
+            IsScanning ? "Scanning gamedata..." :
+            ScanResults.Count == 0 ? "No unrecognized files found." : string.Empty;
+
+        public string PresetsEmptyText =>
+            Presets.Count == 0 ? "No presets yet. Type a name above and click Save to save your current setup." : string.Empty;
+
+        public string CompareEmptyText =>
+            CompareResults.Count == 0 ? "Pick a preset on each side and click Compare to see how they're different." : string.Empty;
+
+        private void RefreshEmptyStates()
+        {
+            OnPropertyChanged(nameof(ScanMatchEmptyText));
+            OnPropertyChanged(nameof(ScanUnknownEmptyText));
+            OnPropertyChanged(nameof(PresetsEmptyText));
+            OnPropertyChanged(nameof(CompareEmptyText));
         }
 
         public void DeleteUnknownFiles(IEnumerable<ScanResultItem> items)
@@ -1213,6 +1308,12 @@ namespace SC2ModManager.ViewModels
         public void EnableAllMaps() => EnableSelectedMaps(DisabledMaps.ToList());
         public void DisableAllMaps() => DisableSelectedMaps(EnabledMaps.ToList());
 
+        /// <summary>Enable All on the page only enables what's showing (filters + search), same as generic mods.</summary>
+        public void EnableAllShownMaps() => EnableSelectedMaps(FilteredDisabledMaps.ToList());
+
+        /// <summary>Disable All on the page only disables what's showing (filters + search), same as generic mods.</summary>
+        public void DisableAllShownMaps() => DisableSelectedMaps(FilteredEnabledMaps.ToList());
+
         // ================= UNSAVED ENABLE/DISABLE CHANGES =================
         // Enable/Disable only moves files around in our storage folders, the game doesn't change until
         // Save. Instead of keeping a "dirty" flag that every code path has to remember to set, we just
@@ -1442,9 +1543,9 @@ namespace SC2ModManager.ViewModels
         public void RefreshInstalledGenericModSort()
         {
             FilteredEnabledGenericMods = new ObservableCollection<GenericGamedataMod>(
-                ApplyGenericModSort(EnabledGenericMods.Where(PassesGenericModFileTypeFilter), InstalledGenericModSort));
+                ApplyGenericModSort(EnabledGenericMods.Where(m => PassesGenericModFileTypeFilter(m) && MatchesGenericModSearch(m, InstalledGenericModsSearch)), InstalledGenericModSort));
             FilteredDisabledGenericMods = new ObservableCollection<GenericGamedataMod>(
-                ApplyGenericModSort(DisabledGenericMods.Where(PassesGenericModFileTypeFilter), InstalledGenericModSort));
+                ApplyGenericModSort(DisabledGenericMods.Where(m => PassesGenericModFileTypeFilter(m) && MatchesGenericModSearch(m, InstalledGenericModsSearch)), InstalledGenericModSort));
             OnPropertyChanged(nameof(FilteredEnabledGenericMods));
             OnPropertyChanged(nameof(FilteredDisabledGenericMods));
             RefreshListCounts();
@@ -1454,7 +1555,8 @@ namespace SC2ModManager.ViewModels
         {
             FilteredDownloadableGenericMods = new ObservableCollection<GenericGamedataMod>(ApplyGenericModSort(
                 DownloadableGenericMods.Where(m =>
-                    PassesDownloadedFilter(m.IsDownloaded, DownloadGenericModsShowDownloaded, DownloadGenericModsShowNotDownloaded)),
+                    PassesDownloadedFilter(m.IsDownloaded, DownloadGenericModsShowDownloaded, DownloadGenericModsShowNotDownloaded) &&
+                    MatchesGenericModSearch(m, DownloadGenericModsSearch)),
                 DownloadGenericModSort));
             OnPropertyChanged(nameof(FilteredDownloadableGenericMods));
             RefreshListCounts();
@@ -1719,11 +1821,51 @@ namespace SC2ModManager.ViewModels
             }
         }
 
+        /// <summary>
+        ///     The "Automatically Enable New Downloaded Mods" checkbox on the Download Generic Gamedata Mods page.
+        ///     Saved straight to the config so it sticks between launches.
+        /// </summary>
+        public bool AutoEnableDownloadedGenericMods
+        {
+            get => configService.Load()?.AutoEnableDownloadedGenericMods ?? true;
+            set
+            {
+                var config = configService.Load();
+                config.AutoEnableDownloadedGenericMods = value;
+                configService.Save(config);
+                OnPropertyChanged(nameof(AutoEnableDownloadedGenericMods));
+            }
+        }
+
+        /// <summary>
+        ///     Moves a just downloaded generic mod to Enabled and puts it in the game. Same as EnableDownloadedMap,
+        ///     if it can't go in the game it goes back to Disabled so the lists never lie about it.
+        /// </summary>
+        private void EnableDownloadedGenericMod(GenericGamedataMod mod)
+        {
+            string modsEnabledPath = Path.Combine(Globals.GetDataPath(), "Mods", "GenericMods", "Enabled");
+            string gameDataPath = Path.Combine(GamePath, "gamedata");
+
+            storageService.MoveGenericModToEnabled(mod);
+            try
+            {
+                gamedataService.EnableGenericMod(mod, modsEnabledPath, gameDataPath);
+            }
+            catch
+            {
+                storageService.MoveGenericModToDisabled(mod);
+                throw;
+            }
+        }
+
         public async Task DownloadSelectedGenericModsAsync(IEnumerable<GenericGamedataMod> mods)
         {
             int successCount = 0;
             var errors = new List<string>();
             var newlyDownloaded = new List<GenericGamedataMod>();
+
+            // Read once up front. Can't put mods in the game without a game path, so they stay disabled then
+            bool autoEnable = AutoEnableDownloadedGenericMods && !string.IsNullOrEmpty(GamePath);
 
             List<GenericGamedataMod> installed = this.storageService.GetInstalledGenericMods();
             var installedMapNames = storageService.GetInstalledMaps()
@@ -1755,6 +1897,20 @@ namespace SC2ModManager.ViewModels
                     mod.IsEnabled = false;
                     newlyDownloaded.Add(mod);
                     successCount++;
+
+                    if (autoEnable)
+                    {
+                        try
+                        {
+                            EnableDownloadedGenericMod(mod);
+                            mod.IsEnabled = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            // The download itself worked, it's just sitting in the disabled list
+                            errors.Add($"{mod.FileName}: downloaded, but couldn't be enabled ({ex.Message}). You can enable it from your installed mods.");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1780,9 +1936,13 @@ namespace SC2ModManager.ViewModels
             RefreshDownloadGenericModSort();
 
             if (errors.Any())
-                MessageBox.Show($"Failed to download:\n{string.Join("\n", errors)}");
+                MessageBox.Show($"Some mods had problems:\n{string.Join("\n", errors)}");
+            else if (autoEnable)
+                MessageBox.Show($"{successCount} mod(s) downloaded and enabled.");
+            else if (AutoEnableDownloadedGenericMods)
+                MessageBox.Show($"{successCount} mod(s) downloaded. Your game path isn't set, so they were added to your disabled mods instead of being enabled.");
             else
-                MessageBox.Show($"{successCount} mod(s) downloaded successfully.");
+                MessageBox.Show($"{successCount} mod(s) downloaded. They're in your disabled mods until you enable them.");
         }
 
         // ================= MAP FILTERING =================
@@ -1797,10 +1957,54 @@ namespace SC2ModManager.ViewModels
             => DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m) &&
                 PassesDownloadedFilter(m.IsDownloaded, DownloadMapsShowDownloaded, DownloadMapsShowNotDownloaded));
 
+        // ================= SEARCH BOXES =================
+        // One search box per page. Matches the file name or the display name (map name for maps), ignoring case.
+        // Empty box means no search. Works on top of the other filters, it doesn't replace them
+
+        private string installedMapsSearch = string.Empty;
+        public string InstalledMapsSearch
+        {
+            get => installedMapsSearch;
+            set { installedMapsSearch = value ?? string.Empty; OnPropertyChanged(nameof(InstalledMapsSearch)); RefreshInstalledMapFilters(); }
+        }
+
+        private string downloadMapsSearch = string.Empty;
+        public string DownloadMapsSearch
+        {
+            get => downloadMapsSearch;
+            set { downloadMapsSearch = value ?? string.Empty; OnPropertyChanged(nameof(DownloadMapsSearch)); RefreshDownloadMapFilters(); }
+        }
+
+        private string installedGenericModsSearch = string.Empty;
+        public string InstalledGenericModsSearch
+        {
+            get => installedGenericModsSearch;
+            set { installedGenericModsSearch = value ?? string.Empty; OnPropertyChanged(nameof(InstalledGenericModsSearch)); RefreshInstalledGenericModSort(); }
+        }
+
+        private string downloadGenericModsSearch = string.Empty;
+        public string DownloadGenericModsSearch
+        {
+            get => downloadGenericModsSearch;
+            set { downloadGenericModsSearch = value ?? string.Empty; OnPropertyChanged(nameof(DownloadGenericModsSearch)); RefreshDownloadGenericModSort(); }
+        }
+
+        private static bool MatchesSearch(string search, params string?[] fields)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return true;
+
+            string s = search.Trim();
+            return fields.Any(f => f != null && f.Contains(s, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool MatchesMapSearch(Map m, string search) => MatchesSearch(search, m.FileName, m.MapName);
+        private bool MatchesGenericModSearch(GenericGamedataMod m, string search) => MatchesSearch(search, m.FileName, m.DisplayName);
+
         public void RefreshInstalledMapFilters()
         {
-            FilteredEnabledMaps = new ObservableCollection<Map>(ApplyMapSort(EnabledMaps.Where(m => InstalledMapsFilter.Passes(m)), InstalledMapSort));
-            FilteredDisabledMaps = new ObservableCollection<Map>(ApplyMapSort(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m)), InstalledMapSort));
+            FilteredEnabledMaps = new ObservableCollection<Map>(ApplyMapSort(EnabledMaps.Where(m => InstalledMapsFilter.Passes(m) && MatchesMapSearch(m, InstalledMapsSearch)), InstalledMapSort));
+            FilteredDisabledMaps = new ObservableCollection<Map>(ApplyMapSort(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m) && MatchesMapSearch(m, InstalledMapsSearch)), InstalledMapSort));
             OnPropertyChanged(nameof(FilteredEnabledMaps));
             OnPropertyChanged(nameof(FilteredDisabledMaps));
             RefreshListCounts();
@@ -1810,7 +2014,8 @@ namespace SC2ModManager.ViewModels
         {
             FilteredDownloadableMaps = new ObservableCollection<Map>(ApplyMapSort(
                 DownloadableMaps.Where(m => DownloadMapsFilter.Passes(m) &&
-                    PassesDownloadedFilter(m.IsDownloaded, DownloadMapsShowDownloaded, DownloadMapsShowNotDownloaded)),
+                    PassesDownloadedFilter(m.IsDownloaded, DownloadMapsShowDownloaded, DownloadMapsShowNotDownloaded) &&
+                    MatchesMapSearch(m, DownloadMapsSearch)),
                 DownloadMapSort));
             OnPropertyChanged(nameof(FilteredDownloadableMaps));
             RefreshListCounts();
@@ -2044,6 +2249,10 @@ namespace SC2ModManager.ViewModels
                 {
                     UpdateAvailable = true;
                     updateDownloadUrl = downloadUrl;
+
+                    // Say which version it is and what's in it, the banner used to just say "Update Available"
+                    UpdateVersionText = $"Version {updateService.LatestReleaseTag.TrimStart('v')} is available (you have {FormatVersion(currentVersion)})";
+                    UpdateNotes = updateService.LatestReleaseNotes.Replace("\r\n", "\n").Trim();
                 }
                 else
                 {
@@ -2054,6 +2263,96 @@ namespace SC2ModManager.ViewModels
             {
                 UpdateAvailable = false;
             }
+        }
+
+        /// <summary>
+        ///     Notes when we started the updater, so an update_error.txt can be matched to this attempt on the next start.
+        ///     Never throws, an update shouldn't fail because of this.
+        /// </summary>
+        private void RememberUpdateAttempt()
+        {
+            try
+            {
+                var config = configService.Load();
+                config.LastUpdateAttemptUtc = DateTime.UtcNow;
+                configService.Save(config);
+            }
+            catch { }
+        }
+
+        private static string FormatVersion(Version? v) =>
+            v == null ? "?" : $"{v.Major}.{v.Minor}.{Math.Max(v.Build, 0)}";
+
+        private string updateVersionText = string.Empty;
+        public string UpdateVersionText
+        {
+            get => updateVersionText;
+            private set { updateVersionText = value; OnPropertyChanged(nameof(UpdateVersionText)); }
+        }
+
+        private string updateNotes = string.Empty;
+        public string UpdateNotes
+        {
+            get => updateNotes;
+            private set { updateNotes = value; OnPropertyChanged(nameof(UpdateNotes)); }
+        }
+
+        /// <summary>
+        ///     Runs once at startup. Returns a message about the last update if there's something to say, or null:
+        ///     - the updater left an update_error.txt, so the last update didn't finish (it used to just close the
+        ///       app and nobody knew why)
+        ///     - the version went up since the last time the app ran, so say what it's on now
+        /// </summary>
+        public string? GetUpdateResultMessage()
+        {
+            string? message = null;
+            string current = FormatVersion(Assembly.GetExecutingAssembly().GetName().Version);
+
+            try
+            {
+                // The updater writes this next to the app when something goes wrong
+                string errorFile = Path.Combine(AppContext.BaseDirectory, "update_error.txt");
+                if (File.Exists(errorFile))
+                {
+                    // Only report it if it came from the update we last started. An old leftover one (from before
+                    // this check existed, or from an update that later worked) just gets renamed quietly
+                    var lastAttempt = configService.Load().LastUpdateAttemptUtc;
+                    bool fromLastAttempt = lastAttempt.HasValue && File.GetLastWriteTimeUtc(errorFile) >= lastAttempt.Value.AddMinutes(-1);
+
+                    if (fromLastAttempt)
+                    {
+                        string firstLine = File.ReadLines(errorFile).FirstOrDefault() ?? string.Empty;
+                        message = "The last update didn't finish, so you're still on version " + current + ".\n\n" +
+                                  $"What went wrong: {firstLine}\n\n" +
+                                  "You can try updating again from the Home page. If it keeps happening, the full details are in update_error.last.txt in the mod manager's folder.";
+                    }
+
+                    // Keep it around for troubleshooting, but renamed so this only shows once
+                    File.Move(errorFile, Path.Combine(AppContext.BaseDirectory, "update_error.last.txt"), overwrite: true);
+                }
+            }
+            catch { }
+
+            try
+            {
+                var config = configService.Load();
+                string? last = config.LastRunVersion;
+
+                if (message == null && !string.IsNullOrEmpty(last) && last != current &&
+                    Version.TryParse(last, out var lastV) && Version.TryParse(current, out var currentV) && currentV > lastV)
+                {
+                    message = $"You're now on version {current}.";
+                }
+
+                if (last != current)
+                {
+                    config.LastRunVersion = current;
+                    configService.Save(config);
+                }
+            }
+            catch { }
+
+            return message;
         }
 
         public async Task RunUpdater()
@@ -2089,6 +2388,8 @@ namespace SC2ModManager.ViewModels
                     string zoneFile = updaterPath + ":Zone.Identifier";
                     if (File.Exists(zoneFile))
                         File.Delete(zoneFile);
+
+                    RememberUpdateAttempt();
 
                     Process.Start(new ProcessStartInfo
                     {
@@ -2192,6 +2493,8 @@ namespace SC2ModManager.ViewModels
                     string zoneFile = updaterPath + ":Zone.Identifier";
                     if (File.Exists(zoneFile))
                         File.Delete(zoneFile);
+
+                    RememberUpdateAttempt();
 
                     Process.Start(new ProcessStartInfo
                     {

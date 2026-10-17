@@ -44,6 +44,7 @@
                     Background="#2D333B" Foreground="White"
                     BorderBrush="#444C56" BorderThickness="1"
                     Cursor="Hand"
+                    IsCancel="True"
                     Click="Cancel_Click"/>
             <Button Content="▶  Launch Replay"
                     Width="140" Height="32"
@@ -51,6 +52,7 @@
                     BorderThickness="0"
                     FontWeight="SemiBold"
                     Cursor="Hand"
+                    IsDefault="True"
                     Click="Launch_Click"/>
         </StackPanel>
 

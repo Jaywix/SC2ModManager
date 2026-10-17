@@ -89,6 +89,12 @@ namespace SC2ModManager.Services
             }
         }
 
+        /// <summary>The latest release's tag (like v1.6.5), filled in by GetLatestRelease. For the update banner.</summary>
+        public string LatestReleaseTag { get; private set; } = string.Empty;
+
+        /// <summary>The latest release's notes from GitHub, filled in by GetLatestRelease. For the update banner.</summary>
+        public string LatestReleaseNotes { get; private set; } = string.Empty;
+
         public async Task<(Version version, string downloadUrl)> GetLatestRelease()
         {
             using HttpClient client = new HttpClient();
@@ -100,6 +106,10 @@ namespace SC2ModManager.Services
             using JsonDocument doc = JsonDocument.Parse(json);
 
             string tag = doc.RootElement.GetProperty("tag_name").GetString();
+
+            // Extra info for the update banner. Only read, nothing below changes because of it
+            LatestReleaseTag = tag ?? string.Empty;
+            LatestReleaseNotes = doc.RootElement.TryGetProperty("body", out var body) ? body.GetString() ?? string.Empty : string.Empty;
 
             var assets = doc.RootElement.GetProperty("assets");
 

@@ -183,6 +183,12 @@
                                               Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- The section you're in. ShowView sets Tag="active" on its sidebar button. Listed
+                                 first so hovering still wins over it -->
+                            <Trigger Property="Tag" Value="active">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ListBoxSelectionBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentDarkBrush}"/>
@@ -541,11 +547,12 @@
 
                     <Separator Style="{StaticResource HRule}" Margin="14,0"/>
 
-                    <Button Content="🏠  Home"        Style="{StaticResource SidebarButton}" Click="GoHome"/>
-                    <Button Content="⚙  Manage Mods" Style="{StaticResource SidebarButton}" Click="GoToMods"/>
-                    <Button Content="🎬  Replays"     Style="{StaticResource SidebarButton}" Click="GoToReplays"/>
+                    <!-- Named so ShowView can highlight the section you're in -->
+                    <Button x:Name="HomeNavButton"     Content="🏠  Home"        Style="{StaticResource SidebarButton}" Click="GoHome"/>
+                    <Button x:Name="ModsNavButton"     Content="⚙  Manage Mods" Style="{StaticResource SidebarButton}" Click="GoToMods"/>
+                    <Button x:Name="ReplaysNavButton"  Content="🎬  Replays"     Style="{StaticResource SidebarButton}" Click="GoToReplays"/>
                     <Button x:Name="LauncherNavButton" Content="🚀  Launcher" Style="{StaticResource SidebarButton}" Click="GoToLauncher"/>
-                    <Button Content="⚙  Settings" Style="{StaticResource SidebarButton}" Click="GoToSettings"/>
+                    <Button x:Name="SettingsNavButton" Content="⚙  Settings" Style="{StaticResource SidebarButton}" Click="GoToSettings"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -583,7 +590,16 @@
             Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Update Available" Foreground="{DynamicResource AccentBrush}"
-                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" FontSize="14" Margin="0,0,0,4"/>
+                            <!-- Which version, and what's in it (the release notes from GitHub) -->
+                            <TextBlock Text="{Binding UpdateVersionText}" Foreground="#CCCCCC" FontSize="13" Margin="0,0,0,6"/>
+                            <Expander Header="What's new" Foreground="White" Margin="0,0,0,8"
+                                      Visibility="{Binding UpdateNotes, Converter={StaticResource StringToVisibilityConverter}}">
+                                <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+                                    <TextBlock Text="{Binding UpdateNotes}" Foreground="#AAAAAA" FontSize="12"
+                                               TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </ScrollViewer>
+                            </Expander>
                             <Button Content="⬇  Download Update" Height="38" Click="Update_Click"/>
                             <ProgressBar Margin="0,8,0,0" Value="{Binding DownloadProgress}"/>
                         </StackPanel>
@@ -617,6 +633,9 @@
                 HorizontalAlignment="Left"
                 Click="HowToToggle_Click"/>
 
+                            <!-- Capped with its own scrollbar. Opening this used to squish the news down to nothing,
+                                 especially on smaller screens -->
+                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                             <StackPanel x:Name="HowToPanel" Visibility="Collapsed" Margin="0,14,0,0">
 
                                 <TextBlock Text="📥  Downloading Mods"
@@ -625,8 +644,7 @@
                                 <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13" LineHeight="18" Margin="0,0,0,12">
                 Go to <Run FontWeight="Bold">Manage Mods → Download</Run> and choose a mod type (Maps or Generic Gamedata Mods).
                 Check the boxes next to the mods you want and click <Run FontWeight="Bold">Download</Run>.
-                Downloaded maps are enabled right away unless you turn off <Run FontWeight="Bold">Automatically Enable New Downloaded Maps</Run> at the top of the Download Maps page.
-                Other downloaded mods are stored by the mod manager and start out disabled.
+                Downloaded maps and mods are enabled right away unless you turn off the <Run FontWeight="Bold">Automatically Enable</Run> checkbox at the top of each Download page.
                                 </TextBlock>
 
                                 <TextBlock Text="✅  Enabling and Disabling Mods"
@@ -667,6 +685,7 @@
                                 </TextBlock>
 
                             </StackPanel>
+                            </ScrollViewer>
                         </StackPanel>
                     </Border>
 
@@ -681,6 +700,15 @@
                             <TextBlock Grid.Row="0" Text="News &amp; Announcements"
                        Foreground="{DynamicResource AccentBrush}"
                        FontWeight="SemiBold" FontSize="14" Margin="0,0,0,12"/>
+
+                            <!-- Loading / couldn't load / no news. Hidden once news is showing -->
+                            <StackPanel Grid.Row="1" VerticalAlignment="Top"
+                                        Visibility="{Binding HasNewsStatus, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding NewsStatusText}" Foreground="#AAAAAA" FontSize="13" TextWrapping="Wrap"/>
+                                <Button Content="⟳  Retry" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                        Visibility="{Binding NewsLoadFailed, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Click="RetryNews_Click"/>
+                            </StackPanel>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding NewsItems}">
@@ -820,7 +848,9 @@
                 </Grid>
 
                 <!-- ===== SETTINGS ===== -->
-                <StackPanel x:Name="SettingsView" Visibility="Collapsed">
+                <!-- Scrolls so the Uninstall button at the bottom can't get cut off on smaller screens -->
+                <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
                     <TextBlock Text="Settings" Style="{StaticResource SectionHeader}"/>
                     <Border Style="{StaticResource ContentPanel}">
                         <StackPanel>
@@ -898,6 +928,7 @@
                                 <TextBox x:Name="GamePathInput"
                          Width="320" Margin="0,0,8,0"
                          VerticalContentAlignment="Center"
+                         KeyDown="GamePathInput_KeyDown"
                          />
                                 <Button Content="📁  Browse" Width="100" Margin="0,0,6,0"
                         Click="BrowseGamePath_Click"/>
@@ -934,9 +965,12 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+                </ScrollViewer>
 
                 <!-- ===== ADVANCED SETTINGS ===== -->
-                <StackPanel x:Name="AdvancedSettingsView" Visibility="Collapsed">
+                <!-- Scrolls so nothing gets cut off on smaller screens -->
+                <ScrollViewer x:Name="AdvancedSettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
                     <TextBlock Text="Advanced Settings" Style="{StaticResource SectionHeader}"/>
                     <Border Style="{StaticResource ContentPanel}">
                         <StackPanel>
@@ -967,6 +1001,7 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+                </ScrollViewer>
 
                 <!-- ===== REPLAYS ===== -->
                 <Grid x:Name="ReplayView" Visibility="Collapsed">
@@ -1029,12 +1064,13 @@
                                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <TextBox x:Name="ReplaySearchBox"
                                              Width="220" VerticalContentAlignment="Center"
+                                             ToolTip="Searches replay names, maps, and player names"
                                              TextChanged="ReplaySearch_Changed"/>
-                                    <Button Content="✕" Width="26" Height="26" Margin="4,0,0,0"
+                                    <Button Content="Clear" Margin="4,0,0,0"
                                             Click="ClearReplaySearch_Click" ToolTip="Clear search"/>
                                 </StackPanel>
-                                <!-- Sort + filter row -->
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                <!-- Sort + filter row. Wraps onto a second line when the window is narrow instead of cutting buttons off -->
+                                <WrapPanel Margin="0,0,0,0">
                                     <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="12"
                                                VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <Button x:Name="SortDateDescBtn" Content="Date ↓" Margin="0,0,4,0"
@@ -1052,18 +1088,37 @@
                                                VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <Button x:Name="FilterAIBtn"     Content="Has AI"       Margin="0,0,4,0"
                                             Tag="AI"  Click="ReplayFilterBtn_Click"/>
+                                    <!-- Opposite of Has AI, only one of the two can be on. Neither on = any -->
+                                    <Button x:Name="FilterNoAIBtn"   Content="No AI"        Margin="0,0,4,0"
+                                            Tag="NoAI"  Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="Filter2pBtn"     Content="1v1"          Margin="0,0,4,0"
                                             Tag="2"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter3pBtn"     Content="3 Players"    Margin="0,0,4,0"
+                                            Tag="3"   Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="Filter4pBtn"     Content="4 Players"    Margin="0,0,4,0"
                                             Tag="4"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter5pBtn"     Content="5 Players"    Margin="0,0,4,0"
+                                            Tag="5"   Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="Filter6pBtn"     Content="6 Players"    Margin="0,0,4,0"
                                             Tag="6"   Click="ReplayFilterBtn_Click"/>
+                                    <Button x:Name="Filter7pBtn"     Content="7 Players"    Margin="0,0,4,0"
+                                            Tag="7"   Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="Filter8pBtn"     Content="8 Players"    Margin="0,0,4,0"
                                             Tag="8"   Click="ReplayFilterBtn_Click"/>
                                     <Button x:Name="FilterExclusionsBtn" Content="Has Exclusions" Margin="0,0,10,0"
                                             Tag="Exclusions" Click="ReplayFilterBtn_Click"/>
+
+                                    <!-- Faction: shows replays where at least one player was that faction -->
+                                    <TextBlock Text="Faction:" Foreground="#AAAAAA" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Button x:Name="FilterUEFBtn"        Content="UEF"        Margin="0,0,4,0"
+                                            Tag="UEF"        Click="ReplayFactionFilter_Click"/>
+                                    <Button x:Name="FilterCybranBtn"     Content="Cybran"     Margin="0,0,4,0"
+                                            Tag="Cybran"     Click="ReplayFactionFilter_Click"/>
+                                    <Button x:Name="FilterIlluminateBtn" Content="Illuminate" Margin="0,0,10,0"
+                                            Tag="Illuminate" Click="ReplayFactionFilter_Click"/>
                                     <Button Content="Clear Filters" Click="ClearReplayFilters_Click"/>
-                                </StackPanel>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
 
@@ -1128,6 +1183,23 @@
                                 Content="✏ Rename"
                                 Click="RenameReplay_Click"
                                 IsEnabled="{Binding IsReplayRunning, Converter={StaticResource InverseBoolConverter}}"
+                                Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <!-- Same handlers as the card buttons, GoToReplayDetails puts the replay in their Tag -->
+                        <Button x:Name="DetailsLaunchReplayBtn" DockPanel.Dock="Left"
+                                Content="▶  Launch"
+                                Style="{StaticResource PrimaryButton}"
+                                Click="LaunchReplay_Click"
+                                IsEnabled="{Binding IsReplayRunning, Converter={StaticResource InverseBoolConverter}}"
+                                Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <Button x:Name="DetailsShowInExplorerBtn" DockPanel.Dock="Left"
+                                Content="📂 Show in Explorer"
+                                Click="ShowReplayInExplorer_Click"
+                                Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <Button x:Name="DetailsDeleteReplayBtn" DockPanel.Dock="Left"
+                                Content="🗑 Delete"
+                                Style="{StaticResource DangerButton}"
+                                Click="DeleteReplay_Click"
+                                IsEnabled="{Binding IsReplayRunning, Converter={StaticResource InverseBoolConverter}}"
                                 Margin="0,0,12,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="ReplayDetailsTitle"
                                    Foreground="White" FontSize="20" FontFamily="Segoe UI"
@@ -1190,8 +1262,11 @@
                 </Grid>
 
                 <!-- ===== FILE LOCATIONS ===== -->
-                <Grid x:Name="FileLocationsView" Visibility="Collapsed">
+                <!-- Scrolls so nothing gets cut off on smaller screens -->
+                <ScrollViewer x:Name="FileLocationsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -1268,9 +1343,47 @@
                         </StackPanel>
                     </Border>
 
-                    <Button Grid.Row="3" Content="← Back"
+                    <!-- Replays. Change uses the same Browse as the Replays page, so it's the same setting -->
+                    <Border Grid.Row="3" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="🎬  Replays Folder"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+
+                            <StackPanel Visibility="{Binding ReplaysFound, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding ReplaysPath}" Foreground="#CCCCCC"
+                           FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="📁  Open Folder" Style="{StaticResource PrimaryButton}"
+                             Margin="0,0,8,0" Click="OpenReplaysFolder_Click"/>
+                                    <Button Content="Change" Click="BrowseReplayFolder_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ReplaysFound}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="Replays folder not found."
+                           Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                <Button Content="📁  Browse for Replays Folder"
+                         HorizontalAlignment="Left"
+                        Click="BrowseReplayFolder_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Row="4" Content="← Back"
             HorizontalAlignment="Left" Click="GoToSettings"/>
                 </Grid>
+                </ScrollViewer>
 
                 <!-- ===== MANAGE MODS ===== -->
                 <StackPanel x:Name="ModsView" Visibility="Collapsed">
@@ -1328,7 +1441,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBox Width="220" Margin="0,0,8,0"
                                          Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
-                                         VerticalContentAlignment="Center"/>
+                                         VerticalContentAlignment="Center"
+                                         KeyDown="PresetNameBox_KeyDown"/>
                                 <Button Content="💾  Save" Style="{StaticResource PrimaryButton}"
                                         Width="100" Click="SavePreset_Click"/>
                             </StackPanel>
@@ -1337,6 +1451,11 @@
 
                     <!-- Preset list -->
                     <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <Grid>
+                        <!-- Shown when there are no presets yet -->
+                        <TextBlock Text="{Binding PresetsEmptyText}"
+                                   Visibility="{Binding PresetsEmptyText, Converter={StaticResource StringToVisibilityConverter}}"
+                                   Foreground="#AAAAAA" FontSize="13" Margin="2,4" TextWrapping="Wrap"/>
                         <ListBox x:Name="PresetsList"
                                  ItemsSource="{Binding Presets}"
                                  SelectedItem="{Binding SelectedPreset}"
@@ -1355,6 +1474,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Grid>
                     </Border>
 
                     <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
@@ -1422,6 +1542,11 @@
                             Click="RunComparison_Click"/>
 
                     <Border Grid.Row="3" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
+                        <Grid>
+                        <!-- Shown before anything has been compared -->
+                        <TextBlock Text="{Binding CompareEmptyText}"
+                                   Visibility="{Binding CompareEmptyText, Converter={StaticResource StringToVisibilityConverter}}"
+                                   Foreground="#AAAAAA" FontSize="13" Margin="2,4" TextWrapping="Wrap"/>
                         <ListBox ItemsSource="{Binding CompareResults}"
                                  BorderThickness="0" Background="Transparent">
                             <ListBox.ItemTemplate>
@@ -1442,6 +1567,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Grid>
                     </Border>
 
                     <Button Grid.Row="4" Content="← Back" Width="80"
@@ -1488,9 +1614,20 @@
                         <!-- Filter bar -->
                         <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
                             <StackPanel>
-                                <Button Content="▼  Show Filters" x:Name="InstalledFiltersToggle"
+                                <!-- Search box sits on the right of the filter toggle, searches both lists -->
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <TextBlock Text="Search" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox Width="180" VerticalContentAlignment="Center"
+                                                 Text="{Binding InstalledMapsSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="Searches file names and map names"/>
+                                        <Button Content="Clear" Margin="4,0,0,0"
+                                                Tag="InstalledMaps" Click="ClearListSearch_Click" ToolTip="Clear search"/>
+                                    </StackPanel>
+                                    <Button Content="▼  Show Filters" x:Name="InstalledFiltersToggle"
                 HorizontalAlignment="Left" Width="130"
                 Click="InstalledFiltersToggle_Click"/>
+                                </DockPanel>
 
                                 <StackPanel x:Name="InstalledFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">
 
@@ -1643,22 +1780,21 @@
                             </Border>
                         </Grid>
 
-                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,6">
-                            <Button Content="✅  Enable Selected"   Margin="0,0,6,0" Click="EnableSelectedMaps_Click"/>
-                            <Button Content="🚫  Disable Selected"  Margin="0,0,6,0" Click="DisableSelectedMaps_Click"/>
-                            <Button Content="Enable All"             Margin="0,0,6,0" Click="EnableAllMaps_Click"/>
-                            <Button Content="Disable All"            Click="DisableAllMaps_Click"/>
-                        </StackPanel>
+                        <!-- These wrap onto another line when the window is narrow instead of getting cut off -->
+                        <WrapPanel Grid.Row="4" Margin="0,0,0,0">
+                            <Button Content="✅  Enable Selected"   Margin="0,0,6,6" Click="EnableSelectedMaps_Click"/>
+                            <Button Content="🚫  Disable Selected"  Margin="0,0,6,6" Click="DisableSelectedMaps_Click"/>
+                            <Button Content="Enable All"             Margin="0,0,6,6" Click="EnableAllMaps_Click"/>
+                            <Button Content="Disable All"            Margin="0,0,6,6" Click="DisableAllMaps_Click"/>
+                        </WrapPanel>
 
-                        <DockPanel Grid.Row="5" LastChildFill="False">
-                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,0" Click="SaveMaps_Click"/>
-                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,0" Click="DeleteSelectedMaps_Click"/>
-                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,0" Click="DeleteAllMaps_Click"/>
-                                <Button Content="← Back"               Click="GoToInstalledMods"/>
-                            </StackPanel>
-                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Maps" Width="180" Click="GoToDownloadMaps"/>
-                        </DockPanel>
+                        <WrapPanel Grid.Row="5">
+                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveMaps_Click"/>
+                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedMaps_Click"/>
+                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllMaps_Click"/>
+                            <Button Content="← Back"              Margin="0,0,6,6" Click="GoToInstalledMods"/>
+                            <Button Content="⬇  Go to Download Maps" Width="180" Margin="0,0,6,6" Click="GoToDownloadMaps"/>
+                        </WrapPanel>
                     </Grid>
 
                     <!-- RIGHT: Map detail panel -->
@@ -1783,13 +1919,21 @@
                             <TextBlock Text="Installed Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
                         </DockPanel>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                        <WrapPanel Grid.Row="1" Margin="0,0,0,6">
                             <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding InstalledGenericModSort.NameButtonText}"  Margin="0,0,4,0"
                     Click="InstalledGenericModSortName_Click"/>
-                            <Button Content="{Binding InstalledGenericModSort.DateButtonText}" 
+                            <Button Content="{Binding InstalledGenericModSort.DateButtonText}"
                     Click="InstalledGenericModSortDate_Click"/>
-                        </StackPanel>
+
+                            <!-- Searches both lists -->
+                            <TextBlock Text="Search" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                            <TextBox Width="180" VerticalContentAlignment="Center"
+                                     Text="{Binding InstalledGenericModsSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Searches file names and mod names"/>
+                            <Button Content="Clear" Margin="4,0,0,0"
+                                    Tag="InstalledGenericMods" Click="ClearListSearch_Click" ToolTip="Clear search"/>
+                        </WrapPanel>
 
                         <Grid Grid.Row="2" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -1862,22 +2006,21 @@
                             </Border>
                         </Grid>
 
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,6">
-                            <Button Content="✅  Enable Selected"   Margin="0,0,6,0" Click="EnableSelectedGenericMods_Click"/>
-                            <Button Content="🚫  Disable Selected"  Margin="0,0,6,0" Click="DisableSelectedGenericMods_Click"/>
-                            <Button Content="Enable All"             Margin="0,0,6,0" Click="EnableAllGenericMods_Click"/>
-                            <Button Content="Disable All"            Click="DisableAllGenericMods_Click"/>
-                        </StackPanel>
+                        <!-- These wrap onto another line when the window is narrow instead of getting cut off -->
+                        <WrapPanel Grid.Row="3">
+                            <Button Content="✅  Enable Selected"   Margin="0,0,6,6" Click="EnableSelectedGenericMods_Click"/>
+                            <Button Content="🚫  Disable Selected"  Margin="0,0,6,6" Click="DisableSelectedGenericMods_Click"/>
+                            <Button Content="Enable All"             Margin="0,0,6,6" Click="EnableAllGenericMods_Click"/>
+                            <Button Content="Disable All"            Margin="0,0,6,6" Click="DisableAllGenericMods_Click"/>
+                        </WrapPanel>
 
-                        <DockPanel Grid.Row="4" LastChildFill="False">
-                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,0" Click="SaveGenericMods_Click"/>
-                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,0" Click="DeleteSelectedGenericMods_Click"/>
-                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,0" Click="DeleteAllGenericMods_Click"/>
-                                <Button Content="← Back"              Width="80" Click="GoToInstalledMods"/>
-                            </StackPanel>
-                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Mods"  Click="GoToDownloadGenericMods"/>
-                        </DockPanel>
+                        <WrapPanel Grid.Row="4">
+                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveGenericMods_Click"/>
+                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedGenericMods_Click"/>
+                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllGenericMods_Click"/>
+                            <Button Content="← Back"              Width="80" Margin="0,0,6,6" Click="GoToInstalledMods"/>
+                            <Button Content="⬇  Go to Download Mods" Margin="0,0,6,6" Click="GoToDownloadGenericMods"/>
+                        </WrapPanel>
                     </Grid>
 
                     <!-- RIGHT: Detail panel -->
@@ -1990,6 +2133,10 @@
                 tracks them with full metadata, or delete them and re-download cleanly later.
                             </TextBlock>
 
+                            <!-- "Scanning..." or "nothing found", hidden when the list has files -->
+                            <TextBlock Grid.Row="2" Text="{Binding ScanMatchEmptyText}"
+                                       Visibility="{Binding ScanMatchEmptyText, Converter={StaticResource StringToVisibilityConverter}}"
+                                       Foreground="#AAAAAA" FontSize="13" Margin="2,4" TextWrapping="Wrap"/>
                             <ListBox Grid.Row="2"
                      x:Name="ScanMatchResultsList"
                      ItemsSource="{Binding ScanMatchResults}"
@@ -2034,6 +2181,10 @@
                 Import them as Generic Gamedata Mods to manage them, or leave them alone.
                             </TextBlock>
 
+                            <!-- "Scanning..." or "nothing found", hidden when the list has files -->
+                            <TextBlock Grid.Row="2" Text="{Binding ScanUnknownEmptyText}"
+                                       Visibility="{Binding ScanUnknownEmptyText, Converter={StaticResource StringToVisibilityConverter}}"
+                                       Foreground="#AAAAAA" FontSize="13" Margin="2,4" TextWrapping="Wrap"/>
                             <ListBox Grid.Row="2"
                      x:Name="ScanResultsList"
                      ItemsSource="{Binding ScanResults}"
@@ -2115,9 +2266,19 @@
                         <!-- Filter bar -->
                         <Border Grid.Row="1" Style="{StaticResource ContentPanel}" Margin="0,0,0,8">
                             <StackPanel>
-                                <Button Content="▼  Show Filters" x:Name="DownloadFiltersToggle"
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <TextBlock Text="Search" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox Width="180" VerticalContentAlignment="Center"
+                                                 Text="{Binding DownloadMapsSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="Searches file names and map names"/>
+                                        <Button Content="Clear" Margin="4,0,0,0"
+                                                Tag="DownloadMaps" Click="ClearListSearch_Click" ToolTip="Clear search"/>
+                                    </StackPanel>
+                                    <Button Content="▼  Show Filters" x:Name="DownloadFiltersToggle"
 HorizontalAlignment="Left" Width="130"
 Click="DownloadFiltersToggle_Click"/>
+                                </DockPanel>
 
                                 <StackPanel x:Name="DownloadFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">
 
@@ -2375,9 +2536,17 @@ Click="DownloadFiltersToggle_Click"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                        <DockPanel Grid.Row="0">
+                            <!-- Saved to the config right away through the binding, same as the maps one -->
+                            <CheckBox DockPanel.Dock="Right"
+                                      Content="Automatically Enable New Downloaded Mods"
+                                      IsChecked="{Binding AutoEnableDownloadedGenericMods, Mode=TwoWay}"
+                                      VerticalAlignment="Center"
+                                      ToolTip="When this is on, mods you download are put in the game right away. When it's off, they go to your disabled mods until you enable them."/>
+                            <TextBlock Text="Download Generic Gamedata Mods" Style="{StaticResource SectionHeader}"/>
+                        </DockPanel>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                        <WrapPanel Grid.Row="1" Margin="0,0,0,6">
                             <TextBlock Text="Sort:" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <Button Content="{Binding DownloadGenericModSort.NameButtonText}" Width="75" Margin="0,0,4,0"
                     Click="DownloadGenericModSortName_Click"/>
@@ -2391,7 +2560,14 @@ Click="DownloadFiltersToggle_Click"/>
                                       IsChecked="{Binding DownloadGenericModsShowDownloaded, Mode=TwoWay}"/>
                             <CheckBox Content="Not Downloaded" VerticalAlignment="Center"
                                       IsChecked="{Binding DownloadGenericModsShowNotDownloaded, Mode=TwoWay}"/>
-                        </StackPanel>
+
+                            <TextBlock Text="Search" Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                            <TextBox Width="160" VerticalContentAlignment="Center"
+                                     Text="{Binding DownloadGenericModsSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Searches file names and mod names"/>
+                            <Button Content="Clear" Margin="4,0,0,0"
+                                    Tag="DownloadGenericMods" Click="ClearListSearch_Click" ToolTip="Clear search"/>
+                        </WrapPanel>
 
                         <Border Grid.Row="2" Style="{StaticResource ContentPanel}" Margin="0,0,0,10">
                             <Grid>
@@ -2873,7 +3049,7 @@ Click="DownloadFiltersToggle_Click"/>
                                                     <TextBox x:Name="HotkeySearchDescriptionBox" VerticalContentAlignment="Center"
                                                              TextChanged="HotkeySearch_Changed"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="3" Content="✕" Width="26" Height="26" Margin="6,0,0,0"
+                                                <Button Grid.Column="3" Content="Clear" Margin="6,0,0,0"
                                                         VerticalAlignment="Bottom"
                                                         Click="ClearHotkeySearch_Click" ToolTip="Clear search"/>
                                             </Grid>

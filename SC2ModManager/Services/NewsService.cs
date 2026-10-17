@@ -31,8 +31,15 @@ namespace SC2ModManager.Services
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SC2ModManager/1.0");
         }
 
+        /// <summary>
+        ///     True if the last GetNewsAsync couldn't reach the news (no internet, GitHub down). It still returns an
+        ///     empty list either way, this is so the home page can tell "couldn't load" apart from "no news".
+        /// </summary>
+        public bool LastFetchFailed { get; private set; }
+
         public async Task<List<NewsItem>> GetNewsAsync()
         {
+            LastFetchFailed = false;
             try
             {
                 string json = await httpClient.GetStringAsync(Globals.NewsUrl);
@@ -68,6 +75,7 @@ namespace SC2ModManager.Services
             }
             catch
             {
+                LastFetchFailed = true;
                 return new List<NewsItem>();
             }
         }

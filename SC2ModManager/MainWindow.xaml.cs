@@ -31,8 +31,12 @@ namespace SC2ModManager
         // ================= Replay filter/sort state =================
         private string _replaySortMode       = "DateDesc";
         private bool   _filterHasAI          = false;
+        private bool   _filterNoAI           = false; // never on at the same time as _filterHasAI
         private bool   _filterHasExclusions  = false;
-        private int    _filterPlayerCount    = 0;   // 0 = all, 2 = 1v1, 4/6/8 = exact count
+        private int    _filterPlayerCount    = 0;   // 0 = all, 2 = 1v1, otherwise the exact player count
+        // Factions picked in the replay filter. Empty = any. Otherwise every player in the replay has to be one of these,
+        // so just UEF means UEF only, UEF + Cybran means UEF, Cybran, or both, and all 3 is the same as none
+        private readonly HashSet<string> _filterFactions = new(StringComparer.OrdinalIgnoreCase);
 
         // Every replay from the last scan. Filters/sort/search all work off this list so they don't
         // have to rescan and re-parse the whole folder every time you click something
@@ -76,6 +80,11 @@ namespace SC2ModManager
             {
                 // If the last update's updater swap got stuck, finish it now (see the comment on the method)
                 SC2ModManager.Services.UpdateService.RepairStuckUpdaterSwap();
+
+                // "You're now on version X" after an update, or that the last update didn't finish
+                string? updateMessage = vm.GetUpdateResultMessage();
+                if (updateMessage != null)
+                    MessageBox.Show(updateMessage, "Update", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // If a gamedata restore got interrupted (crash, power loss) partway through its folder swap, put
                 // things back together before anything else looks at gamedata. Can't happen with the game open
@@ -271,6 +280,31 @@ namespace SC2ModManager
                 case "Replays": ReplayView.Visibility = Visibility.Visible; break;
                 case "ReplayDetails": ReplayDetailsView.Visibility = Visibility.Visible; break;
             }
+
+            UpdateSidebarHighlight(view);
+        }
+
+        /// <summary>
+        ///     Lights up the sidebar button for the section you're in. Pages you get to from inside a section count
+        ///     as that section, like Download Maps is under Manage Mods. The look is the Tag="active" trigger in
+        ///     the SidebarButton style.
+        /// </summary>
+        private void UpdateSidebarHighlight(string view)
+        {
+            string section = view switch
+            {
+                "Home" => "Home",
+                "Replays" or "ReplayDetails" => "Replays",
+                "Launcher" => "Launcher",
+                "Settings" or "AdvancedSettings" or "FileLocations" or "PreviousVersions" => "Settings",
+                _ => "Mods"   // everything else is reached from Manage Mods
+            };
+
+            HomeNavButton.Tag = section == "Home" ? "active" : null;
+            ModsNavButton.Tag = section == "Mods" ? "active" : null;
+            ReplaysNavButton.Tag = section == "Replays" ? "active" : null;
+            LauncherNavButton.Tag = section == "Launcher" ? "active" : null;
+            SettingsNavButton.Tag = section == "Settings" ? "active" : null;
         }
 
         private void GoHome(object sender, RoutedEventArgs e) => ShowView("Home");
@@ -466,6 +500,8 @@ namespace SC2ModManager
             }
         }
 
+        private async void RetryNews_Click(object sender, RoutedEventArgs e) => await vm.LoadNewsAsync();
+
         private void NewsLink_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string url && !string.IsNullOrEmpty(url))
@@ -515,6 +551,13 @@ namespace SC2ModManager
             // vm.SaveIpcDllPath(IpcDllPathInput.Text);
             // MessageBox.Show("Путь к IPC DLL сохранён.", "Settings",
             //     MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Enter in the game path box saves it, same as clicking Set
+        private void GamePathInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+                SetGamePath_Click(sender, e);
         }
 
         private void SetGamePath_Click(object sender, RoutedEventArgs e)
@@ -719,6 +762,9 @@ namespace SC2ModManager
         private void OpenGamePrefsFolder_Click(object sender, RoutedEventArgs e)
             => vm.OpenFolder(vm.GamePrefsFolder);
 
+        private void OpenReplaysFolder_Click(object sender, RoutedEventArgs e)
+            => vm.OpenFolder(vm.ReplaysPath);
+
         private void BrowseGamePrefsFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog
@@ -754,6 +800,7 @@ namespace SC2ModManager
             // Reflect the saved auto-save setting on the toggle.
             AutoSaveReplaysCheckBox.IsChecked = vm.AutoSaveReplays;
 
+            LoadReplayListSettings();   // sort + filters from last time, only the first time the page opens
             UpdateReplayFilterButtonStyles();
             RefreshReplayList();
         }
@@ -830,19 +877,31 @@ namespace SC2ModManager
             // 1. Filter
             IEnumerable<SC2ModManager.Models.ReplayEntry> filtered = _allReplays;
 
+            // Search matches the replay name, the map, or any player's name (like "find my games vs X")
             if (!string.IsNullOrEmpty(search))
                 filtered = filtered.Where(r =>
                     r.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    (r.Metadata?.MapDisplayName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true));
+                    (r.Metadata?.MapDisplayName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (r.Metadata?.Players?.Any(p => p.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) == true) == true));
 
             if (_filterHasAI)
                 filtered = filtered.Where(r => r.Metadata?.HasAI == true);
+
+            // Only replays we could actually read, otherwise HasAI is just false because we don't know
+            if (_filterNoAI)
+                filtered = filtered.Where(r => r.Metadata != null && !r.Metadata.ParseFailed && !r.Metadata.HasAI);
 
             if (_filterHasExclusions)
                 filtered = filtered.Where(r => r.Metadata?.HasExclusions == true);
 
             if (_filterPlayerCount > 0)
                 filtered = filtered.Where(r => r.Metadata != null && r.Metadata.TotalPlayerCount == _filterPlayerCount);
+
+            // Every player (AI too) has to be one of the picked factions. Replays we couldn't read the players
+            // from get hidden, since there's no way to know. All 3 picked is the same as no filter
+            if (_filterFactions.Count > 0 && _filterFactions.Count < 3)
+                filtered = filtered.Where(r => r.Metadata?.Players is { Count: > 0 } players &&
+                    players.All(p => p.Faction != null && _filterFactions.Contains(p.Faction)));
 
             // 2. Sort
             IOrderedEnumerable<SC2ModManager.Models.ReplayEntry> sorted = _replaySortMode switch
@@ -959,6 +1018,19 @@ namespace SC2ModManager
             nameText.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "AccentBrush");
             leftStack.Children.Add(nameText);
 
+            // Little warning tag so it's obvious why there's no map/players on this one. Hover shows the actual error
+            if (replay.Metadata?.ParseFailed == true)
+            {
+                leftStack.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = "⚠ Couldn't read this replay",
+                    FontSize = 11,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE0, 0xA0, 0x40)),
+                    Margin = new System.Windows.Thickness(0, 3, 0, 0),
+                    ToolTip = string.IsNullOrEmpty(replay.Metadata.ParseError) ? null : replay.Metadata.ParseError
+                });
+            }
+
             // Map name (if parsed)
             if (replay.Metadata?.ParseFailed == false && !string.IsNullOrEmpty(replay.Metadata.MapDisplayName))
             {
@@ -1029,6 +1101,17 @@ namespace SC2ModManager
             };
             renameBtn.Click += RenameReplay_Click;
 
+            var explorerBtn = new System.Windows.Controls.Button
+            {
+                Content = "📂",
+                Tag = replay,
+                Style = (System.Windows.Style)TryFindResource("ModernButton"),
+                Width = 36,
+                ToolTip = "Show in Explorer",
+                Margin = new System.Windows.Thickness(0, 0, 6, 0)
+            };
+            explorerBtn.Click += ShowReplayInExplorer_Click;
+
             var deleteBtn = new System.Windows.Controls.Button
             {
                 Content = "🗑",
@@ -1066,6 +1149,7 @@ namespace SC2ModManager
             btnStack.Children.Add(launchBtn);
             btnStack.Children.Add(detailsBtn);
             btnStack.Children.Add(renameBtn);
+            btnStack.Children.Add(explorerBtn);
             btnStack.Children.Add(deleteBtn);
             System.Windows.Controls.Grid.SetColumn(btnStack, 1);
 
@@ -1087,6 +1171,7 @@ namespace SC2ModManager
         {
             _currentDetailReplay = replay;
             ReplayDetailsTitle.Text = replay.DisplayName;
+            SetDetailButtonsReplay(replay);
             ReplayDetailsPanel.Children.Clear();
 
             BuildReplayDetailsContent(replay);
@@ -1097,6 +1182,55 @@ namespace SC2ModManager
         private void BackToReplayList_Click(object sender, RoutedEventArgs e)
         {
             ShowView("Replays");
+        }
+
+        // The details page Launch/Explorer/Delete buttons use the same click handlers as the cards, which
+        // read the replay out of the button's Tag. So keep their Tag pointing at whatever replay is open
+        private void SetDetailButtonsReplay(SC2ModManager.Models.ReplayEntry replay)
+        {
+            DetailsLaunchReplayBtn.Tag = replay;
+            DetailsShowInExplorerBtn.Tag = replay;
+            DetailsDeleteReplayBtn.Tag = replay;
+        }
+
+        // The ✕ next to the map/generic mod search boxes. The Tag says which page's search to clear
+        private void ClearListSearch_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            switch (btn.Tag as string)
+            {
+                case "InstalledMaps":        vm.InstalledMapsSearch = string.Empty; break;
+                case "DownloadMaps":         vm.DownloadMapsSearch = string.Empty; break;
+                case "InstalledGenericMods": vm.InstalledGenericModsSearch = string.Empty; break;
+                case "DownloadGenericMods":  vm.DownloadGenericModsSearch = string.Empty; break;
+            }
+        }
+
+        private void ShowReplayInExplorer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn ||
+                btn.Tag is not SC2ModManager.Models.ReplayEntry replay)
+                return;
+
+            try
+            {
+                if (System.IO.File.Exists(replay.FilePath))
+                {
+                    // Opens the folder with the replay highlighted
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{replay.FilePath}\"");
+                }
+                else
+                {
+                    MessageBox.Show("That replay file isn't there anymore. It may have been moved or deleted outside the mod manager. Try refreshing the replay list.",
+                        "Replay Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Couldn't open Explorer: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void BuildReplayDetailsContent(SC2ModManager.Models.ReplayEntry replay)
@@ -1296,6 +1430,14 @@ namespace SC2ModManager
                 // paging so the list doesn't snap back to 100 after deleting something further down
                 _allReplays.Remove(replay);
                 ApplyReplayFilter(resetPaging: false);
+
+                // Deleted from the details page, so there's nothing left to show here. Go back to the list
+                if (_currentDetailReplay != null &&
+                    string.Equals(_currentDetailReplay.FilePath, replay.FilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentDetailReplay = null;
+                    ShowView("Replays");
+                }
             }
             catch (Exception ex)
             {
@@ -1330,6 +1472,7 @@ namespace SC2ModManager
                 {
                     _currentDetailReplay = updated;
                     ReplayDetailsTitle.Text = updated.DisplayName;
+                    SetDetailButtonsReplay(updated);
                 }
 
                 // Swap the renamed entry into the cached list instead of rescanning the whole folder
@@ -1351,7 +1494,51 @@ namespace SC2ModManager
             if (sender is not System.Windows.Controls.Button btn) return;
             _replaySortMode = btn.Tag as string ?? "DateDesc";
             UpdateReplayFilterButtonStyles();
+            SaveReplayListSettings();
             ApplyReplayFilter();
+        }
+
+        // ── Remembering sort / filters between launches ──────────────────────
+
+        private bool _replayListSettingsLoaded = false;
+
+        /// <summary>Puts back the sort and filters from last time. Only runs once, the first time the Replays page opens.</summary>
+        private void LoadReplayListSettings()
+        {
+            if (_replayListSettingsLoaded) return;
+            _replayListSettingsLoaded = true;
+
+            try
+            {
+                var config = new SC2ModManager.Services.ConfigService().Load();
+                _replaySortMode = string.IsNullOrEmpty(config.ReplaySortMode) ? "DateDesc" : config.ReplaySortMode;
+                _filterHasAI = config.ReplayFilterHasAI;
+                _filterNoAI = config.ReplayFilterNoAI && !_filterHasAI;
+                _filterHasExclusions = config.ReplayFilterHasExclusions;
+                _filterPlayerCount = config.ReplayFilterPlayerCount;
+                _filterFactions.Clear();
+                foreach (var f in config.ReplayFilterFactions ?? new List<string>())
+                    _filterFactions.Add(f);
+            }
+            catch { /* just use the defaults */ }
+        }
+
+        /// <summary>Saves the sort and filters so they come back next time the mod manager opens. Search isn't saved.</summary>
+        private void SaveReplayListSettings()
+        {
+            try
+            {
+                var configService = new SC2ModManager.Services.ConfigService();
+                var config = configService.Load();
+                config.ReplaySortMode = _replaySortMode;
+                config.ReplayFilterHasAI = _filterHasAI;
+                config.ReplayFilterNoAI = _filterNoAI;
+                config.ReplayFilterHasExclusions = _filterHasExclusions;
+                config.ReplayFilterPlayerCount = _filterPlayerCount;
+                config.ReplayFilterFactions = _filterFactions.ToList();
+                configService.Save(config);
+            }
+            catch { /* not worth bothering anyone over */ }
         }
 
         private void ReplaySearch_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -1388,6 +1575,12 @@ namespace SC2ModManager
             if (tag == "AI")
             {
                 _filterHasAI = !_filterHasAI;
+                if (_filterHasAI) _filterNoAI = false;
+            }
+            else if (tag == "NoAI")
+            {
+                _filterNoAI = !_filterNoAI;
+                if (_filterNoAI) _filterHasAI = false;
             }
             else if (tag == "Exclusions")
             {
@@ -1399,18 +1592,37 @@ namespace SC2ModManager
             }
 
             UpdateReplayFilterButtonStyles();
+            SaveReplayListSettings();
+            ApplyReplayFilter();
+        }
+
+        // Faction buttons toggle on and off on their own, you can pick more than one. See _filterFactions for how they combine
+        private void ReplayFactionFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            string faction = btn.Tag as string ?? string.Empty;
+            if (faction.Length == 0) return;
+
+            if (!_filterFactions.Remove(faction))
+                _filterFactions.Add(faction);
+
+            UpdateReplayFilterButtonStyles();
+            SaveReplayListSettings();
             ApplyReplayFilter();
         }
 
         private void ClearReplayFilters_Click(object sender, RoutedEventArgs e)
         {
             _filterHasAI = false;
+            _filterNoAI = false;
             _filterHasExclusions = false;
             _filterPlayerCount = 0;
+            _filterFactions.Clear();
             _replaySortMode = "DateDesc";
             if (ReplaySearchBox != null)
                 ReplaySearchBox.Text = string.Empty;
             UpdateReplayFilterButtonStyles();
+            SaveReplayListSettings();
 
             // Filter right away, so cancel the search debounce that clearing the box just kicked off
             _replaySearchTimer?.Stop();
@@ -1434,11 +1646,19 @@ namespace SC2ModManager
 
             // Filter toggles — active when the filter is on
             FilterAIBtn.Style          = _filterHasAI               ? active : inactive;
+            FilterNoAIBtn.Style        = _filterNoAI                ? active : inactive;
             Filter2pBtn.Style          = _filterPlayerCount == 2    ? active : inactive;
+            Filter3pBtn.Style          = _filterPlayerCount == 3    ? active : inactive;
             Filter4pBtn.Style          = _filterPlayerCount == 4    ? active : inactive;
+            Filter5pBtn.Style          = _filterPlayerCount == 5    ? active : inactive;
             Filter6pBtn.Style          = _filterPlayerCount == 6    ? active : inactive;
+            Filter7pBtn.Style          = _filterPlayerCount == 7    ? active : inactive;
             Filter8pBtn.Style          = _filterPlayerCount == 8    ? active : inactive;
             FilterExclusionsBtn.Style  = _filterHasExclusions       ? active : inactive;
+
+            FilterUEFBtn.Style         = _filterFactions.Contains("UEF")        ? active : inactive;
+            FilterCybranBtn.Style      = _filterFactions.Contains("Cybran")     ? active : inactive;
+            FilterIlluminateBtn.Style  = _filterFactions.Contains("Illuminate") ? active : inactive;
         }
 
         private async void LaunchReplay_Click(object sender, RoutedEventArgs e)
@@ -1547,6 +1767,13 @@ namespace SC2ModManager
         // ================= PRESETS =================
 
         private void SavePreset_Click(object sender, RoutedEventArgs e) => vm.SaveCurrentStateAsPreset();
+
+        // Enter in the preset name box saves, same as clicking Save
+        private void PresetNameBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+                vm.SaveCurrentStateAsPreset();
+        }
         private void ApplyPreset_Click(object sender, RoutedEventArgs e) => vm.ApplySelectedPreset();
         private void DeletePreset_Click(object sender, RoutedEventArgs e) => vm.DeleteSelectedPreset();
 
@@ -1590,14 +1817,14 @@ namespace SC2ModManager
 
         private void EnableAllMaps_Click(object sender, RoutedEventArgs e)
         {
-            vm.EnableAllMaps();
+            vm.EnableAllShownMaps();
             foreach (var m in vm.EnabledMaps) m.IsChecked = false;
             vm.RefreshInstalledMapFilters();
         }
 
         private void DisableAllMaps_Click(object sender, RoutedEventArgs e)
         {
-            vm.DisableAllMaps();
+            vm.DisableAllShownMaps();
             foreach (var m in vm.DisabledMaps) m.IsChecked = false;
             vm.RefreshInstalledMapFilters();
         }

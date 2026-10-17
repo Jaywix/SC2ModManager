@@ -42,6 +42,7 @@
                     Background="#2D333B" Foreground="White"
                     BorderBrush="#444C56" BorderThickness="1"
                     Cursor="Hand"
+                    IsCancel="True"
                     Click="Cancel_Click"/>
             <Button Content="✓  Rename"
                     Width="100" Height="32"

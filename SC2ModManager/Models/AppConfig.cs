@@ -92,6 +92,31 @@ namespace SC2ModManager.Models
         public bool AutoEnableDownloadedMaps { get; set; } = true;
 
         /// <summary>
+        ///     Same as AutoEnableDownloadedMaps but for the Download Generic Gamedata Mods page.
+        /// </summary>
+        public bool AutoEnableDownloadedGenericMods { get; set; } = true;
+
+        /// <summary>
+        ///     The version that ran last time (like 1.6.4). When it goes up, the app says "You're now on version X"
+        ///     once. Null on the first run with this version of the setting, which just saves the current version.
+        /// </summary>
+        public string? LastRunVersion { get; set; }
+
+        /// <summary>
+        ///     When the app last started the updater (update or restoring a version). An update_error.txt is only
+        ///     reported if it was written after this, so an old one from months ago doesn't show up as a new problem.
+        /// </summary>
+        public DateTime? LastUpdateAttemptUtc { get; set; }
+
+        // Replay page sort and filters, remembered between launches (the search box isn't saved)
+        public string? ReplaySortMode { get; set; }
+        public bool ReplayFilterHasAI { get; set; }
+        public bool ReplayFilterNoAI { get; set; }
+        public bool ReplayFilterHasExclusions { get; set; }
+        public int ReplayFilterPlayerCount { get; set; }
+        public List<string> ReplayFilterFactions { get; set; } = new();
+
+        /// <summary>
         ///     The last replay auto-save copied (path|write time|size). Remembered between launches so a game that
         ///     finished while the mod manager was closed still gets saved the next time it opens. Null means auto-save
         ///     hasn't started remembering yet (first run with this version, or it was just turned back on).
