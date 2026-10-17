@@ -2322,9 +2322,23 @@ namespace SC2ModManager
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            e.Handled = true;
+
+            // File Explorer stays frozen until this handler returns, and Explorer is still the window in front. So if a
+            // popup (like the non .scd warning) opened in here, it showed up behind Explorer with both windows locked.
+            // Let the drop finish first, pull the mod manager to the front, then do the import
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+
+            // Windows doesn't always let an app steal focus with just Activate, it sometimes only flashes the taskbar.
+            // Flipping Topmost on and off is the usual trick to actually get in front
+            Activate();
+            Topmost = true;
+            Topmost = false;
+            Focus();
+
             bool anySuccess = await vm.ImportModFilesAsync(files);
             if (anySuccess)
-                MessageBox.Show("Import complete. Files added to Generic Mods (Disabled).");
+                MessageBox.Show(this, "Import complete. Files added to Generic Mods (Disabled).");
         }
 
         private async void ManualImportBrowse_Click(object sender, RoutedEventArgs e)

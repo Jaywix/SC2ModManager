@@ -1624,9 +1624,14 @@
                                         <Button Content="Clear" Margin="4,0,0,0"
                                                 Tag="InstalledMaps" Click="ClearListSearch_Click" ToolTip="Clear search"/>
                                     </StackPanel>
-                                    <Button Content="▼  Show Filters" x:Name="InstalledFiltersToggle"
+                                    <Button Content="▼  Show Filters" x:Name="InstalledFiltersToggle" DockPanel.Dock="Left"
                 HorizontalAlignment="Left" Width="130"
                 Click="InstalledFiltersToggle_Click"/>
+                                    <!-- Only shows when a filter is on, so one left on by accident doesn't look like missing maps -->
+                                    <TextBlock Text="⚠ Filters are on, some maps may be hidden"
+                                               Foreground="#E0A040" FontSize="12" VerticalAlignment="Center" Margin="10,0,8,0"
+                                               TextWrapping="Wrap"
+                                               Visibility="{Binding InstalledMapFiltersActive, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </DockPanel>
 
                                 <StackPanel x:Name="InstalledFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">
@@ -1788,13 +1793,18 @@
                             <Button Content="Disable All"            Margin="0,0,6,6" Click="DisableAllMaps_Click"/>
                         </WrapPanel>
 
-                        <WrapPanel Grid.Row="5">
-                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveMaps_Click"/>
-                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedMaps_Click"/>
-                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllMaps_Click"/>
-                            <Button Content="← Back"              Margin="0,0,6,6" Click="GoToInstalledMods"/>
-                            <Button Content="⬇  Go to Download Maps" Width="180" Margin="0,0,6,6" Click="GoToDownloadMaps"/>
-                        </WrapPanel>
+                        <!-- Go to Download stays pinned on the far right like the Go to Installed button on the download page,
+                             the rest wrap in whatever space is left -->
+                        <DockPanel Grid.Row="5">
+                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Maps" Width="180" Margin="0,0,0,6"
+                                    VerticalAlignment="Top" Click="GoToDownloadMaps"/>
+                            <WrapPanel>
+                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveMaps_Click"/>
+                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedMaps_Click"/>
+                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllMaps_Click"/>
+                                <Button Content="← Back"              Margin="0,0,6,6" Click="GoToInstalledMods"/>
+                            </WrapPanel>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Map detail panel -->
@@ -2014,13 +2024,17 @@
                             <Button Content="Disable All"            Margin="0,0,6,6" Click="DisableAllGenericMods_Click"/>
                         </WrapPanel>
 
-                        <WrapPanel Grid.Row="4">
-                            <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveGenericMods_Click"/>
-                            <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedGenericMods_Click"/>
-                            <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllGenericMods_Click"/>
-                            <Button Content="← Back"              Width="80" Margin="0,0,6,6" Click="GoToInstalledMods"/>
-                            <Button Content="⬇  Go to Download Mods" Margin="0,0,6,6" Click="GoToDownloadGenericMods"/>
-                        </WrapPanel>
+                        <!-- Same as the maps page, Go to Download pinned on the far right -->
+                        <DockPanel Grid.Row="4">
+                            <Button DockPanel.Dock="Right" Content="⬇  Go to Download Mods" Margin="0,0,0,6"
+                                    VerticalAlignment="Top" Click="GoToDownloadGenericMods"/>
+                            <WrapPanel>
+                                <Button Content="💾  Save"            Style="{StaticResource PrimaryButton}"   Margin="0,0,6,6" Click="SaveGenericMods_Click"/>
+                                <Button Content="🗑  Delete Selected" Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteSelectedGenericMods_Click"/>
+                                <Button Content="🗑  Delete All"      Style="{StaticResource DangerButton}"   Margin="0,0,6,6" Click="DeleteAllGenericMods_Click"/>
+                                <Button Content="← Back"              Width="80" Margin="0,0,6,6" Click="GoToInstalledMods"/>
+                            </WrapPanel>
+                        </DockPanel>
                     </Grid>
 
                     <!-- RIGHT: Detail panel -->
@@ -2275,9 +2289,13 @@
                                         <Button Content="Clear" Margin="4,0,0,0"
                                                 Tag="DownloadMaps" Click="ClearListSearch_Click" ToolTip="Clear search"/>
                                     </StackPanel>
-                                    <Button Content="▼  Show Filters" x:Name="DownloadFiltersToggle"
+                                    <Button Content="▼  Show Filters" x:Name="DownloadFiltersToggle" DockPanel.Dock="Left"
 HorizontalAlignment="Left" Width="130"
 Click="DownloadFiltersToggle_Click"/>
+                                    <TextBlock Text="⚠ Filters are on, some maps may be hidden"
+                                               Foreground="#E0A040" FontSize="12" VerticalAlignment="Center" Margin="10,0,8,0"
+                                               TextWrapping="Wrap"
+                                               Visibility="{Binding DownloadMapFiltersActive, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </DockPanel>
 
                                 <StackPanel x:Name="DownloadFiltersPanel" Visibility="Collapsed" Margin="0,10,0,0">

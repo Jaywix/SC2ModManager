@@ -90,6 +90,9 @@ namespace SC2ModManager.ViewModels
             return selectedTags.All(t => map.Tags.Contains(t));
         }
 
+        /// <summary>True if any filter checkbox is ticked, so some maps might be hidden.</summary>
+        public bool HasActiveFilters => TagFilters.Any(t => t.IsSelected);
+
         public void ClearAll()
         {
             foreach (var tag in TagFilters)

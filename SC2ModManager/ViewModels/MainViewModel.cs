@@ -2007,6 +2007,7 @@ namespace SC2ModManager.ViewModels
             FilteredDisabledMaps = new ObservableCollection<Map>(ApplyMapSort(DisabledMaps.Where(m => InstalledMapsFilter.Passes(m) && MatchesMapSearch(m, InstalledMapsSearch)), InstalledMapSort));
             OnPropertyChanged(nameof(FilteredEnabledMaps));
             OnPropertyChanged(nameof(FilteredDisabledMaps));
+            OnPropertyChanged(nameof(InstalledMapFiltersActive));
             RefreshListCounts();
         }
 
@@ -2018,8 +2019,17 @@ namespace SC2ModManager.ViewModels
                     MatchesMapSearch(m, DownloadMapsSearch)),
                 DownloadMapSort));
             OnPropertyChanged(nameof(FilteredDownloadableMaps));
+            OnPropertyChanged(nameof(DownloadMapFiltersActive));
             RefreshListCounts();
         }
+
+        // Shows the "filters are on" note next to Show Filters, so a filter left on by accident doesn't
+        // look like missing maps. The search box isn't counted since it's always visible
+        public bool InstalledMapFiltersActive => InstalledMapsFilter.HasActiveFilters;
+
+        public bool DownloadMapFiltersActive =>
+            DownloadMapsFilter.HasActiveFilters ||
+            DownloadMapsShowDownloaded != DownloadMapsShowNotDownloaded; // both or neither ticked = no filter
 
         // ================= DOWNLOADED FILTER =================
         // The "Downloaded" / "Not Downloaded" checkboxes on both download pages. Works like the other filter

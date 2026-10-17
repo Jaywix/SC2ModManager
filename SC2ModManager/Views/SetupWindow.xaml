@@ -79,18 +79,20 @@
                           Margin="0,14,0,0"/>
             </StackPanel>
 
-            <!-- PAGE 2: Theme Selection -->
-            <StackPanel x:Name="Page2" Visibility="Collapsed">
+            <!-- PAGE 2: Theme Selection. Scrolls since 5 themes don't fit in the window anymore. The name is on the
+                 ScrollViewer so hiding the page hides the scroll area too and it can't block clicks on the other pages -->
+            <ScrollViewer x:Name="Page2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,6,0">
                 <TextBlock Text="Choose Your Theme"
                Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
                 <TextBlock Foreground="#CCCCCC" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20">
-        Select a faction theme for your mod manager. You can change this later in Settings.
+        Select a theme for your mod manager. You can change this later in Settings.
                 </TextBlock>
 
                 <UniformGrid Columns="2" Margin="0,0,0,0">
 
                     <!-- Jaywix Standard -->
-                    <Border x:Name="ThemeStandardCard" Margin="0,0,8,8" CornerRadius="6" Padding="14"
+                    <Border x:Name="ThemeStandardCard" Margin="4" CornerRadius="6" Padding="14"
                 Background="#1A2535" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_Standard_Click">
                         <StackPanel>
@@ -103,7 +105,7 @@
                     </Border>
 
                     <!-- UEF -->
-                    <Border x:Name="ThemeUEFCard" Margin="8,0,0,8" CornerRadius="6" Padding="14"
+                    <Border x:Name="ThemeUEFCard" Margin="4" CornerRadius="6" Padding="14"
                 Background="#1A2535" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_UEF_Click">
                         <StackPanel>
@@ -116,7 +118,7 @@
                     </Border>
 
                     <!-- Cybran -->
-                    <Border x:Name="ThemeCybranCard" Margin="0,0,8,0" CornerRadius="6" Padding="14"
+                    <Border x:Name="ThemeCybranCard" Margin="4" CornerRadius="6" Padding="14"
                 Background="#1F0A08" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_Cybran_Click">
                         <StackPanel>
@@ -129,7 +131,7 @@
                     </Border>
 
                     <!-- Aeon -->
-                    <Border x:Name="ThemeAeonCard" Margin="8,0,0,0" CornerRadius="6" Padding="14"
+                    <Border x:Name="ThemeAeonCard" Margin="4" CornerRadius="6" Padding="14"
                 Background="#0A1A18" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_Aeon_Click">
                         <StackPanel>
@@ -142,7 +144,7 @@
                     </Border>
 
                     <!-- Dark Mode -->
-                    <Border x:Name="ThemeDarkModeCard" Margin="8,0,0,0" CornerRadius="6" Padding="14"
+                    <Border x:Name="ThemeDarkModeCard" Margin="4" CornerRadius="6" Padding="14"
                 Background="#0A1A18" BorderThickness="2" BorderBrush="#444444"
                 Cursor="Hand" MouseLeftButtonUp="ThemeCard_DarkMode_Click">
                         <StackPanel>
@@ -156,6 +158,7 @@
 
                 </UniformGrid>
             </StackPanel>
+            </ScrollViewer>
 
             <!-- PAGE 3: Game Path -->
             <StackPanel x:Name="Page3" Visibility="Collapsed">
